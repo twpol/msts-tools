@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -45,9 +46,12 @@ namespace SimisEditor
 		}
 
 		private void OpenFile(string filename) {
-			var applicationDirectory = @"E:\Users\James\Documents\Visual Studio 2008\Projects\JGR MSTS Editor\MSTS Route Editor";
+			var resourcesDirectory = Application.ExecutablePath;
+			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
+
+			// Load BNFs.
 			var BNFs = new Dictionary<string, BNF>();
-			foreach (var bnfFilename in Directory.GetFiles(applicationDirectory + @"\BNF", "*.bnf")) {
+			foreach (var bnfFilename in Directory.GetFiles(resourcesDirectory, "*.bnf")) {
 				var bnf = new BNFFile(bnfFilename);
 				try {
 					bnf.ReadFile();
@@ -63,7 +67,25 @@ namespace SimisEditor
 				BNFs.Add(bnf.FileType + bnf.FileTypeVer, bnf.BNF);
 			}
 
-			var newFile = new SimisFile(filename, BNFs);
+			// Load token names.
+			var TokenNames = new Dictionary<uint, string>();
+			foreach (var tokFilename in Directory.GetFiles(resourcesDirectory, "*.tok")) {
+				var ffReader = new StreamReader(System.IO.File.OpenRead(tokFilename), Encoding.ASCII);
+				var tokenType = (ushort)0x0000;
+				var tokenIndex = (ushort)0x0000;
+				for (var ffLine = ffReader.ReadLine(); !ffReader.EndOfStream; ffLine = ffReader.ReadLine()) {
+					if (ffLine.StartsWith("SID_DEFINE_FIRST_ID(")) {
+						var type = ffLine.Substring(ffLine.IndexOf('(') + 1, ffLine.LastIndexOf(')') - ffLine.IndexOf('(') - 1);
+						tokenType = ushort.Parse(type.Substring(2), NumberStyles.HexNumber);
+						tokenIndex = 0x0000;
+					} else if (ffLine.StartsWith("SIDDEF(")) {
+						var name = ffLine.Substring(ffLine.IndexOf('"') + 1, ffLine.LastIndexOf('"') - ffLine.IndexOf('"') - 1);
+						TokenNames.Add(((uint)tokenType << 16) + ++tokenIndex, name);
+					}
+				}
+			}
+
+			var newFile = new SimisFile(filename, BNFs, TokenNames);
 			try {
 				newFile.ReadFile();
 			} catch (FileException ex) {
@@ -81,7 +103,9 @@ namespace SimisEditor
 			UpdateTitle();
 			File = newFile;
 			SimisTree.Nodes.Clear();
-			InsertSimisBlock(SimisTree.Nodes, File.Root);
+			foreach (var root in File.Roots) {
+				InsertSimisBlock(SimisTree.Nodes, root);
+			}
 			SimisTree.TopNode = SimisTree.Nodes[0];
 		}
 
@@ -106,7 +130,7 @@ namespace SimisEditor
 
 			if (simisBlock is SimisBlockValueString) {
 				var bv = (SimisBlockValue)simisBlock;
-				treeNode.Name = bv.Name + "=\"" + bv + "\"";
+				treeNode.Name = bv.Name + "=\"" + bv.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
 			} else if (simisBlock is SimisBlockValue) {
 				var bv = (SimisBlockValue)simisBlock;
 				treeNode.Name = bv.Name + "=" + bv;
@@ -123,13 +147,8 @@ namespace SimisEditor
 			}
 			// If we have just one child, and it is a value, omit its name.
 			if ((simisBlock.Nodes.Count == 1) && (simisBlock.Nodes[0] is SimisBlockValue)) {
-				if (simisBlock.Nodes[0] is SimisBlockValueString) {
-					var bv = (SimisBlockValue)simisBlock.Nodes[0];
-					treeNode.Nodes[0].Name = "\"" + bv + "\"";
-				} else {
-					var bv = (SimisBlockValue)simisBlock.Nodes[0];
-					treeNode.Nodes[0].Name = bv.ToString();
-				}
+				var sbv = (SimisBlockValue)simisBlock.Nodes[0];
+				treeNode.Nodes[0].Name = treeNode.Nodes[0].Name.Substring(sbv.Name.Length + 1);
 			}
 			// If all children are values, don't expand the node.
 			if (allChildrenAreValues) {

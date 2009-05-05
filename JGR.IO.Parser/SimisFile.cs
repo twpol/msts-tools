@@ -90,13 +90,15 @@ namespace JGR.IO.Parser
 	public class SimisFile : BufferedMessageSource
 	{
 		public string Filename { get; private set; }
-		public SimisBlock Root;
+		public List<SimisBlock> Roots;
 		protected Dictionary<string, BNF> BNFs;
+		protected Dictionary<uint, string> TokenNames;
 
-		public SimisFile(string filename, Dictionary<string, BNF> bnfs) {
+		public SimisFile(string filename, Dictionary<string, BNF> bnfs, Dictionary<uint, string> tokenNames) {
 			Filename = filename;
-			Root = null;
+			Roots = new List<SimisBlock>();
 			BNFs = bnfs;
+			TokenNames = tokenNames;
 		}
 
 		public override string GetMessageSourceName() {
@@ -191,6 +193,7 @@ namespace JGR.IO.Parser
 				if (BNFs.ContainsKey(format)) {
 					parser.BNF = BNFs[format];
 				}
+				parser.TokenNames = TokenNames;
 
 				//using (var writer = new StreamWriter(Filename + ".txt", false, Encoding.UTF8)) {
 					var blockStack = new Stack<SimisBlock>();
@@ -203,8 +206,11 @@ namespace JGR.IO.Parser
 							case SimisParserToken.Block:
 								MessageSend(LEVEL_DEBUG, "Got token BLOCK (" + parser.TokenText + ").");
 								var block = new SimisBlock(this, parser.TokenText);
-								if (Root == null) Root = block;
-								if (blockStack.Count > 0) blockStack.Peek().Nodes.Add(block);
+								if (blockStack.Count == 0) {
+									Roots.Add(block);
+								} else {
+									blockStack.Peek().Nodes.Add(block);
+								}
 								blockStack.Push(block);
 								//if (inline) writer.WriteLine();
 								//writer.Write(indent + parser.TokenText + " (");
@@ -379,6 +385,7 @@ namespace JGR.IO.Parser
 		string TokenText { get; }
 		double TokenNumber { get; }
 		BNF BNF { get; set; }
+		Dictionary<uint, string> TokenNames { get; set; }
 		BNFState BNFState { get; }
 	}
 
@@ -387,11 +394,13 @@ namespace JGR.IO.Parser
 		protected readonly SimisFile File;
 		protected BinaryReader Reader { get; private set; }
 		public BNF BNF { get; set; }
+		public Dictionary<uint, string> TokenNames { get; set; }
 		public BNFState BNFState { get; protected set; }
 
 		protected SimisParser(SimisFile file, BinaryReader reader) {
 			File = file;
 			Reader = reader;
+			TokenNames = new Dictionary<uint, string>();
 			ResetToken();
 		}
 
@@ -489,10 +498,11 @@ namespace JGR.IO.Parser
 				// First token in the file must match the production FILE.
 				if ((token == "(") || (token == ")") || token.ToCharArray().All<char>(t => numberChars.Any<char>(c => t == c))) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser expected token; got '" + token + "'.");
 				if (!BNF.Definitions.ContainsKey("FILE")) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser cannot find FILE definition in BNF.");
-				if (BNF.Definitions["FILE"].Expression.Op != OperatorType.Reference) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser found BFN definition for FILE doesn't contain just a single reference.");
-				var rootOp = (ReferenceOperator)BNF.Definitions["FILE"].Expression;
-				if (!BNF.Productions.ContainsKey(rootOp.Reference)) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser found BNF symbol " + rootOp.Reference + " is not a production.");
-				if (token != rootOp.Reference) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser expected '" + rootOp.Reference + "'; got '" + token + "'.");
+				if (BNF.Definitions["FILE"].Expression == null) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser found BFN definition for FILE which is empty.");
+				//if (BNF.Definitions["FILE"].Expression.Op != OperatorType.Reference) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser found BFN definition for FILE doesn't contain just a single reference.");
+				//var rootOp = (ReferenceOperator)BNF.Definitions["FILE"].Expression;
+				//if (!BNF.Productions.ContainsKey(rootOp.Reference)) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser found BNF symbol " + rootOp.Reference + " is not a production.");
+				//if (token != rootOp.Reference) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser expected '" + rootOp.Reference + "'; got '" + token + "'.");
 				BNFState = new BNFState(BNF);
 				BNFState.RegisterMessageSink(File);
 			}
@@ -515,11 +525,11 @@ namespace JGR.IO.Parser
 					} catch (FileException ex) {
 						throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed end-block; see below for BNF state.", ex);
 					}
-					if (BNFState.IsEmpty) {
-						while (Reader.BaseStream.Position < Reader.BaseStream.Length) {
-							Reader.ReadChar();
-						}
-					}
+					//if (BNFState.IsEmpty) {
+					//	while (Reader.BaseStream.Position < Reader.BaseStream.Length) {
+					//		Reader.ReadChar();
+					//	}
+					//}
 				}
 				return SimisParserToken.BlockEnd;
 			}
@@ -626,33 +636,14 @@ namespace JGR.IO.Parser
 
 	internal class SimisParserBinary : SimisParser
 	{
-		private Dictionary<uint, string> TokenNames;
 		private Stack<uint> BlockEnds;
 		private Queue<SimisParserToken> TokenQueue;
 		private readonly List<string> dataTypes;
 
 		public SimisParserBinary(SimisFile file, BinaryReader reader) : base(file, reader) {
-			TokenNames = new Dictionary<uint, string>();
 			BlockEnds = new Stack<uint>();
 			TokenQueue = new Queue<SimisParserToken>();
 			dataTypes = new List<string>(new string[] { "string", "byte", "uint", "sint", "dword", "float", "buffer" });
-
-			var app = Environment.GetCommandLineArgs()[0];
-			app = app.Substring(0, app.LastIndexOf('\\'));
-			app = @"E:\Users\James\Documents\Visual Studio 2008\Projects\JGR MSTS Editor\MSTS Route Editor";
-			var ffReader = new StreamReader(System.IO.File.OpenRead(app + @"\\ffedit.txt"), Encoding.ASCII);
-			var tokenType = (ushort)0x0000;
-			var tokenIndex = (ushort)0x0000;
-			for (var ffLine = ffReader.ReadLine(); !ffReader.EndOfStream; ffLine = ffReader.ReadLine()) {
-				if (ffLine.StartsWith("SID_DEFINE_FIRST_ID(")) {
-					var type = ffLine.Substring(ffLine.IndexOf('(') + 1, ffLine.LastIndexOf(')') - ffLine.IndexOf('(') - 1);
-					tokenType = ushort.Parse(type.Substring(2), NumberStyles.HexNumber);
-					tokenIndex = 0x0000;
-				} else if (ffLine.StartsWith("SIDDEF(")) {
-					var name = ffLine.Substring(ffLine.IndexOf('"') + 1, ffLine.LastIndexOf('"') - ffLine.IndexOf('"') - 1);
-					TokenNames.Add(((uint)tokenType << 16) + ++tokenIndex, name);
-				}
-			}
 		}
 
 		public override SimisParserToken NextToken() {
