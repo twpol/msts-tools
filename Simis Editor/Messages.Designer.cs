@@ -46,7 +46,7 @@
 			this.ListOfMessages.HideSelection = false;
 			this.ListOfMessages.Location = new System.Drawing.Point(0, 0);
 			this.ListOfMessages.Name = "ListOfMessages";
-			this.ListOfMessages.Size = new System.Drawing.Size(584, 264);
+			this.ListOfMessages.Size = new System.Drawing.Size(624, 294);
 			this.ListOfMessages.TabIndex = 0;
 			this.ListOfMessages.UseCompatibleStateImageBehavior = false;
 			this.ListOfMessages.View = System.Windows.Forms.View.Details;
@@ -71,12 +71,12 @@
 			this.MessageText.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.MessageText.Dock = System.Windows.Forms.DockStyle.Bottom;
 			this.MessageText.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.MessageText.Location = new System.Drawing.Point(0, 264);
+			this.MessageText.Location = new System.Drawing.Point(0, 294);
 			this.MessageText.Multiline = true;
 			this.MessageText.Name = "MessageText";
 			this.MessageText.ReadOnly = true;
 			this.MessageText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-			this.MessageText.Size = new System.Drawing.Size(584, 148);
+			this.MessageText.Size = new System.Drawing.Size(624, 148);
 			this.MessageText.TabIndex = 2;
 			this.MessageText.Text = "1\r\n2\r\n3\r\n4\r\n5\r\n6\r\n7\r\n8\r\n9\r\n10";
 			// 
@@ -84,7 +84,7 @@
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(584, 412);
+			this.ClientSize = new System.Drawing.Size(624, 442);
 			this.Controls.Add(this.ListOfMessages);
 			this.Controls.Add(this.MessageText);
 			this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));

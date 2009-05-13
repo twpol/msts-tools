@@ -1,16 +1,21 @@
 ﻿using System;
+using System.CodeDom;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
 using JGR;
 using JGR.Grammar;
 using JGR.IO.Parser;
+using Microsoft.CSharp;
 
 namespace SimisEditor
 {
@@ -42,6 +47,8 @@ namespace SimisEditor
 			UpdateTitle();
 			File = null;
 			SimisTree.Nodes.Clear();
+            var node = SimisTree.Nodes.Add("No file loaded.");
+            node.NodeFont = new Font(SimisTree.Font, FontStyle.Italic);
 			SimisTree.ExpandAll();
 		}
 
@@ -130,12 +137,12 @@ namespace SimisEditor
 
 			if (simisBlock is SimisBlockValueString) {
 				var bv = (SimisBlockValue)simisBlock;
-				treeNode.Name = bv.Name + "=\"" + bv.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
+                treeNode.Name = bv.Name + "=\"" + bv.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
 			} else if (simisBlock is SimisBlockValue) {
 				var bv = (SimisBlockValue)simisBlock;
 				treeNode.Name = bv.Name + "=" + bv;
 			} else {
-				treeNode.Name = simisBlock.Token;
+				treeNode.Name = simisBlock.Type;
 				if (simisBlock.Name.Length > 0) {
 					treeNode.Name += " \"" + simisBlock.Name + "\"";
 				}
@@ -159,6 +166,14 @@ namespace SimisEditor
 
 			return (simisBlock is SimisBlockValue);
 		}
+
+        private void SelectNode(TreeNode treeNode) {
+			SimisKey.Text = "<none>";
+            if (treeNode.Tag == null) return;
+			SimisBlock selectedBlock = (SimisBlock)treeNode.Tag;
+			SimisKey.Text = selectedBlock.Key;
+			SimisProperties.SelectedObject = CreateEditObjectFor(selectedBlock);
+        }
 
 		private bool SaveFileIfModified() {
 			if (Modified) {
@@ -188,6 +203,115 @@ namespace SimisEditor
 			return node.Name + " (" + String.Join(" ", node.Nodes.Cast<TreeNode>().Select<TreeNode, string>(n => GetCollapsedNodeText(n)).ToArray<string>()) + ")";
 		}
 
+		private static object CreateEditObjectFor(SimisBlock block) {
+			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) return null;
+
+			var dClassName = block.Type.Replace(".", "_");
+
+			// Create constructor.
+			var dConstructor = new CodeConstructor();
+			dConstructor.Attributes = MemberAttributes.Public;
+
+			// Go through the Simis data to find suitable things for editing.
+			var dFields = new List<CodeMemberField>();
+			var dProperties = new List<CodeMemberProperty>();
+			var dBlockNames = new List<string>();
+			var dPropertyValues = new Dictionary<string, object>();
+			foreach (var child in block.Nodes) {
+				var dPropertyName = child.Name.Length > 0 ? child.Name : child.Type;
+				if (block.Nodes.Count<SimisBlock>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
+					var index = 1;
+					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "#" + index))) index++;
+					dPropertyName += "#" + index;
+					dBlockNames.Add(dPropertyName);
+				}
+
+				CodeTypeReference type;
+				if (child is SimisBlockValueInteger) {
+					type = new CodeTypeReference(typeof(long));
+				} else if (child is SimisBlockValueDouble) {
+					type = new CodeTypeReference(typeof(double));
+				} else if (child is SimisBlockValueString) {
+					type = new CodeTypeReference(typeof(string));
+				} else {
+					// SetupDynamicTypesFor(doneTypes, dNamespace, child)
+					type = new CodeTypeReference(typeof(string));
+					//continue;
+				}
+
+				var dField = new CodeMemberField();
+				dField.Attributes = MemberAttributes.Private;
+				dField.Name = "_" + dPropertyName;
+				dField.Type = type;
+				dFields.Add(dField);
+
+				var dProperty = new CodeMemberProperty();
+				dProperty.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+				dProperty.Name = dPropertyName;
+				dProperty.Type = type;
+				dProperty.HasGet = true;
+				dProperty.HasSet = true;
+				dProperty.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name)));
+				dProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name), new CodeVariableReferenceExpression("value")));
+				dProperties.Add(dProperty);
+
+				if (child is SimisBlockValue) {
+					dPropertyValues.Add(dPropertyName, ((SimisBlockValue)child).Value);
+				}
+			}
+
+			// Create edit class. The attribute [TypeConverter(typeof(ExpandableObjectConverter))] allows the property grid to expand nested items.
+			var dClass = new CodeTypeDeclaration(dClassName);
+			dClass.IsClass = true;
+			dClass.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
+			dClass.CustomAttributes.Add(new CodeAttributeDeclaration("TypeConverter", new CodeAttributeArgument(new CodeTypeOfExpression("ExpandableObjectConverter"))));
+			dClass.Members.Add(dConstructor);
+			dClass.Members.AddRange(dFields.ToArray());
+			dClass.Members.AddRange(dProperties.ToArray());
+
+			// Create namespace, including imports needed for various code created below.
+			var dNamespace = new CodeNamespace("SimisEditor.Editor.Dynamic");
+			dNamespace.Imports.Add(new CodeNamespaceImport("System"));
+			dNamespace.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
+			dNamespace.Types.Add(dClass);
+
+			// Create compile unit, containing our dynamic namespace and classes.
+			var dUnit = new CodeCompileUnit();
+			dUnit.ReferencedAssemblies.Add("System.dll");
+			dUnit.ReferencedAssemblies.Add("System.Windows.Forms.dll");
+			dUnit.Namespaces.Add(dNamespace);
+
+			// Set up compiler options.
+			var compilerParams = new CompilerParameters();
+			compilerParams.GenerateExecutable = false;
+			compilerParams.GenerateInMemory = true;
+
+			// Get the C# compiler and build a new assembly from the code we've just created.
+			var compiler = new CSharpCodeProvider();
+			using (var writer = new StreamWriter(Application.ExecutablePath + @"\..\dynamic_codedom.cs", false, Encoding.UTF8)) {
+				compiler.GenerateCodeFromCompileUnit(dUnit, writer, new CodeGeneratorOptions());
+			}
+			var compileResults = compiler.CompileAssemblyFromDom(compilerParams, dUnit);
+
+			// Did it work? Did it?
+			if (compileResults.Errors.HasErrors) {
+				var messages = new string[compileResults.Output.Count];
+				compileResults.Output.CopyTo(messages, 0);
+				MessageBox.Show(String.Join("\n", messages), Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return null;
+			}
+
+			var dType = compileResults.CompiledAssembly.GetType(dNamespace.Name + "." + dClass.Name);
+			var dTypeConstructor = dType.GetConstructor(new Type[] { });
+			var dInstance = dTypeConstructor.Invoke(new object[] { });
+
+			foreach (var prop in dPropertyValues) {
+				dInstance.GetType().GetProperty(prop.Key).SetValue(dInstance, prop.Value, new object[] { });
+			}
+
+			return dInstance;
+		}
+
 		private void newToolStripMenuItem_Click(object sender, EventArgs e) {
 			if (!SaveFileIfModified()) {
 				return;
@@ -215,7 +339,6 @@ namespace SimisEditor
 			}
 		}
 
-
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
 			if (!SaveFileIfModified()) {
 				return;
@@ -229,6 +352,14 @@ namespace SimisEditor
 
 		private void SimisTree_AfterExpand(object sender, TreeViewEventArgs e) {
 			e.Node.Text = GetNodeText(e.Node);
+		}
+
+        private void SimisTree_AfterSelect(object sender, TreeViewEventArgs e) {
+            SelectNode(e.Node);
+        }
+
+		private void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
+			//
 		}
 	}
 }
