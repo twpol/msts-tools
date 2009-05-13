@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSTS Route Editor", "MSTS Route Editor\MSTS Route Editor.csproj", "{57D66581-70DB-4B7D-9C21-748920084697}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simis Editor", "Simis Editor\Simis Editor.csproj", "{D0874CDE-545D-439A-9EA7-93970C6F4071}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR", "JGR\JGR.csproj", "{8A4E6830-F84F-4938-B261-F732B7C97C4F}"
@@ -19,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{57D66581-70DB-4B7D-9C21-748920084697}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{57D66581-70DB-4B7D-9C21-748920084697}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{57D66581-70DB-4B7D-9C21-748920084697}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{57D66581-70DB-4B7D-9C21-748920084697}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D0874CDE-545D-439A-9EA7-93970C6F4071}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D0874CDE-545D-439A-9EA7-93970C6F4071}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0874CDE-545D-439A-9EA7-93970C6F4071}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -202,10 +202,18 @@ namespace JGR.IO.Parser
 					//writer.WriteLine("SIMISA@@@@@@@@@@JINX0" + format + "t______");
 					//writer.WriteLine();
 					for (var token = parser.NextToken(); token != SimisParserToken.None; token = parser.NextToken()) {
+                        var key = (blockStack.Count > 0 ? blockStack.Peek().Key + "." : "");
+                        var type = parser.TokenType;
+                        var name = "";
+                        if ((parser.BNFState != null) && (parser.BNFState.State != null) && (parser.BNFState.State.Op is NamedReferenceOperator)) {
+                            name = ((NamedReferenceOperator)parser.BNFState.State.Op).Name;
+                        }
+                        //if ((name == "") && (token != SimisParserToken.Block)) name = "unnamed_" + type;
+                        key += (token == SimisParserToken.Block ? type : name);
 						switch (token) {
 							case SimisParserToken.Block:
-								MessageSend(LEVEL_DEBUG, "Got token BLOCK (" + parser.TokenText + ").");
-								var block = new SimisBlock(this, parser.TokenText);
+                                MessageSend(LEVEL_DEBUG, "Got token BLOCK (" + type + (name.Length > 0 ? " \"" + name + "\"" : "") + ").");
+                                var block = new SimisBlock(this, key, type, name);
 								if (blockStack.Count == 0) {
 									Roots.Add(block);
 								} else {
@@ -233,19 +241,11 @@ namespace JGR.IO.Parser
 								break;
 							case SimisParserToken.Double:
 								MessageSend(LEVEL_DEBUG, "Got number: " + parser.TokenNumber);
-								if ((parser.BNFState != null) && (parser.BNFState.State != null) && (parser.BNFState.State.Op is NamedReferenceOperator)) {
-									blockStack.Peek().Nodes.Add(new SimisBlockValueDouble(this, ((NamedReferenceOperator)parser.BNFState.State.Op).Name, parser.TokenNumber));
-								} else {
-									blockStack.Peek().Nodes.Add(new SimisBlockValueDouble(this, "unnamed_" + parser.TokenText, parser.TokenNumber));
-								}
+                                blockStack.Peek().Nodes.Add(new SimisBlockValueDouble(this, key, type, name, parser.TokenNumber));
 								break;
 							case SimisParserToken.Integer:
 								MessageSend(LEVEL_DEBUG, "Got number: " + parser.TokenNumber);
-								if ((parser.BNFState != null) && (parser.BNFState.State != null) && (parser.BNFState.State.Op is NamedReferenceOperator)) {
-									blockStack.Peek().Nodes.Add(new SimisBlockValueInteger(this, ((NamedReferenceOperator)parser.BNFState.State.Op).Name, (long)parser.TokenNumber));
-								} else {
-									blockStack.Peek().Nodes.Add(new SimisBlockValueInteger(this, "unnamed_" + parser.TokenText, (long)parser.TokenNumber));
-								}
+                                blockStack.Peek().Nodes.Add(new SimisBlockValueInteger(this, key, type, name, (long)parser.TokenNumber));
 								/*if ((parser.BNFState != null) && (parser.BNFState.State != null) && (parser.BNFState.State.Op is NamedReferenceOperator)) {
 									var nrop = (NamedReferenceOperator)parser.BNFState.State.Op;
 									writer.WriteLine();
@@ -259,19 +259,15 @@ namespace JGR.IO.Parser
 								//}
 								break;
 							case SimisParserToken.Text:
-								if ((parser.BNFState != null) && (parser.BNFState.State != null) && (parser.BNFState.State.Op is NamedReferenceOperator)) {
-									blockStack.Peek().Nodes.Add(new SimisBlockValueString(this, ((NamedReferenceOperator)parser.BNFState.State.Op).Name, parser.TokenText));
-								} else {
-									blockStack.Peek().Nodes.Add(new SimisBlockValueString(this, "unnamed_string", parser.TokenText));
-								}
+								var formattedString = parser.TokenText.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n");
+								MessageSend(LEVEL_DEBUG, "Got text: " + formattedString);
+                                blockStack.Peek().Nodes.Add(new SimisBlockValueString(this, key, type, name, parser.TokenText));
 								/*if ((parser.BNFState != null) && (parser.BNFState.State != null) && (parser.BNFState.State.Op is NamedReferenceOperator)) {
 									var nrop = (NamedReferenceOperator)parser.BNFState.State.Op;
 									writer.WriteLine();
 									writer.WriteLine(indent + nrop.Name + " " + parser.TokenText);
 									inline = false;
 								} else*/
-								var formattedString = parser.TokenText.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n");
-								MessageSend(LEVEL_DEBUG, "Got text: " + formattedString);
 								//if (inline) {
 								//	writer.Write(" \"" + formattedString + "\"");
 								//} else {
@@ -306,21 +302,15 @@ namespace JGR.IO.Parser
 	public class SimisBlock
 	{
 		public readonly SimisFile File;
-		public string Token;
+        public readonly string Key;
+		public string Type;
 		public string Name;
 		public readonly List<SimisBlock> Nodes;
 
-		public SimisBlock(SimisFile file)
-			: this(file, "", "") {
-		}
-
-		public SimisBlock(SimisFile file, string token)
-			: this(file, token, "") {
-		}
-
-		public SimisBlock(SimisFile file, string token, string name) {
+		public SimisBlock(SimisFile file, string key, string type, string name) {
 			File = file;
-			Token = token;
+            Key = key;
+			Type = type;
 			Name = name;
 			Nodes = new List<SimisBlock>();
 		}
@@ -329,16 +319,22 @@ namespace JGR.IO.Parser
 	public class SimisBlockValue : SimisBlock
 	{
 		protected object _value;
-		protected SimisBlockValue(SimisFile file, string name, object value)
-			: base(file, "", name) {
+        protected SimisBlockValue(SimisFile file, string key, string type, string name, object value)
+			: base(file, key, type, name) {
 			_value = value;
 		}
+
+        public object Value {
+            get {
+                return _value;
+            }
+        }
 	}
 
 	public class SimisBlockValueInteger : SimisBlockValue
 	{
-		public SimisBlockValueInteger(SimisFile file, string name, long value)
-			: base(file, name, value) {
+        public SimisBlockValueInteger(SimisFile file, string key, string type, string name, long value)
+			: base(file, key, type, name, value) {
 		}
 
 		public override string ToString() {
@@ -348,8 +344,8 @@ namespace JGR.IO.Parser
 
 	public class SimisBlockValueDouble : SimisBlockValue
 	{
-		public SimisBlockValueDouble(SimisFile file, string name, double value)
-			: base(file, name, value) {
+        public SimisBlockValueDouble(SimisFile file, string key, string type, string name, double value)
+			: base(file, key, type, name, value) {
 		}
 
 		public override string ToString() {
@@ -359,8 +355,8 @@ namespace JGR.IO.Parser
 
 	public class SimisBlockValueString : SimisBlockValue
 	{
-		public SimisBlockValueString(SimisFile file, string name, string value)
-			: base(file, name, value) {
+        public SimisBlockValueString(SimisFile file, string key, string type, string name, string value)
+			: base(file, key, type, name, value) {
 		}
 
 		public override string ToString() {
@@ -382,6 +378,7 @@ namespace JGR.IO.Parser
 	interface ISimisParser
 	{
 		SimisParserToken NextToken();
+        string TokenType { get; }
 		string TokenText { get; }
 		double TokenNumber { get; }
 		BNF BNF { get; set; }
@@ -405,6 +402,7 @@ namespace JGR.IO.Parser
 		}
 
 		protected void ResetToken() {
+            TokenType = "";
 			TokenText = "";
 			TokenNumber = 0.0;
 		}
@@ -412,8 +410,9 @@ namespace JGR.IO.Parser
 
 		#region ISimisParser Members
 		public virtual SimisParserToken NextToken() { return SimisParserToken.None; }
-		public string TokenText { get; protected set; }
-		public double TokenNumber { get; protected set; }
+        public string TokenType { get; protected set; }
+        public string TokenText { get; protected set; }
+        public double TokenNumber { get; protected set; }
 		#endregion
 	}
 
@@ -545,6 +544,7 @@ namespace JGR.IO.Parser
 			if (BNF != null) {
 				if (BNFState.IsEnterBlockTime) {
 					// This is (probably?) a block name, which fits in between the block tag and the "(".
+                    TokenType = "block-string";
 					TokenText = token;
 					return SimisParserToken.Text;
 				}
@@ -552,23 +552,21 @@ namespace JGR.IO.Parser
 				// Get all valid new states, except the special <begin-block> and <end-block>.
 				var validReferences = BNFState.GetValidStates().Where<string>(s => !s.StartsWith("<")).ToArray<string>();
 
-				var dataType = "";
 				if (validReferences.Any<string>(s => s == token)) {
 					// Token matches reference. Go!
-					dataType = token;
+                    TokenType = token;
 				} else {
 					// Check all the datatypes match.
 					var validDataTypes = validReferences.Where<string>(s => dataTypes.Contains(s));
 					if (validDataTypes.Any<string>(s => s != validDataTypes.First<string>())) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser got token '" + token + "' but BNF has multiple datatype states to move to; see below for BNF state.");
 					// Look for first datatype.
-					dataType = validReferences.FirstOrDefault<string>(s => dataTypes.Contains(s));
-					if (dataType == null) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser got token '" + token + "' but BNF doesn't include this state or a datatype to parse it with; see below for BNF state.");
+                    TokenType = validReferences.FirstOrDefault<string>(s => dataTypes.Contains(s));
+                    if (TokenType == null) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser got token '" + token + "' but BNF doesn't include this state or a datatype to parse it with; see below for BNF state.");
 				}
 
-				if ((dataType == "uint") || (dataType == "sint") || (dataType == "dword") || (dataType == "float")) {
-					TokenText = dataType;
+                if ((TokenType == "uint") || (TokenType == "sint") || (TokenType == "dword") || (TokenType == "float")) {
 					try {
-						if (dataType == "float") {
+                        if (TokenType == "float") {
 							TokenNumber = double.Parse(token);
 						} else if ((token.Length == 8) && !nonhexNumberChars.Any<char>(c => token.Contains(c))) {
 							TokenNumber = long.Parse(token, NumberStyles.HexNumber);
@@ -576,61 +574,67 @@ namespace JGR.IO.Parser
 							TokenNumber = long.Parse(token);
 						}
 					} catch (Exception ex) {
-						throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser failed to parse '" + token + "' as '" + dataType + "'.", ex);
+                        throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "Simis parser failed to parse '" + token + "' as '" + TokenType + "'.", ex);
 					}
 					try {
-						BNFState.MoveTo(dataType);
+                        BNFState.MoveTo(TokenType);
 					} catch (FileException ex) {
-						throw new InvalidSimisFormatException(File.Filename, Reader, 0, "Simis parser got token '" + token + "' but BNF state failed move to '" + dataType + "'; see below for BNF state.", ex);
+                        throw new InvalidSimisFormatException(File.Filename, Reader, 0, "Simis parser got token '" + token + "' but BNF state failed move to '" + TokenType + "'; see below for BNF state.", ex);
 					}
-					return (dataType == "float" ? SimisParserToken.Double : SimisParserToken.Integer);
+                    return (TokenType == "float" ? SimisParserToken.Double : SimisParserToken.Integer);
 				}
-				TokenText = token;
+                if (TokenType == "string") TokenText = token;
 				try {
-					BNFState.MoveTo(dataType);
+                    BNFState.MoveTo(TokenType);
 				} catch (FileException ex) {
-					throw new InvalidSimisFormatException(File.Filename, Reader, 0, "Simis parser got token '" + token + "' but BNF state failed move to '" + dataType + "'; see below for BNF state.", ex);
+                    throw new InvalidSimisFormatException(File.Filename, Reader, 0, "Simis parser got token '" + token + "' but BNF state failed move to '" + TokenType + "'; see below for BNF state.", ex);
 				}
-				return (dataType == "string" ? SimisParserToken.Text : SimisParserToken.Block);
+                return (TokenType == "string" ? SimisParserToken.Text : SimisParserToken.Block);
 			}
 
 			if (token.ToCharArray().All<char>(t => numberChars.Any<char>(c => t == c))) {
 				if (token.Contains('.')) {
+                    TokenType = "float";
 					TokenNumber = double.Parse(token);
 					if (BNF != null) {
 						try {
-							BNFState.MoveTo("float");
+							BNFState.MoveTo(TokenType);
 						} catch (FileException ex) {
-							throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed move to 'float'; see below for BNF state.", ex);
+							throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed move to '" + TokenType + "'; see below for BNF state.", ex);
 						}
 					}
 					return SimisParserToken.Double;
 				}
 				if ((token.Length == 8) && !nonhexNumberChars.Any<char>(c => token.Contains(c))) {
+                    TokenType = "dword";
 					TokenNumber = long.Parse(token, NumberStyles.HexNumber);
 					if (BNF != null) {
-						try {
-							BNFState.MoveTo("dword");
-						} catch (FileException ex) {
-							throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed move to 'dword'; see below for BNF state.", ex);
-						}
-					}
+                        try {
+                            BNFState.MoveTo(TokenType);
+                        } catch (FileException ex) {
+                            throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed move to '" + TokenType + "'; see below for BNF state.", ex);
+                        }
+                    }
 					return SimisParserToken.Integer;
 				}
+                TokenType = "uint";
 				TokenNumber = long.Parse(token);
 				if (BNF != null) {
-					try {
-						BNFState.MoveTo("uint");
-					} catch (FileException ex) {
-						throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed move to 'uint'; see below for BNF state.", ex);
-					}
-				}
+                    try {
+                        BNFState.MoveTo(TokenType);
+                    } catch (FileException ex) {
+                        throw new InvalidSimisFormatException(File.Filename, Reader, 0, "BNF state failed move to '" + TokenType + "'; see below for BNF state.", ex);
+                    }
+                }
 				return SimisParserToken.Integer;
 			}
-			{
+			if (isString) {
+                TokenType = "string";
 				TokenText = token;
-				return isString ? SimisParserToken.Text : SimisParserToken.Block;
+				return SimisParserToken.Text;
 			}
+            TokenType = token;
+            return SimisParserToken.Block;
 		}
 	}
 
