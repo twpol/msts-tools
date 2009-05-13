@@ -131,40 +131,18 @@ namespace SimisEditor
 			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
 		}
 
-		private bool InsertSimisBlock(TreeNodeCollection treeNodes, SimisBlock simisBlock) {
+		private void InsertSimisBlock(TreeNodeCollection treeNodes, SimisBlock block) {
 			var treeNode = treeNodes.Add("<fail>");
-			treeNode.Tag = simisBlock;
+			treeNode.Tag = block;
+			treeNode.Text = GetNodeText(treeNode);
 
-			if (simisBlock is SimisBlockValueString) {
-				var bv = (SimisBlockValue)simisBlock;
-                treeNode.Name = bv.Name + "=\"" + bv.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
-			} else if (simisBlock is SimisBlockValue) {
-				var bv = (SimisBlockValue)simisBlock;
-				treeNode.Name = bv.Name + "=" + bv;
-			} else {
-				treeNode.Name = simisBlock.Type;
-				if (simisBlock.Name.Length > 0) {
-					treeNode.Name += " \"" + simisBlock.Name + "\"";
+			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) {
+				// If we have any non-value child blocks, add everything and expand.
+				foreach (var child in block.Nodes) {
+					InsertSimisBlock(treeNode.Nodes, child);
 				}
-			}
-
-			var allChildrenAreValues = true;
-			foreach (var child in simisBlock.Nodes) {
-				allChildrenAreValues &= InsertSimisBlock(treeNode.Nodes, child);
-			}
-			// If we have just one child, and it is a value, omit its name.
-			if ((simisBlock.Nodes.Count == 1) && (simisBlock.Nodes[0] is SimisBlockValue)) {
-				var sbv = (SimisBlockValue)simisBlock.Nodes[0];
-				treeNode.Nodes[0].Name = treeNode.Nodes[0].Name.Substring(sbv.Name.Length + 1);
-			}
-			// If all children are values, don't expand the node.
-			if (allChildrenAreValues) {
-				treeNode.Text = GetNodeText(treeNode);
-			} else {
 				treeNode.Expand();
 			}
-
-			return (simisBlock is SimisBlockValue);
 		}
 
         private void SelectNode(TreeNode treeNode) {
@@ -189,24 +167,52 @@ namespace SimisEditor
 			return true;
 		}
 
-		private string GetNodeText(TreeNode node) {
-			if (node.IsExpanded) {
-				return node.Name;
-			}
-			return GetCollapsedNodeText(node);
+		private static string BlockToNameString(SimisBlock block) {
+			if (block.Name.Length > 0) return block.Name;
+			return block.Type;
 		}
 
-		private string GetCollapsedNodeText(TreeNode node) {
-			if (node.Nodes.Count == 0) {
-				return node.Name;
+		private static string BlockToValueString(SimisBlockValue block) {
+			if (block is SimisBlockValueString) {
+				return "\"" + block.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
 			}
-			return node.Name + " (" + String.Join(" ", node.Nodes.Cast<TreeNode>().Select<TreeNode, string>(n => GetCollapsedNodeText(n)).ToArray<string>()) + ")";
+			return block.ToString();
+		}
+
+		private string GetNodeText(TreeNode node) {
+			var block = (SimisBlock)node.Tag;
+
+			// Non-trivial node, don't bother trying.
+			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) {
+				return BlockToNameString(block);
+			}
+
+			// Just a single value child, easy.
+			if (block.Nodes.Count == 1) {
+				return BlockToNameString(block) + "=" + BlockToValueString((SimisBlockValue)block.Nodes[0]);
+			}
+
+			// Multiple value children. Quite easy.
+			if (block.Nodes.Count > 1) {
+				var values = new List<string>();
+				foreach (var child in block.Nodes) {
+					values.Add(BlockToNameString(child) + "=" + BlockToValueString((SimisBlockValue)child));
+				}
+				return BlockToNameString(block) + " (" + String.Join(" ", values.ToArray()) + ")";
+			}
+
+			// No children.
+			if (block is SimisBlockValue) {
+				return BlockToNameString(block) + "=" + BlockToValueString((SimisBlockValue)block);
+			}
+
+			return BlockToNameString(block);
 		}
 
 		private static object CreateEditObjectFor(SimisBlock block) {
 			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) return null;
 
-			var dClassName = block.Type.Replace(".", "_");
+			var dClassName = "block_" + block.Type.Replace(".", "_");
 
 			// Create constructor.
 			var dConstructor = new CodeConstructor();
@@ -221,9 +227,12 @@ namespace SimisEditor
 				var dPropertyName = child.Name.Length > 0 ? child.Name : child.Type;
 				if (block.Nodes.Count<SimisBlock>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
 					var index = 1;
-					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "#" + index))) index++;
-					dPropertyName += "#" + index;
+					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "_" + index))) index++;
+					dPropertyName += "_" + index;
 					dBlockNames.Add(dPropertyName);
+				}
+				if (block.Nodes.Count == 1) {
+					dPropertyName = block.Type;
 				}
 
 				CodeTypeReference type;
@@ -256,7 +265,7 @@ namespace SimisEditor
 				dProperties.Add(dProperty);
 
 				if (child is SimisBlockValue) {
-					dPropertyValues.Add(dPropertyName, ((SimisBlockValue)child).Value);
+					dPropertyValues.Add(dProperty.Name, ((SimisBlockValue)child).Value);
 				}
 			}
 
