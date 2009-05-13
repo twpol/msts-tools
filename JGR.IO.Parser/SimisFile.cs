@@ -687,9 +687,9 @@ namespace JGR.IO.Parser
 				} else {
 					if (validReferences.All<string>(r => dataTypes.Contains(r))) {
 						if (validReferences.Any<string>(r => r != validReferences[0])) throw new InvalidSimisFormatException(File.Filename, Reader, 0, BNFState, "BNF has multiple datatype states to move to. We can't decide where to go from here: " + String.Join(", ", validReferences.Select<string, string>(s => "'" + s + "'").ToArray()));
-						BNFState.MoveTo(validReferences[0]);
-						TokenText = validReferences[0];
-						switch (validReferences[0]) {
+						TokenType = validReferences[0];
+						BNFState.MoveTo(TokenType);
+						switch (TokenType) {
 							case "string":
 								var stringLength = Reader.ReadUInt16();
 								for (var i = 0; i < stringLength; i++) {
@@ -723,9 +723,9 @@ namespace JGR.IO.Parser
 						var tokenType = Reader.ReadUInt16();
 						var token = ((uint)tokenType << 16) + tokenID;
 						if (((tokenType == 0x0000) || (tokenType == 0x0004)) && TokenNames.ContainsKey(token)) {
-							TokenText = TokenNames[token];
-							if (!validReferences.Contains(TokenText)) throw new InvalidSimisFormatException(File.Filename, Reader, 4, BNFState, "Simis parser expected token from " + String.Join(", ", validReferences.Select<string, string>(s => "'" + s + "'").ToArray()) + "; got '" + TokenText + "'.");
-							BNFState.MoveTo(TokenText);
+							TokenType = TokenNames[token];
+							if (!validReferences.Contains(TokenType)) throw new InvalidSimisFormatException(File.Filename, Reader, 4, BNFState, "Simis parser expected token from " + String.Join(", ", validReferences.Select<string, string>(s => "'" + s + "'").ToArray()) + "; got '" + TokenType + "'.");
+							BNFState.MoveTo(TokenType);
 
 							var contentsLength = Reader.ReadUInt32();
 							if (contentsLength > 0) {
@@ -734,11 +734,9 @@ namespace JGR.IO.Parser
 
 								var nameLength = Reader.Read();
 								if (nameLength > 0) {
-									TokenText += " \"";
 									for (var i = 0; i < nameLength; i++) {
 										TokenText += (char)Reader.ReadUInt16();
 									}
-									TokenText += "\"";
 								}
 
 								while ((BlockEnds.Count > 0) && (Reader.BaseStream.Position == BlockEnds.Peek())) {
