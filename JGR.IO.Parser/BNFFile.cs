@@ -53,14 +53,18 @@ namespace JGR.IO.Parser
 	public class BNFFile : BufferedMessageSource
 	{
 		public string Filename { get; private set; }
-		public string FileType { get; private set; }
-		public int FileTypeVer { get; private set; }
+		public string BNFFileName { get; private set; }
+		public string BNFFileExt { get; private set; }
+		public string BNFFileType { get; private set; }
+		public int BNFFileTypeVer { get; private set; }
 		public BNF BNF { get; private set; }
 
 		public BNFFile(string filename) {
 			Filename = filename;
-			FileType = "";
-			FileTypeVer = 0;
+			BNFFileName = "";
+			BNFFileExt = "";
+			BNFFileType = "";
+			BNFFileTypeVer = 0;
 			BNF = new BNF(Filename);
 		}
 
@@ -80,10 +84,14 @@ namespace JGR.IO.Parser
 							MessageSend(LEVEL_DEBUG, rule.ToString());
 
 							if (rule is BNFDefinition) {
-								if ((rule.Symbol.Reference == "FILE_TYPE") && (rule.Expression is StringOperator)) {
-									FileType = ((StringOperator)rule.Expression).Value;
+								if ((rule.Symbol.Reference == "FILE_NAME") && (rule.Expression is StringOperator)) {
+									BNFFileName = ((StringOperator)rule.Expression).Value;
+								} else if ((rule.Symbol.Reference == "FILE_EXT") && (rule.Expression is StringOperator)) {
+									BNFFileExt = ((StringOperator)rule.Expression).Value;
+								} else if ((rule.Symbol.Reference == "FILE_TYPE") && (rule.Expression is StringOperator)) {
+									BNFFileType = ((StringOperator)rule.Expression).Value;
 								} else if ((rule.Symbol.Reference == "FILE_TYPE_VER") && (rule.Expression is StringOperator)) {
-									FileTypeVer = int.Parse(((StringOperator)rule.Expression).Value);
+									BNFFileTypeVer = int.Parse(((StringOperator)rule.Expression).Value);
 								}
 								BNF.Definitions.Add(rule.Symbol.Reference, (BNFDefinition)rule);
 							}

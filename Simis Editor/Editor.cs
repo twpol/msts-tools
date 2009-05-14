@@ -71,7 +71,7 @@ namespace SimisEditor
 					}
 					return;
 				}
-				BNFs.Add(bnf.FileType + bnf.FileTypeVer, bnf.BNF);
+				BNFs.Add(bnf.BNFFileType + bnf.BNFFileTypeVer, bnf.BNF);
 			}
 
 			// Load token names.
