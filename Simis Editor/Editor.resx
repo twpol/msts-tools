@@ -123,13 +123,7 @@
   <metadata name="openFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>132, 17</value>
   </metadata>
-  <data name="openFileDialog.Filter" xml:space="preserve">
-    <value>All MSTS files|*.act;*.env;*.pat;*.srv;*.s;*.sms;*.td;*.tdl;*.dat;*.t;*.trf;*.bin;*.w;*.ws|Activity files|*.act|Environment files|*.env|Pattern files|*.pat|Service files|*.srv|Shape files|*.s|Sound Management files|*.sms|TD files|*.td;*.tdl|TD DAT files|*.dat|Tile files|*.t|Traffic files|*.trf|World files|*.bin;*.w;*.ws|All files|*.*</value>
-  </data>
   <metadata name="saveFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>265, 17</value>
   </metadata>
-  <data name="saveFileDialog.Filter" xml:space="preserve">
-    <value>Activity files|*.act|Environment files|*.env|Pattern files|*.pat|Service files|*.srv|Shape files|*.s|Sound Management files|*.sms|TD files|*.td;*.tdl|TD DAT files|*.dat|Tile files|*.t|Traffic files|*.trf|World files|*.bin;*.w;*.ws|All files|*.*</value>
-  </data>
 </root>
