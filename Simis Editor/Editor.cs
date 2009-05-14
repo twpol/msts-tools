@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using JGR;
 using JGR.Grammar;
@@ -35,29 +36,25 @@ namespace SimisEditor
 			}
 		}
 		protected SimisFile File;
+		protected Dictionary<string, string> FileFormats;
+		protected Dictionary<string, BNF> BNFs;
+		protected Dictionary<uint, string> TokenNames;
 
 		public Editor() {
 			InitializeComponent();
 			NewFile();
+
+			FileFormats = new Dictionary<string, string>();
+			BNFs = new Dictionary<string, BNF>();
+			TokenNames = new Dictionary<uint, string>();
+			var initThread = new Thread(() => LoadBNFsAndTokenNames());
+			initThread.Start();
 		}
 
-		private void NewFile() {
-			Filename = "";
-			Modified = false;
-			UpdateTitle();
-			File = null;
-			SimisTree.Nodes.Clear();
-            var node = SimisTree.Nodes.Add("No file loaded.");
-            node.NodeFont = new Font(SimisTree.Font, FontStyle.Italic);
-			SimisTree.ExpandAll();
-		}
-
-		private void OpenFile(string filename) {
+		private void LoadBNFsAndTokenNames() {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
 
-			// Load BNFs.
-			var BNFs = new Dictionary<string, BNF>();
 			foreach (var bnfFilename in Directory.GetFiles(resourcesDirectory, "*.bnf")) {
 				var bnf = new BNFFile(bnfFilename);
 				try {
@@ -71,11 +68,10 @@ namespace SimisEditor
 					}
 					return;
 				}
+				FileFormats.Add(bnf.BNFFileName, bnf.BNFFileExt);
 				BNFs.Add(bnf.BNFFileType + bnf.BNFFileTypeVer, bnf.BNF);
 			}
 
-			// Load token names.
-			var TokenNames = new Dictionary<uint, string>();
 			foreach (var tokFilename in Directory.GetFiles(resourcesDirectory, "*.tok")) {
 				var ffReader = new StreamReader(System.IO.File.OpenRead(tokFilename), Encoding.ASCII);
 				var tokenType = (ushort)0x0000;
@@ -92,6 +88,35 @@ namespace SimisEditor
 				}
 			}
 
+			this.Invoke((MethodInvoker)(() => UpdateDialogsWithBNFs()));
+		}
+
+		private void UpdateDialogsWithBNFs() {
+			var types = new List<List<string>>();
+
+			types.Add(new List<string>(new string[] { "All Train Simulator files" }));
+			foreach (var format in FileFormats) {
+				types[0].Add(format.Value);
+				types.Add(new List<string>(new string[] { format.Key + " files", format.Value }));
+			}
+			types.Add(new List<string>(new string[] { "All files", "*.*" }));
+
+			openFileDialog.Filter = String.Join("|", types.Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray<string>());
+			saveFileDialog.Filter = String.Join("|", types.Where<List<string>>((l, i) => i > 0 || i < types.Count - 1).Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray<string>());
+		}
+
+		private void NewFile() {
+			Filename = "";
+			Modified = false;
+			UpdateTitle();
+			File = null;
+			SimisTree.Nodes.Clear();
+            var node = SimisTree.Nodes.Add("No file loaded.");
+            node.NodeFont = new Font(SimisTree.Font, FontStyle.Italic);
+			SimisTree.ExpandAll();
+		}
+
+		private void OpenFile(string filename) {
 			var newFile = new SimisFile(filename, BNFs, TokenNames);
 			try {
 				newFile.ReadFile();
@@ -113,6 +138,7 @@ namespace SimisEditor
 			foreach (var root in File.Roots) {
 				InsertSimisBlock(SimisTree.Nodes, root);
 			}
+			SimisTree.ExpandAll();
 			SimisTree.TopNode = SimisTree.Nodes[0];
 		}
 
@@ -141,7 +167,6 @@ namespace SimisEditor
 				foreach (var child in block.Nodes) {
 					InsertSimisBlock(treeNode.Nodes, child);
 				}
-				treeNode.Expand();
 			}
 		}
 
