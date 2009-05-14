@@ -27,6 +27,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -162,6 +163,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>XCOPY /S /I /Y "$(SolutionDir)\Resources" "$(TargetDir)\Resources"</PostBuildEvent>
+    <PostBuildEvent>RMDIR /S /Q "$(TargetDir)\Resources"
+XCOPY /S /I /Y "$(SolutionDir)\Resources" "$(TargetDir)\Resources"</PostBuildEvent>
   </PropertyGroup>
 </Project>
