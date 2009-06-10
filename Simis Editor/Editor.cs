@@ -1,22 +1,23 @@
-﻿using System;
+﻿//------------------------------------------------------------------------------
+// Simis Editor, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using JGR;
-using JGR.Grammar;
 using JGR.IO.Parser;
 using Microsoft.CSharp;
+using SimisEditor.Properties;
 
 namespace SimisEditor
 {
@@ -36,66 +37,61 @@ namespace SimisEditor
 			}
 		}
 		protected SimisFile File;
-		protected Dictionary<string, string> FileFormats;
-		protected Dictionary<string, BNF> BNFs;
-		protected Dictionary<uint, string> TokenNames;
+		protected SimisProvider SimisProvider;
 
 		public Editor() {
 			InitializeComponent();
 			NewFile();
 
-			FileFormats = new Dictionary<string, string>();
-			BNFs = new Dictionary<string, BNF>();
-			TokenNames = new Dictionary<uint, string>();
-			var initThread = new Thread(() => LoadBNFsAndTokenNames());
-			initThread.Start();
-		}
-
-		private void LoadBNFsAndTokenNames() {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
+			SimisProvider = new SimisProvider(resourcesDirectory);
+			var thread = new Thread(() => WaitForSimisProvider());
+			thread.Start();
 
-			foreach (var bnfFilename in Directory.GetFiles(resourcesDirectory, "*.bnf")) {
-				var bnf = new BNFFile(bnfFilename);
-				try {
-					bnf.ReadFile();
-				} catch (FileException ex) {
-					using (var messages = new Messages()) {
-						bnf.RegisterMessageSink(messages);
-						messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
-						messages.ShowDialog();
-						bnf.UnregisterMessageSink(messages);
+			var versionCheck = new CodePlexVersionCheck(Settings.Default.UpdateCheckCodePlexProjectUrl, Settings.Default.UpdateCheckCodePlexProjectName, Settings.Default.UpdateCheckCodePlexReleaseDate);
+			versionCheck.CheckComplete += new EventHandler((o, e) => this.Invoke((MethodInvoker)(() => {
+				if (versionCheck.HasLatestVersion) {
+					if (versionCheck.IsNewVersion) {
+						var item = menuStrip.Items.Add("New Version: " + versionCheck.LatestVersionTitle);
+						item.Alignment = ToolStripItemAlignment.Right;
+						item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
+					//} else {
+					//    var item = menuStrip.Items.Add("Current Version: " + versionCheck.LatestVersionTitle);
+					//    item.Alignment = ToolStripItemAlignment.Right;
+					//    item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
 					}
-					return;
+				} else {
+					var item = menuStrip.Items.Add("Error Checking for New Version");
+					item.Alignment = ToolStripItemAlignment.Right;
+					item.Click += new EventHandler((o2, e2) => Process.Start(Settings.Default.AboutUpdatesUrl));
 				}
-				FileFormats.Add(bnf.BNFFileName, bnf.BNFFileExt);
-				BNFs.Add(bnf.BNFFileType + bnf.BNFFileTypeVer, bnf.BNF);
-			}
-
-			foreach (var tokFilename in Directory.GetFiles(resourcesDirectory, "*.tok")) {
-				var ffReader = new StreamReader(System.IO.File.OpenRead(tokFilename), Encoding.ASCII);
-				var tokenType = (ushort)0x0000;
-				var tokenIndex = (ushort)0x0000;
-				for (var ffLine = ffReader.ReadLine(); !ffReader.EndOfStream; ffLine = ffReader.ReadLine()) {
-					if (ffLine.StartsWith("SID_DEFINE_FIRST_ID(")) {
-						var type = ffLine.Substring(ffLine.IndexOf('(') + 1, ffLine.LastIndexOf(')') - ffLine.IndexOf('(') - 1);
-						tokenType = ushort.Parse(type.Substring(2), NumberStyles.HexNumber);
-						tokenIndex = 0x0000;
-					} else if (ffLine.StartsWith("SIDDEF(")) {
-						var name = ffLine.Substring(ffLine.IndexOf('"') + 1, ffLine.LastIndexOf('"') - ffLine.IndexOf('"') - 1);
-						TokenNames.Add(((uint)tokenType << 16) + ++tokenIndex, name);
-					}
-				}
-			}
-
-			this.Invoke((MethodInvoker)(() => UpdateDialogsWithBNFs()));
+			})));
+			versionCheck.Check();
 		}
 
-		private void UpdateDialogsWithBNFs() {
+		private void WaitForSimisProvider() {
+			try {
+				SimisProvider.Join();
+			} catch (FileException ex) {
+				using (var messages = new Messages()) {
+					//bnf.RegisterMessageSink(messages);
+					messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
+					this.Invoke((MethodInvoker)(() => {
+						messages.ShowDialog(this);
+					}));
+					//bnf.UnregisterMessageSink(messages);
+				}
+			}
+
+			this.Invoke((MethodInvoker)(() => UpdateFromSimisProvider()));
+		}
+
+		private void UpdateFromSimisProvider() {
 			var types = new List<List<string>>();
 
 			types.Add(new List<string>(new string[] { "All Train Simulator files" }));
-			foreach (var format in FileFormats) {
+			foreach (var format in SimisProvider.FileFormats) {
 				types[0].Add(format.Value);
 				types.Add(new List<string>(new string[] { format.Key + " files", format.Value }));
 			}
@@ -114,18 +110,21 @@ namespace SimisEditor
             var node = SimisTree.Nodes.Add("No file loaded.");
             node.NodeFont = new Font(SimisTree.Font, FontStyle.Italic);
 			SimisTree.ExpandAll();
+			if (SimisTree.Nodes.Count > 0) {
+				SimisTree.TopNode = SimisTree.Nodes[0];
+			}
 		}
 
 		private void OpenFile(string filename) {
-			var newFile = new SimisFile(filename, BNFs, TokenNames);
+			var newFile = new SimisFile(filename, SimisProvider);
 			try {
 				newFile.ReadFile();
 			} catch (FileException ex) {
 				using (var messages = new Messages()) {
-					newFile.RegisterMessageSink(messages);
+					//newFile.RegisterMessageSink(messages);
 					messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
-					messages.ShowDialog();
-					newFile.UnregisterMessageSink(messages);
+					messages.ShowDialog(this);
+					//newFile.UnregisterMessageSink(messages);
 				}
 				return;
 			}
@@ -139,7 +138,9 @@ namespace SimisEditor
 				InsertSimisBlock(SimisTree.Nodes, root);
 			}
 			SimisTree.ExpandAll();
-			SimisTree.TopNode = SimisTree.Nodes[0];
+			if (SimisTree.Nodes.Count > 0) {
+				SimisTree.TopNode = SimisTree.Nodes[0];
+			}
 		}
 
 		private void FileModified() {
@@ -162,8 +163,8 @@ namespace SimisEditor
 			treeNode.Tag = block;
 			treeNode.Text = GetNodeText(treeNode);
 
-			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) {
-				// If we have any non-value child blocks, add everything and expand.
+			if (block.Nodes.Any<SimisBlock>(b => !(b is SimisBlockValue))) {
+				// If we have any non-value child blocks, add everything.
 				foreach (var child in block.Nodes) {
 					InsertSimisBlock(treeNode.Nodes, child);
 				}
@@ -263,7 +264,7 @@ namespace SimisEditor
 				CodeTypeReference type;
 				if (child is SimisBlockValueInteger) {
 					type = new CodeTypeReference(typeof(long));
-				} else if (child is SimisBlockValueDouble) {
+				} else if (child is SimisBlockValueFloat) {
 					type = new CodeTypeReference(typeof(double));
 				} else if (child is SimisBlockValueString) {
 					type = new CodeTypeReference(typeof(string));
@@ -322,9 +323,9 @@ namespace SimisEditor
 
 			// Get the C# compiler and build a new assembly from the code we've just created.
 			var compiler = new CSharpCodeProvider();
-			using (var writer = new StreamWriter(Application.ExecutablePath + @"\..\dynamic_codedom.cs", false, Encoding.UTF8)) {
-				compiler.GenerateCodeFromCompileUnit(dUnit, writer, new CodeGeneratorOptions());
-			}
+			//using (var writer = new StreamWriter(Application.ExecutablePath + @"\..\dynamic_codedom.cs", false, Encoding.UTF8)) {
+			//	compiler.GenerateCodeFromCompileUnit(dUnit, writer, new CodeGeneratorOptions());
+			//}
 			var compileResults = compiler.CompileAssemblyFromDom(compilerParams, dUnit);
 
 			// Did it work? Did it?
@@ -357,7 +358,7 @@ namespace SimisEditor
 			if (!SaveFileIfModified()) {
 				return;
 			}
-			if (openFileDialog.ShowDialog() == DialogResult.OK) {
+			if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
 				OpenFile(openFileDialog.FileName);
 			}
 		}
@@ -367,7 +368,7 @@ namespace SimisEditor
 		}
 
 		private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
-			if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
 				Filename = saveFileDialog.FileName;
 				SaveFile();
 			}
@@ -380,20 +381,38 @@ namespace SimisEditor
 			Close();
 		}
 
-		private void SimisTree_AfterCollapse(object sender, TreeViewEventArgs e) {
-			e.Node.Text = GetNodeText(e.Node);
-		}
-
-		private void SimisTree_AfterExpand(object sender, TreeViewEventArgs e) {
-			e.Node.Text = GetNodeText(e.Node);
-		}
-
         private void SimisTree_AfterSelect(object sender, TreeViewEventArgs e) {
             SelectNode(e.Node);
         }
 
 		private void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
 			//
+		}
+
+		private void testToolStripMenuItem_Click(object sender, EventArgs e) {
+			folderBrowserDialog.Description = "Select a folder to test files from.";
+			if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK) {
+				using (var test = new Test()) {
+					test.SetupTest(folderBrowserDialog.SelectedPath, SimisProvider);
+					test.ShowDialog(this);
+				}
+			}
+		}
+
+		private void homepageToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutHomepageUrl);
+		}
+
+		private void updatesToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutUpdatesUrl);
+		}
+
+		private void discussionsToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutDiscussionsUrl);
+		}
+
+		private void issueTrackerToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutIssuesUrl);
 		}
 	}
 }

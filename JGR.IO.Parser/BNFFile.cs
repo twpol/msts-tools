@@ -1,4 +1,9 @@
-﻿using System;
+﻿//------------------------------------------------------------------------------
+// JGR.IO.Parser library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -209,80 +214,110 @@ namespace JGR.IO.Parser
 					if ('=' != Reader.Read()) throw new InvalidBNFFormatException(File.Filename, Reader, 2, "BNF parser expected '==>'.");
 					if ('>' != Reader.Read()) throw new InvalidBNFFormatException(File.Filename, Reader, 3, "BNF parser expected '==>'.");
 				}
-				Operator expression = null;
-				var or = false;
+
+				var stackEx = new Stack<Operator>();
+				var stackOp = new Stack<char>();
+				Func<int> stackProcessOp = () => {
+					var op = stackOp.Pop();
+					switch (op) {
+						case ']':
+							if (stackEx.Count < 1) throw new InvalidBNFFormatException(File.Filename, Reader, 0, "BNF parser found unmatched '['.");
+							var right = stackEx.Pop();
+							stackEx.Push(new OptionalOperator(right));
+							break;
+						case '}':
+							if (stackEx.Count < 1) throw new InvalidBNFFormatException(File.Filename, Reader, 0, "BNF parser found unmatched '{'.");
+							right = stackEx.Pop();
+							stackEx.Push(new RepeatOperator(right));
+							break;
+						case '|':
+							if (stackEx.Count < 2) throw new InvalidBNFFormatException(File.Filename, Reader, 0, "BNF parser found unbalanced '|'.");
+							right = stackEx.Pop();
+							var left = stackEx.Pop();
+							stackEx.Push(new LogicalOrOperator(left, right));
+							break;
+						case ' ':
+							if (stackEx.Count < 2) throw new InvalidBNFFormatException(File.Filename, Reader, 0, "BNF parser found unbalanced ' '.");
+							right = stackEx.Pop();
+							left = stackEx.Pop();
+							stackEx.Push(new LogicalAndOperator(left, right));
+							break;
+					}
+					return 0;
+				};
+
 				while (true) {
-					var optional = false;
-					var repeat = false;
-					Operator op = null;
 					EatWhitespace();
-					if ('[' == Reader.Peek()) {
-						Reader.Read();
-						optional = true;
+					while (new char[] { '[', '{' }.Contains<char>((char)Reader.Peek())) {
+						if ('[' == Reader.Peek()) {
+							Reader.Read();
+							stackOp.Push(']');
+						} else if ('{' == Reader.Peek()) {
+							Reader.Read();
+							stackOp.Push('}');
+						}
+						EatWhitespace();
 					}
-					EatWhitespace();
-					if ('{' == Reader.Peek()) {
-						Reader.Read();
-						repeat = true;
-					}
+
+					Operator ex = null;
 					EatWhitespace();
 					if ('"' == Reader.Peek()) {
 						var value = "";
 						streamPosition = Reader.Position;
 						if (!EatString(out value)) throw new InvalidBNFFormatException(File.Filename, Reader, Reader.Position - streamPosition, "BNF parser expected string.");
-						Debug.Assert(expression == null);
-						op = new StringOperator(value);
+						ex = new StringOperator(value);
 					} else if ('.' == Reader.Peek()) {
+						Reader.Read();
+						if ((stackOp.Count > 0) && (' ' == stackOp.Peek())) stackOp.Pop();
+						while (stackOp.Count > 0) stackProcessOp();
+						if (stackEx.Count > 1) throw new InvalidBNFFormatException(File.Filename, Reader, 1, "BNF parser expected ']' and/or '}' but found '.'.");
 						Reader.ReadLine();
 						break;
 					} else {
-						if (':' == Reader.Peek()) {
-							Reader.Read();
-						}
+						if (':' != Reader.Read()) throw new InvalidBNFFormatException(File.Filename, Reader, 1, "BNF parser expected ':'.");
 						var token = "";
 						streamPosition = Reader.Position;
 						if (!EatSymbol(out token)) throw new InvalidBNFFormatException(File.Filename, Reader, Reader.Position - streamPosition, "BNF parser expected token.");
-						op = new ReferenceOperator(token);
+						ex = new ReferenceOperator(token);
+
+						EatWhitespace();
 						if (',' == Reader.Peek()) {
 							Reader.Read();
+
 							var tokenName = "";
+							EatWhitespace();
 							streamPosition = Reader.Position;
 							if (!EatSymbol(out tokenName)) throw new InvalidBNFFormatException(File.Filename, Reader, Reader.Position - streamPosition, "BNF parser expected token name.");
-							op = new NamedReferenceOperator(tokenName, token);
+							ex = new NamedReferenceOperator(tokenName, token);
 						}
 					}
-					EatWhitespace();
-					if (repeat) {
-						op = new RepeatOperator(op);
-						if ('}' != Reader.Read()) throw new InvalidBNFFormatException(File.Filename, Reader, 1, "BNF parser expected '}'.");
-					}
-					EatWhitespace();
-					if (optional) {
-						op = new OptionalOperator(op);
-						if (']' != Reader.Read()) throw new InvalidBNFFormatException(File.Filename, Reader, 1, "BNF parser expected ']'.");
-					}
+					Debug.Assert(ex != null, "BNF parsed expression is null!");
+					stackEx.Push(ex);
 
-					if (expression == null) {
-						expression = op;
-					} else if (or) {
-						expression = new LogicalOrOperator(expression, op);
-					} else {
-						expression = new LogicalAndOperator(expression, op);
+					EatWhitespace();
+					while (new char[]{ ']', '}' }.Contains<char>((char)Reader.Peek())) {
+						var endOp = (char)Reader.Read();
+						while ((stackOp.Count > 0) && (stackOp.Peek() != endOp)) stackProcessOp();
+						if (stackOp.Count == 0) throw new InvalidBNFFormatException(File.Filename, Reader, 0, "BNF parser found unmatched '" + endOp + "'.");
+						stackProcessOp();
+						EatWhitespace();
 					}
 
 					EatWhitespace();
 					if ('|' == Reader.Peek()) {
 						Reader.Read();
-						or = true;
+						stackOp.Push('|');
 					} else {
-						or = false;
+						while ((stackOp.Count > 0) && ('|' == stackOp.Peek())) stackProcessOp();
+						stackOp.Push(' ');
 					}
 				}
+				if (stackEx.Count == 0) stackEx.Push(null);
 				BNFRule rule = null;
 				if (production) {
-					rule = new BNFProduction(File.BNF, new ReferenceOperator(symbol), expression);
+					rule = new BNFProduction(File.BNF, new ReferenceOperator(symbol), stackEx.Pop());
 				} else {
-					rule = new BNFDefinition(File.BNF, new ReferenceOperator(symbol), expression);
+					rule = new BNFDefinition(File.BNF, new ReferenceOperator(symbol), stackEx.Pop());
 				}
 				return rule;
 			}
