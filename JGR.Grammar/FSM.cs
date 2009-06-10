@@ -1,4 +1,9 @@
-﻿using System;
+﻿//------------------------------------------------------------------------------
+// JGR.Grammar library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -8,7 +13,7 @@ namespace JGR.Grammar
 {
 	public class FSM
 	{
-		public readonly FSMState Root;
+		public FSMState Root { get; protected set; }
 
 		public FSM(Operator expression) {
 			Root = RemoveRedundantSteps(MakeStateForOp(expression));

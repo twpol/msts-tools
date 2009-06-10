@@ -49,6 +49,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodePlexVersionCheck.cs" />
+    <Compile Include="DescriptiveException.cs" />
     <Compile Include="FileException.cs" />
     <Compile Include="IMessageSink.cs" />
     <Compile Include="IMessageSource.cs" />

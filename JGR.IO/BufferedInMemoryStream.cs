@@ -1,4 +1,9 @@
-﻿using System;
+﻿//------------------------------------------------------------------------------
+// JGR.IO library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,6 +50,7 @@ namespace JGR.IO
 
 		public override long Length {
 			get {
+				if (Incomming.CanSeek) return Incomming.Length;
 				if (Memory.Position + ChunkSize >= Memory.Length) ReadChunk(ChunkSize);
 				return Memory.Length;
 			}

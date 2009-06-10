@@ -1,4 +1,9 @@
-﻿using System;
+﻿//------------------------------------------------------------------------------
+// JGR.IO library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -53,10 +58,10 @@ namespace JGR.IO
 		}
 
 		public override int Read(char[] buffer, int index, int count) {
-			if (buffer == null) throw new ArgumentNullException("Buffer cannot be null.", "buffer");
+			if (buffer == null) throw new ArgumentNullException("buffer", "Buffer cannot be null.");
 			if (buffer.Length < index + count) throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
-			if (index < 0) throw new ArgumentOutOfRangeException("Non-negative number required.", "index");
-			if (count < 0) throw new ArgumentOutOfRangeException("Non-negative number required.", "count");
+			if (index < 0) throw new ArgumentOutOfRangeException("index", "Non-negative number required.");
+			if (count < 0) throw new ArgumentOutOfRangeException("count", "Non-negative number required.");
 
 			if (MemoryPosition + count > Memory.Length) ReadChunk(count);
 			if (MemoryPosition + count > Memory.Length) count = Memory.Length - (int)MemoryPosition;
