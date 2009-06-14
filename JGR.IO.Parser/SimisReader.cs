@@ -125,8 +125,19 @@ namespace JGR.IO.Parser
 
 			if (StreamFormat == SimisStreamFormat.Text) {
 				PinReader();
+				rv = ReadTokenAsText();
 				try {
-					rv = ReadTokenAsText();
+					if (rv.Kind == SimisTokenKind.BlockBegin) {
+						BNFState.EnterBlock();
+					} else if (rv.Kind == SimisTokenKind.BlockEnd) {
+						BNFState.LeaveBlock();
+					} else if (rv.Kind != SimisTokenKind.None) {
+						if (rv.Type.Length > 0) {
+							BNFState.MoveTo(rv.Type);
+						}
+					} else {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "ReadTokenAsText returned invalid token type: " + rv.Kind);
+					}
 				} catch (BNFStateException e) {
 					throw new ReaderException(BinaryReader, false, PinReaderChanged(), "", e);
 				}
@@ -137,8 +148,13 @@ namespace JGR.IO.Parser
 				}
 			} else {
 				PinReader();
+				rv = ReadTokenAsBinary();
 				try {
-					rv = ReadTokenAsBinary();
+					if ((rv.Kind != SimisTokenKind.BlockBegin) && (rv.Kind != SimisTokenKind.BlockEnd)) {
+						BNFState.MoveTo(rv.Type);
+					} else {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "ReadTokenAsBinary returned invalid token type: " + rv.Type);
+					}
 				} catch (BNFStateException e) {
 					throw new ReaderException(BinaryReader, true, PinReaderChanged(), "", e);
 				}
@@ -157,18 +173,125 @@ namespace JGR.IO.Parser
 
 			if ('(' == BinaryReader.PeekChar()) {
 				BinaryReader.ReadChar();
-				BNFState.EnterBlock();
 				rv.Kind = SimisTokenKind.BlockBegin;
 				return rv;
 			}
 
 			if (')' == BinaryReader.PeekChar()) {
 				BinaryReader.ReadChar();
-				BNFState.LeaveBlock();
 				rv.Kind = SimisTokenKind.BlockEnd;
 				return rv;
 			}
 
+			string token = ReadTokenOrString();
+
+			if (BNFState.IsEnterBlockTime) {
+				// We should only end up here when called recursively by the
+				// if (validStates.Contains(token)) code below.
+				rv.String = token;
+				rv.Kind = token.Length > 0 ? SimisTokenKind.Block : SimisTokenKind.None;
+				return rv;
+			}
+
+			if (token.ToLower() == "skip") {
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && (')' != BinaryReader.PeekChar())) {
+					token += BinaryReader.ReadChar();
+				}
+				if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected ')'; got EOF.");
+				token += BinaryReader.ReadChar();
+				rv.String = token;
+				rv.Kind = SimisTokenKind.String;
+				return rv;
+			}
+
+			var validStates = BNFState.ValidStates;
+			if (validStates.Contains(token)) {
+				// Token exactly matches a valid state transition, so let's use it.
+				rv.Type = token;
+				rv.Kind = SimisTokenKind.Block;
+
+				// Do lookahead for block name. Since we've moved BNFState already, it'll
+				// fall into the special BNFState.IsEnterBlockTime code if we have a
+				// possible string token. The only possible Kind values are thus
+				// BlockBegin, BlockEnd and Block. BlockEnd would be weird (and wrong).
+				PinReader();
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains<char>((char)BinaryReader.PeekChar())) {
+					BinaryReader.ReadChar();
+				}
+				string name = ReadTokenOrString();
+				if (name.Length > 0) {
+					rv.String = name;
+				} else {
+					PinReaderReset();
+				}
+
+				return rv;
+			}
+
+			var validDataTypeStates = validStates.Where<string>(s => DataTypes.Contains(s)).Where<string>(s => {
+				if (token.Contains(".")) return (s == "float") || (s == "string");
+				if ((token.Length == 8) && (token.ToCharArray().All<char>(c => HexDigits.Contains(c)))) return s == "dword";
+				return s != "dword";
+			}).ToArray<string>();
+			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BNFStateException(BNFState, ""));
+
+			rv.Type = validDataTypeStates[0];
+			switch (rv.Type) {
+				case "uint":
+					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					try {
+						rv.Integer = UInt32.Parse(token);
+						if (token.Length == 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected decimal number; got possible hex '" + token + "'.");
+					} catch (FormatException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					} catch (OverflowException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					}
+					rv.Kind = SimisTokenKind.Integer;
+					break;
+				case "sint":
+					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					try {
+						rv.Integer = Int32.Parse(token);
+					} catch (FormatException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					} catch (OverflowException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					}
+					rv.Kind = SimisTokenKind.Integer;
+					break;
+				case "dword":
+					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					try {
+						rv.Integer = UInt32.Parse(token, NumberStyles.HexNumber);
+						if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
+					} catch (FormatException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					} catch (OverflowException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					}
+					rv.Kind = SimisTokenKind.Integer;
+					break;
+				case "float":
+					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					try {
+						rv.Float = Double.Parse(token);
+					} catch (FormatException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					} catch (OverflowException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					}
+					rv.Kind = SimisTokenKind.Float;
+					break;
+				case "string":
+					rv.String = token;
+					rv.Kind = SimisTokenKind.String;
+					break;
+			}
+			return rv;
+		}
+
+		private string ReadTokenOrString() {
 			string token = "";
 			if ('"' == BinaryReader.PeekChar()) {
 				do {
@@ -217,94 +340,7 @@ namespace JGR.IO.Parser
 					token += BinaryReader.ReadChar();
 				}
 			}
-
-			if (BNFState.IsEnterBlockTime) {
-				// We should only end up here when called recursively by the
-				// if (validStates.Contains(token)) code below.
-				rv.String = token;
-				rv.Kind = SimisTokenKind.Block;
-				return rv;
-			}
-
-			if (token.ToLower() == "skip") {
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && (')' != BinaryReader.PeekChar())) {
-					token += BinaryReader.ReadChar();
-				}
-				if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected ')'; got EOF.");
-				token += BinaryReader.ReadChar();
-				rv.String = token;
-				rv.Kind = SimisTokenKind.String;
-				return rv;
-			}
-
-			var validStates = BNFState.ValidStates;
-			if (validStates.Contains(token)) {
-				// Token exactly matches a valid state transition, so let's use it.
-				rv.Type = token;
-				BNFState.MoveTo(rv.Type);
-				rv.Kind = SimisTokenKind.Block;
-
-				// Do lookahead for block name. Since we've moved BNFState already, it'll
-				// fall into the special BNFState.IsEnterBlockTime code if we have a
-				// possible string token. The only possible Kind values are thus
-				// BlockBegin, BlockEnd and Block. BlockEnd would be weird (and wrong).
-				var rv2 = ReadTokenAsText();
-				if (rv2.Kind == SimisTokenKind.Block) {
-					rv.String = rv2.String;
-				}
-
-				return rv;
-			}
-
-			var validDataTypeStates = validStates.Where<string>(s => DataTypes.Contains(s)).ToArray<string>();
-			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BNFStateException(BNFState, ""));
-
-			rv.Type = validDataTypeStates[0];
-			BNFState.MoveTo(rv.Type);
-			switch (rv.Type) {
-				case "uint":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
-					try {
-						rv.Integer = UInt32.Parse(token);
-					} catch (Exception ex) {
-						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
-					}
-					rv.Kind = SimisTokenKind.Integer;
-					break;
-				case "sint":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
-					try {
-						rv.Integer = Int32.Parse(token);
-					} catch (Exception ex) {
-						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
-					}
-					rv.Kind = SimisTokenKind.Integer;
-					break;
-				case "dword":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
-					try {
-						rv.Integer = UInt32.Parse(token, NumberStyles.HexNumber);
-						if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
-					} catch (Exception ex) {
-						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
-					}
-					rv.Kind = SimisTokenKind.Integer;
-					break;
-				case "float":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
-					try {
-						rv.Float = Double.Parse(token);
-					} catch (Exception ex) {
-						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
-					}
-					rv.Kind = SimisTokenKind.Float;
-					break;
-				case "string":
-					rv.String = token;
-					rv.Kind = SimisTokenKind.String;
-					break;
-			}
-			return rv;
+			return token;
 		}
 
 		private SimisToken ReadTokenAsBinary() {
@@ -319,7 +355,6 @@ namespace JGR.IO.Parser
 				if (!validDataTypes.All<string>(s => s == validDataTypes[0])) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BNFStateException(BNFState, ""));
 
 				rv.Type = validDataTypes[0];
-				BNFState.MoveTo(rv.Type);
 				switch (rv.Type) {
 					case "string":
 						var stringLength = BinaryReader.ReadUInt16();
@@ -361,7 +396,6 @@ namespace JGR.IO.Parser
 				if ((tokenType != 0x0000) && (tokenType != 0x0004)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}, name={2}.", tokenID, tokenType, SimisProvider.TokenNames[token]), new BNFStateException(BNFState, ""));
 
 				rv.Type = SimisProvider.TokenNames[token];
-				BNFState.MoveTo(rv.Type);
 				rv.Kind = SimisTokenKind.Block;
 
 				var contentsLength = BinaryReader.ReadUInt32();
@@ -391,6 +425,10 @@ namespace JGR.IO.Parser
 
 		private int PinReaderChanged() {
 			return (int)(BinaryReader.BaseStream.Position - PinReaderPosition);
+		}
+
+		private void PinReaderReset() {
+			BinaryReader.BaseStream.Position = PinReaderPosition;
 		}
 		#endregion
 

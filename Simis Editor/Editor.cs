@@ -194,7 +194,7 @@ namespace SimisEditor
 		}
 
 		private static string BlockToNameString(SimisBlock block) {
-			if (block.Name.Length > 0) return block.Name;
+			if (block.Name.Length > 0) return block.Type + " \"" + block.Name + "\"";
 			return block.Type;
 		}
 
