@@ -12,6 +12,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using JGR;
@@ -37,6 +38,7 @@ namespace SimisEditor
 			}
 		}
 		protected SimisFile File;
+		protected TreeNode SelectedNode;
 		protected SimisProvider SimisProvider;
 
 		public Editor() {
@@ -74,14 +76,15 @@ namespace SimisEditor
 			try {
 				SimisProvider.Join();
 			} catch (FileException ex) {
-				using (var messages = new Messages()) {
+				//using (var messages = new Messages()) {
 					//bnf.RegisterMessageSink(messages);
-					messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
+					//messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
 					this.Invoke((MethodInvoker)(() => {
-						messages.ShowDialog(this);
+						//messages.ShowDialog(this);
+						MessageBox.Show(ex.ToString(), "Load Resources - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 					}));
 					//bnf.UnregisterMessageSink(messages);
-				}
+				//}
 			}
 
 			this.Invoke((MethodInvoker)(() => UpdateFromSimisProvider()));
@@ -102,10 +105,10 @@ namespace SimisEditor
 		}
 
 		private void NewFile() {
-			Filename = "";
 			Modified = false;
-			UpdateTitle();
-			File = null;
+			Filename = "";
+			File = new SimisFile("", SimisProvider);
+			SelectNode(null);
 			SimisTree.Nodes.Clear();
             var node = SimisTree.Nodes.Add("No file loaded.");
             node.NodeFont = new Font(SimisTree.Font, FontStyle.Italic);
@@ -113,6 +116,7 @@ namespace SimisEditor
 			if (SimisTree.Nodes.Count > 0) {
 				SimisTree.TopNode = SimisTree.Nodes[0];
 			}
+			UpdateTitle();
 		}
 
 		private void OpenFile(string filename) {
@@ -120,19 +124,14 @@ namespace SimisEditor
 			try {
 				newFile.ReadFile();
 			} catch (FileException ex) {
-				using (var messages = new Messages()) {
-					//newFile.RegisterMessageSink(messages);
-					messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
-					messages.ShowDialog(this);
-					//newFile.UnregisterMessageSink(messages);
-				}
+				MessageBox.Show(ex.ToString(), "Open File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return;
 			}
 
-			Filename = filename;
 			Modified = false;
-			UpdateTitle();
+			Filename = filename;
 			File = newFile;
+			SelectNode(null);
 			SimisTree.Nodes.Clear();
 			foreach (var root in File.Roots) {
 				InsertSimisBlock(SimisTree.Nodes, root);
@@ -141,6 +140,7 @@ namespace SimisEditor
 			if (SimisTree.Nodes.Count > 0) {
 				SimisTree.TopNode = SimisTree.Nodes[0];
 			}
+			UpdateTitle();
 		}
 
 		private void FileModified() {
@@ -149,35 +149,19 @@ namespace SimisEditor
 		}
 
 		private void SaveFile() {
-			// TODO: Save file here.
+			if (File.Filename != Filename) {
+				File.Filename = Filename;
+			}
+			try {
+				File.WriteFile();
+			} catch (FileException ex) {
+				MessageBox.Show(ex.ToString(), "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return;
+			}
+
 			Modified = false;
 			UpdateTitle();
 		}
-
-		private void UpdateTitle() {
-			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
-		}
-
-		private void InsertSimisBlock(TreeNodeCollection treeNodes, SimisBlock block) {
-			var treeNode = treeNodes.Add("<fail>");
-			treeNode.Tag = block;
-			treeNode.Text = GetNodeText(treeNode);
-
-			if (block.Nodes.Any<SimisBlock>(b => !(b is SimisBlockValue))) {
-				// If we have any non-value child blocks, add everything.
-				foreach (var child in block.Nodes) {
-					InsertSimisBlock(treeNode.Nodes, child);
-				}
-			}
-		}
-
-        private void SelectNode(TreeNode treeNode) {
-			SimisKey.Text = "<none>";
-            if (treeNode.Tag == null) return;
-			SimisBlock selectedBlock = (SimisBlock)treeNode.Tag;
-			SimisKey.Text = selectedBlock.Key;
-			SimisProperties.SelectedObject = CreateEditObjectFor(selectedBlock);
-        }
 
 		private bool SaveFileIfModified() {
 			if (Modified) {
@@ -193,6 +177,32 @@ namespace SimisEditor
 			return true;
 		}
 
+		private void UpdateTitle() {
+			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
+		}
+
+		private void InsertSimisBlock(TreeNodeCollection treeNodes, SimisBlock block) {
+			var treeNode = treeNodes.Add(GetNodeText(block));
+			treeNode.Tag = block;
+
+			if (block.Nodes.Any<SimisBlock>(b => !(b is SimisBlockValue))) {
+				// If we have any non-value child blocks, add everything.
+				foreach (var child in block.Nodes) {
+					InsertSimisBlock(treeNode.Nodes, child);
+				}
+			}
+		}
+
+        private void SelectNode(TreeNode treeNode) {
+			if ((treeNode == null) || (treeNode.Tag == null)) {
+				SelectedNode = null;
+				SimisProperties.SelectedObject = null;
+				return;
+			}
+			SelectedNode = treeNode;
+			SimisProperties.SelectedObject = CreateEditObjectFor((SimisBlock)SelectedNode.Tag);
+        }
+
 		private static string BlockToNameString(SimisBlock block) {
 			if (block.Name.Length > 0) return block.Type + " \"" + block.Name + "\"";
 			return block.Type;
@@ -205,9 +215,7 @@ namespace SimisEditor
 			return block.ToString();
 		}
 
-		private string GetNodeText(TreeNode node) {
-			var block = (SimisBlock)node.Tag;
-
+		private string GetNodeText(SimisBlock block) {
 			// Non-trivial node, don't bother trying.
 			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) {
 				return BlockToNameString(block);
@@ -261,6 +269,13 @@ namespace SimisEditor
 					dPropertyName = block.Type;
 				}
 
+				if (child is SimisBlockValue) {
+					// Store the SimisBlockValue in a way we can find later.
+					var dSimisProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName + "_SimisBlockValue", new CodeTypeReference(typeof(SimisBlockValue)));
+					dSimisProperty.CustomAttributes.Add(new CodeAttributeDeclaration("BrowsableAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
+					dPropertyValues.Add(dSimisProperty.Name, (SimisBlockValue)child);
+				}
+
 				CodeTypeReference type;
 				if (child is SimisBlockValueInteger) {
 					type = new CodeTypeReference(typeof(long));
@@ -270,25 +285,15 @@ namespace SimisEditor
 					type = new CodeTypeReference(typeof(string));
 				} else {
 					// SetupDynamicTypesFor(doneTypes, dNamespace, child)
-					type = new CodeTypeReference(typeof(string));
-					//continue;
+					//type = new CodeTypeReference(typeof(string));
+					continue;
 				}
 
-				var dField = new CodeMemberField();
-				dField.Attributes = MemberAttributes.Private;
-				dField.Name = "_" + dPropertyName;
-				dField.Type = type;
-				dFields.Add(dField);
-
-				var dProperty = new CodeMemberProperty();
-				dProperty.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-				dProperty.Name = dPropertyName;
-				dProperty.Type = type;
-				dProperty.HasGet = true;
-				dProperty.HasSet = true;
-				dProperty.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name)));
-				dProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name), new CodeVariableReferenceExpression("value")));
-				dProperties.Add(dProperty);
+				var dProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName, type);
+				if (child is SimisBlockValueString) {
+					//dProperty.CustomAttributes.Add(new CodeAttributeDeclaration("Editor", new CodeAttributeArgument(new CodePrimitiveExpression("System.ComponentModel.Design.ArrayEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")), new CodeAttributeArgument(new CodeTypeOfExpression("UITypeEditor"))));
+					dProperty.CustomAttributes.Add(new CodeAttributeDeclaration("Editor", new CodeAttributeArgument(new CodePrimitiveExpression("System.ComponentModel.Design.MultilineStringEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")), new CodeAttributeArgument(new CodeTypeOfExpression("UITypeEditor"))));
+				}
 
 				if (child is SimisBlockValue) {
 					dPropertyValues.Add(dProperty.Name, ((SimisBlockValue)child).Value);
@@ -308,12 +313,16 @@ namespace SimisEditor
 			var dNamespace = new CodeNamespace("SimisEditor.Editor.Dynamic");
 			dNamespace.Imports.Add(new CodeNamespaceImport("System"));
 			dNamespace.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
+			dNamespace.Imports.Add(new CodeNamespaceImport("System.Drawing.Design"));
+			dNamespace.Imports.Add(new CodeNamespaceImport("JGR.IO.Parser"));
 			dNamespace.Types.Add(dClass);
 
 			// Create compile unit, containing our dynamic namespace and classes.
 			var dUnit = new CodeCompileUnit();
 			dUnit.ReferencedAssemblies.Add("System.dll");
+			dUnit.ReferencedAssemblies.Add("System.Drawing.dll");
 			dUnit.ReferencedAssemblies.Add("System.Windows.Forms.dll");
+			dUnit.ReferencedAssemblies.Add("JGR.IO.Parser.dll");
 			dUnit.Namespaces.Add(dNamespace);
 
 			// Set up compiler options.
@@ -323,16 +332,19 @@ namespace SimisEditor
 
 			// Get the C# compiler and build a new assembly from the code we've just created.
 			var compiler = new CSharpCodeProvider();
-			//using (var writer = new StreamWriter(Application.ExecutablePath + @"\..\dynamic_codedom.cs", false, Encoding.UTF8)) {
-			//	compiler.GenerateCodeFromCompileUnit(dUnit, writer, new CodeGeneratorOptions());
-			//}
 			var compileResults = compiler.CompileAssemblyFromDom(compilerParams, dUnit);
 
 			// Did it work? Did it?
 			if (compileResults.Errors.HasErrors) {
+				// We failed so write out a file the user can look at.
+				using (var writer = new StreamWriter(Application.ExecutablePath + @"\..\CreateEditObjectFor.cs", false, Encoding.UTF8)) {
+					compiler.GenerateCodeFromCompileUnit(dUnit, writer, new CodeGeneratorOptions());
+				}
+
 				var messages = new string[compileResults.Output.Count];
 				compileResults.Output.CopyTo(messages, 0);
-				MessageBox.Show(String.Join("\n", messages), Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
+					+ String.Join("\n", messages), "Create Property Editor Data - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return null;
 			}
 
@@ -345,6 +357,25 @@ namespace SimisEditor
 			}
 
 			return dInstance;
+		}
+
+		private static CodeMemberProperty CreateEditObjectFor_AddProperty(List<CodeMemberField> dFields, List<CodeMemberProperty> dProperties, string dPropertyName, CodeTypeReference type) {
+			var dField = new CodeMemberField();
+			dField.Attributes = MemberAttributes.Private;
+			dField.Name = "_" + dPropertyName;
+			dField.Type = type;
+			dFields.Add(dField);
+
+			var dProperty = new CodeMemberProperty();
+			dProperty.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+			dProperty.Name = dPropertyName;
+			dProperty.Type = type;
+			dProperty.HasGet = true;
+			dProperty.HasSet = true;
+			dProperty.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name)));
+			dProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name), new CodeVariableReferenceExpression("value")));
+			dProperties.Add(dProperty);
+			return dProperty;
 		}
 
 		private void newToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -386,7 +417,21 @@ namespace SimisEditor
         }
 
 		private void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
-			//
+			if (SelectedNode == null) return;
+
+			var block = (SimisBlock)SelectedNode.Tag;
+			var child = (SimisBlockValue)SimisProperties.SelectedObject.GetType().GetProperty(e.ChangedItem.Label + "_SimisBlockValue").GetValue(SimisProperties.SelectedObject, null);
+			var value = e.ChangedItem.Value;
+
+			if (child is SimisBlockValueInteger) {
+				child.Value = (long)value;
+			} else if (child is SimisBlockValueFloat) {
+				child.Value = (double)value;
+			} else if (child is SimisBlockValueString) {
+				child.Value = (string)value;
+			}
+
+			SelectedNode.Text = GetNodeText(block);
 		}
 
 		private void testToolStripMenuItem_Click(object sender, EventArgs e) {

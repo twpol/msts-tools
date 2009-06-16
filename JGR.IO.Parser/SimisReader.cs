@@ -14,41 +14,9 @@ using JGR.Grammar;
 
 namespace JGR.IO.Parser
 {
-	public enum SimisStreamFormat
-	{
-		Autodetect,
-		Binary,
-		Text
-	}
-
-	public enum SimisTokenKind
-	{
-		None,
-		Block,
-		BlockBegin,
-		BlockEnd,
-		String,
-		Integer,
-		Float
-	}
-
-	public class SimisToken
-	{
-		public SimisToken() {
-			Type = "";
-			String = "";
-		}
-
-		public SimisTokenKind Kind;
-		public string Type;
-		public string String;
-		public long Integer;
-		public double Float;
-	}
-
 	public class SimisReader //: BufferedMessageSource
 	{
-		public Stream BaseStream { get; protected set; }
+		protected Stream BaseStream { get; set; }
 		protected SimisProvider SimisProvider { get; set; }
 		protected BinaryReader BinaryReader { get; set; }
 		public SimisStreamFormat StreamFormat { get; protected set; }
@@ -356,14 +324,6 @@ namespace JGR.IO.Parser
 
 				rv.Type = validDataTypes[0];
 				switch (rv.Type) {
-					case "string":
-						var stringLength = BinaryReader.ReadUInt16();
-						if (stringLength > 10000) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found a string longer than 10,000 characters.", new BNFStateException(BNFState, ""));
-						for (var i = 0; i < stringLength; i++) {
-							rv.String += (char)BinaryReader.ReadUInt16();
-						}
-						rv.Kind = SimisTokenKind.String;
-						break;
 					case "uint":
 						rv.Integer = BinaryReader.ReadUInt32();
 						rv.Kind = SimisTokenKind.Integer;
@@ -379,6 +339,14 @@ namespace JGR.IO.Parser
 					case "float":
 						rv.Float = BinaryReader.ReadSingle();
 						rv.Kind = SimisTokenKind.Float;
+						break;
+					case "string":
+						var stringLength = BinaryReader.ReadUInt16();
+						if (stringLength > 10000) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found a string longer than 10,000 characters.", new BNFStateException(BNFState, ""));
+						for (var i = 0; i < stringLength; i++) {
+							rv.String += (char)BinaryReader.ReadUInt16();
+						}
+						rv.Kind = SimisTokenKind.String;
 						break;
 					case "buffer":
 						var bufferLength = BlockEndOffsets.Peek() - BinaryReader.BaseStream.Position;

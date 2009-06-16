@@ -3,23 +3,19 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using JGR;
 using JGR.Grammar;
 
 namespace JGR.IO.Parser
 {
-	public class SimisFile //: BufferedMessageSource
+	public class SimisFile
 	{
-		public string Filename { get; private set; }
+		public string Filename { get; set; }
 		public List<SimisBlock> Roots;
+		protected SimisStreamFormat StreamFormat;
+		protected bool StreamCompressed;
+		protected string SimisFormat;
 		protected SimisProvider SimisProvider;
 
 		public SimisFile(string filename, SimisProvider provider) {
@@ -28,12 +24,7 @@ namespace JGR.IO.Parser
 			SimisProvider = provider;
 		}
 
-		//public override string GetMessageSourceName() {
-		//	return "Simis File";
-		//}
-
 		public void ReadFile() {
-			//MessageSend(LEVEL_INFORMATION, "Loading '" + Filename + "'...");
 			try {
 				using (var fileStream = File.OpenRead(Filename)) {
 					var reader = new SimisReader(new BufferedInMemoryStream(fileStream), SimisProvider);
@@ -47,8 +38,6 @@ namespace JGR.IO.Parser
 							name = ((NamedReferenceOperator)reader.BNFState.State.Op).Name;
 						}
 						key += (token.Kind == SimisTokenKind.Block ? token.Type : name);
-
-						//MessageSend(LEVEL_DEBUG, String.Format("Got token {0}, t={1}, s={2}, i={3}, f={4} (n={5}, k={6})", token.Kind, token.Type, token.String, token.Integer, token.Float, name, key));
 
 						switch (token.Kind) {
 							case SimisTokenKind.Block:
@@ -76,11 +65,45 @@ namespace JGR.IO.Parser
 								break;
 						}
 					}
+
+					// We need to do this AFTER reading the file, otherwise they'll not be correct.
+					StreamFormat = reader.StreamFormat;
+					StreamCompressed = reader.StreamCompressed;
+					SimisFormat = reader.SimisFormat;
 				}
 			} catch (ReaderException e) {
 				throw new FileException(Filename, e);
 			}
-			//MessageSend(LEVEL_INFORMATION, "Done.");
+		}
+
+		public void WriteFile() {
+			try {
+				using (var fileStream = File.Create(Filename)) {
+					var writer = new SimisWriter(fileStream, SimisProvider, StreamFormat, StreamCompressed, SimisFormat);
+					foreach (var root in Roots) {
+						WriteBlock(writer, root);
+					}
+				}
+			} catch (ReaderException e) {
+				throw new FileException(Filename, e);
+			}
+		}
+
+		private void WriteBlock(SimisWriter writer, SimisBlock block) {
+			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, String = block.Name });
+			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
+			foreach (var child in block.Nodes) {
+				if (child is SimisBlockValueInteger) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Integer, Integer = (long)((SimisBlockValueInteger)child).Value });
+				} else if (child is SimisBlockValueFloat) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (double)((SimisBlockValueFloat)child).Value });
+				} else if (child is SimisBlockValueString) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.String, String = (string)((SimisBlockValueString)child).Value });
+				} else {
+					WriteBlock(writer, child);
+				}
+			}
+			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockEnd });
 		}
 	}
 
@@ -112,6 +135,9 @@ namespace JGR.IO.Parser
 		public object Value {
 			get {
 				return _value;
+			}
+			set {
+				_value = value;
 			}
 		}
 	}

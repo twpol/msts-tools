@@ -51,6 +51,8 @@
     <Compile Include="SimisFile.cs" />
     <Compile Include="SimisProvider.cs" />
     <Compile Include="SimisReader.cs" />
+    <Compile Include="SimisTypes.cs" />
+    <Compile Include="SimisWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JGR.Grammar\JGR.Grammar.csproj">
