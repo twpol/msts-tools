@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Collections.Generic;
+using System;
 
 namespace JGR.IO.Parser
 {
@@ -22,6 +24,7 @@ namespace JGR.IO.Parser
 		protected bool DoneHeader { get; set; }
 		protected int TextIndent { get; set; }
 		protected bool TextBlocked { get; set; }
+		protected Stack<long> BlockStarts { get; set; }
 
 		protected readonly string SafeTokenCharacters;
 
@@ -37,6 +40,7 @@ namespace JGR.IO.Parser
 			DoneHeader = false;
 			TextIndent = 0;
 			TextBlocked = true;
+			BlockStarts = new Stack<long>();
 			Debug.Assert(StreamFormat != SimisStreamFormat.Autodetect, "Cannot save a stream in Autodetect format - must be Binary or Text.");
 			Debug.Assert(StreamCompressed == false, "Compressed streams are not currently supported.");
 
@@ -46,76 +50,118 @@ namespace JGR.IO.Parser
 		public void WriteToken(SimisToken token) {
 			if (!DoneHeader) WriteHeader();
 
-			switch (token.Kind) {
-				case SimisTokenKind.Block:
-					if (!TextBlocked) {
-						BinaryWriter.Write("\r\n".ToCharArray());
-					}
-					for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
-					BinaryWriter.Write(token.Type.ToCharArray());
-					if (token.String.Length > 0) {
-						BinaryWriter.Write((" " + token.String).ToCharArray());
-					}
-					TextBlocked = true;
-					break;
-				case SimisTokenKind.BlockBegin:
-					BinaryWriter.Write(" (".ToCharArray());
-					TextIndent++;
-					TextBlocked = false;
-					break;
-				case SimisTokenKind.BlockEnd:
-					TextIndent--;
-					if (TextBlocked) {
+			if (StreamFormat == SimisStreamFormat.Text) {
+				switch (token.Kind) {
+					case SimisTokenKind.Block:
+						if (!TextBlocked) {
+							BinaryWriter.Write("\r\n".ToCharArray());
+						}
 						for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
-					} else {
-						BinaryWriter.Write(' ');
-					}
-					BinaryWriter.Write(")\r\n".ToCharArray());
-					TextBlocked = true;
-					break;
-				case SimisTokenKind.Integer:
-					if (TextBlocked) {
-						for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
-					} else {
-						BinaryWriter.Write(' ');
-					}
-					BinaryWriter.Write(token.Integer.ToString().ToCharArray());
-					if (TextBlocked) {
-						BinaryWriter.Write("\r\n".ToCharArray());
-					}
-					break;
-				case SimisTokenKind.Float:
-					if (TextBlocked) {
-						for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
-					} else {
-						BinaryWriter.Write(' ');
-					}
-					BinaryWriter.Write(token.Float.ToString("G6").ToCharArray());
-					if (TextBlocked) {
-						BinaryWriter.Write("\r\n".ToCharArray());
-					}
-					break;
-				case SimisTokenKind.String:
-					if (TextBlocked) {
-						for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
-					} else {
-						BinaryWriter.Write(' ');
-					}
-					if (token.String.ToCharArray().All<char>(c => SafeTokenCharacters.Contains(c))) {
-						BinaryWriter.Write(token.String.ToCharArray());
-					} else {
-						var wrap = "\"+\r\n";
-						for (var i = 0; i < TextIndent; i++) wrap += '\t';
-						wrap += " \"";
+						BinaryWriter.Write(token.Type.ToCharArray());
+						if (token.String.Length > 0) {
+							BinaryWriter.Write((" " + token.String).ToCharArray());
+						}
+						TextBlocked = true;
+						break;
+					case SimisTokenKind.BlockBegin:
+						BinaryWriter.Write(" (".ToCharArray());
+						TextIndent++;
+						TextBlocked = false;
+						break;
+					case SimisTokenKind.BlockEnd:
+						TextIndent--;
+						if (TextBlocked) {
+							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+						} else {
+							BinaryWriter.Write(' ');
+						}
+						BinaryWriter.Write(")\r\n".ToCharArray());
+						TextBlocked = true;
+						break;
+					case SimisTokenKind.Integer:
+						if (TextBlocked) {
+							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+						} else {
+							BinaryWriter.Write(' ');
+						}
+						BinaryWriter.Write(token.Integer.ToString().ToCharArray());
+						if (TextBlocked) {
+							BinaryWriter.Write("\r\n".ToCharArray());
+						}
+						break;
+					case SimisTokenKind.Float:
+						if (TextBlocked) {
+							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+						} else {
+							BinaryWriter.Write(' ');
+						}
+						BinaryWriter.Write(token.Float.ToString("G6").ToCharArray());
+						if (TextBlocked) {
+							BinaryWriter.Write("\r\n".ToCharArray());
+						}
+						break;
+					case SimisTokenKind.String:
+						if (TextBlocked) {
+							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+						} else {
+							BinaryWriter.Write(' ');
+						}
+						if (token.String.ToCharArray().All<char>(c => SafeTokenCharacters.Contains(c))) {
+							BinaryWriter.Write(token.String.ToCharArray());
+						} else {
+							var wrap = "\"+\r\n";
+							for (var i = 0; i < TextIndent; i++) wrap += '\t';
+							wrap += " \"";
 
-						BinaryWriter.Write(('"' + token.String.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\t", "\\t").Replace("\n\n", "\\n\n").Replace("\n", "\\n" + wrap) + '"').Replace(wrap + '"', "\"" + wrap.Substring(2, wrap.Length - 4)).ToCharArray());
-					}
-					if (TextBlocked) {
-						BinaryWriter.Write("\r\n".ToCharArray());
-					}
-					break;
-				default:
-					throw new InvalidDataException("SimisToken.Kind is invalid: " + token.Kind);
+							BinaryWriter.Write(('"' + token.String.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\t", "\\t").Replace("\n\n", "\\n\n").Replace("\n", "\\n" + wrap) + '"').Replace(wrap + '"', "\"" + wrap.Substring(2, wrap.Length - 4)).ToCharArray());
+						}
+						if (TextBlocked) {
+							BinaryWriter.Write("\r\n".ToCharArray());
+						}
+						break;
+					default:
+						throw new InvalidDataException("SimisToken.Kind is invalid: " + token.Kind);
+				}
+			} else {
+				switch (token.Kind) {
+					case SimisTokenKind.Block:
+						var id = SimisProvider.TokenNames.FirstOrDefault<KeyValuePair<uint, string>>(kvp => kvp.Value == token.Type).Key;
+						BinaryWriter.Write((uint)id);
+						BinaryWriter.Write((uint)0x7F8F7F8F); // Length, set to sentinel value.
+						BlockStarts.Push(BinaryWriter.BaseStream.Position);
+						BinaryWriter.Write((byte)token.String.Length);
+						foreach (var ch in token.String.ToCharArray()) {
+							BinaryWriter.Write((ushort)ch);
+						}
+						break;
+					case SimisTokenKind.BlockBegin:
+						break;
+					case SimisTokenKind.BlockEnd:
+						var start = BlockStarts.Pop();
+						var length = (uint)(BinaryWriter.BaseStream.Position - start);
+						BinaryWriter.BaseStream.Seek(start - 4, SeekOrigin.Begin);
+						BinaryWriter.Write(length);
+						BinaryWriter.BaseStream.Seek(0, SeekOrigin.End);
+						break;
+					case SimisTokenKind.Integer:
+						if (token.Integer > int.MaxValue) {
+							BinaryWriter.Write((uint)token.Integer);
+						} else {
+							BinaryWriter.Write((int)token.Integer);
+						}
+						break;
+					case SimisTokenKind.Float:
+						BinaryWriter.Write((float)token.Float);
+						break;
+					case SimisTokenKind.String:
+						BinaryWriter.Write((ushort)token.String.Length);
+						foreach (var ch in token.String.ToCharArray()) {
+							BinaryWriter.Write((ushort)ch);
+						}
+						break;
+					default:
+						throw new InvalidDataException("SimisToken.Kind is invalid: " + token.Kind);
+				}
 			}
 		}
 
