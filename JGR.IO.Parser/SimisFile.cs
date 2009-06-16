@@ -13,9 +13,9 @@ namespace JGR.IO.Parser
 	{
 		public string Filename { get; set; }
 		public List<SimisBlock> Roots;
-		protected SimisStreamFormat StreamFormat;
-		protected bool StreamCompressed;
-		protected string SimisFormat;
+		public SimisStreamFormat StreamFormat;
+		public bool StreamCompressed;
+		public string SimisFormat;
 		protected SimisProvider SimisProvider;
 
 		public SimisFile(string filename, SimisProvider provider) {

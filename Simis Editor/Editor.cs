@@ -91,17 +91,19 @@ namespace SimisEditor
 		}
 
 		private void UpdateFromSimisProvider() {
-			var types = new List<List<string>>();
+			var generalName = "Train Simulator files";
 
-			types.Add(new List<string>(new string[] { "All Train Simulator files" }));
+			var simisFormats = new List<List<string>>();
+			simisFormats.Add(new List<string>(new string[] { "All " + generalName }));
 			foreach (var format in SimisProvider.FileFormats) {
-				types[0].Add(format.Value);
-				types.Add(new List<string>(new string[] { format.Key + " files", format.Value }));
+				simisFormats[0].Add(format.Value);
+				simisFormats.Add(new List<string>(new string[] { format.Key + " files", format.Value }));
 			}
-			types.Add(new List<string>(new string[] { "All files", "*.*" }));
+			simisFormats.Add(new List<string>(new string[] { "All files", "*.*" }));
+			openFileDialog.Filter = String.Join("|", simisFormats.Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray());
 
-			openFileDialog.Filter = String.Join("|", types.Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray<string>());
-			saveFileDialog.Filter = String.Join("|", types.Where<List<string>>((l, i) => i > 0 || i < types.Count - 1).Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray<string>());
+			var streamFormats = new string[] { "Text", "Binary", "Compressed Binary" };
+			saveFileDialog.Filter = String.Join("|", streamFormats.Select<string, string>(s => s + " " + generalName + "|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
 		}
 
 		private void NewFile() {
@@ -401,6 +403,9 @@ namespace SimisEditor
 		private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
 			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
 				Filename = saveFileDialog.FileName;
+				// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
+				File.StreamFormat = saveFileDialog.FilterIndex == 1 ? SimisStreamFormat.Text : SimisStreamFormat.Binary;
+				File.StreamCompressed = saveFileDialog.FilterIndex == 3;
 				SaveFile();
 			}
 		}
