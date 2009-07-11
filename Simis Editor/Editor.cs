@@ -51,25 +51,27 @@ namespace SimisEditor
 			var thread = new Thread(() => WaitForSimisProvider());
 			thread.Start();
 
-			var versionCheck = new CodePlexVersionCheck(Settings.Default.UpdateCheckCodePlexProjectUrl, Settings.Default.UpdateCheckCodePlexProjectName, Settings.Default.UpdateCheckCodePlexReleaseDate);
-			versionCheck.CheckComplete += new EventHandler((o, e) => this.Invoke((MethodInvoker)(() => {
-				if (versionCheck.HasLatestVersion) {
-					if (versionCheck.IsNewVersion) {
-						var item = menuStrip.Items.Add("New Version: " + versionCheck.LatestVersionTitle);
+			if (!Environment.GetCommandLineArgs().Contains("/noversioncheck")) {
+				var versionCheck = new CodePlexVersionCheck(Settings.Default.UpdateCheckCodePlexProjectUrl, Settings.Default.UpdateCheckCodePlexProjectName, Settings.Default.UpdateCheckCodePlexReleaseDate);
+				versionCheck.CheckComplete += new EventHandler((o, e) => this.Invoke((MethodInvoker)(() => {
+					if (versionCheck.HasLatestVersion) {
+						if (versionCheck.IsNewVersion) {
+							var item = menuStrip.Items.Add("New Version: " + versionCheck.LatestVersionTitle);
+							item.Alignment = ToolStripItemAlignment.Right;
+							item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
+							//} else {
+							//    var item = menuStrip.Items.Add("Current Version: " + versionCheck.LatestVersionTitle);
+							//    item.Alignment = ToolStripItemAlignment.Right;
+							//    item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
+						}
+					} else {
+						var item = menuStrip.Items.Add("Error Checking for New Version");
 						item.Alignment = ToolStripItemAlignment.Right;
-						item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
-					//} else {
-					//    var item = menuStrip.Items.Add("Current Version: " + versionCheck.LatestVersionTitle);
-					//    item.Alignment = ToolStripItemAlignment.Right;
-					//    item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
+						item.Click += new EventHandler((o2, e2) => Process.Start(Settings.Default.AboutUpdatesUrl));
 					}
-				} else {
-					var item = menuStrip.Items.Add("Error Checking for New Version");
-					item.Alignment = ToolStripItemAlignment.Right;
-					item.Click += new EventHandler((o2, e2) => Process.Start(Settings.Default.AboutUpdatesUrl));
-				}
-			})));
-			versionCheck.Check();
+				})));
+				versionCheck.Check();
+			}
 		}
 
 		private void WaitForSimisProvider() {
@@ -401,9 +403,10 @@ namespace SimisEditor
 		}
 
 		private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
+			// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
+			saveFileDialog.FilterIndex = File.StreamCompressed ? 3 : File.StreamFormat == SimisStreamFormat.Text ? 1 : 2;
 			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
 				Filename = saveFileDialog.FileName;
-				// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
 				File.StreamFormat = saveFileDialog.FilterIndex == 1 ? SimisStreamFormat.Text : SimisStreamFormat.Binary;
 				File.StreamCompressed = saveFileDialog.FilterIndex == 3;
 				SaveFile();
