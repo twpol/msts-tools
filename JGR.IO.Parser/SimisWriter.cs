@@ -127,7 +127,7 @@ namespace JGR.IO.Parser
 					case SimisTokenKind.Block:
 						var id = SimisProvider.TokenNames.FirstOrDefault<KeyValuePair<uint, string>>(kvp => kvp.Value == token.Type).Key;
 						BinaryWriter.Write((uint)id);
-						BinaryWriter.Write((uint)0x7F8F7F8F); // Length, set to sentinel value.
+						BinaryWriter.Write((uint)0x7F8F7F8F); // Length, set to sentinel value for now.
 						BlockStarts.Push(BinaryWriter.BaseStream.Position);
 						BinaryWriter.Write((byte)token.String.Length);
 						foreach (var ch in token.String.ToCharArray()) {
