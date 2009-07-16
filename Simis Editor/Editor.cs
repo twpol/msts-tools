@@ -97,9 +97,9 @@ namespace SimisEditor
 
 			var simisFormats = new List<List<string>>();
 			simisFormats.Add(new List<string>(new string[] { "All " + generalName }));
-			foreach (var format in SimisProvider.FileFormats) {
-				simisFormats[0].Add(format.Value);
-				simisFormats.Add(new List<string>(new string[] { format.Key + " files", format.Value }));
+			foreach (var format in SimisProvider.Formats) {
+				simisFormats[0].Add("*." + format.Extension);
+				simisFormats.Add(new List<string>(new string[] { format.Name + " files", "*." + format.Extension }));
 			}
 			simisFormats.Add(new List<string>(new string[] { "All files", "*.*" }));
 			openFileDialog.Filter = String.Join("|", simisFormats.Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray());
@@ -187,6 +187,7 @@ namespace SimisEditor
 
 		private void InsertSimisBlock(TreeNodeCollection treeNodes, SimisBlock block) {
 			var treeNode = treeNodes.Add(GetNodeText(block));
+			treeNode.ToolTipText = block.Key;
 			treeNode.Tag = block;
 
 			if (block.Nodes.Any<SimisBlock>(b => !(b is SimisBlockValue))) {

@@ -27,7 +27,7 @@ namespace JGR
 			}
 			if (Message.Length > 0) rv += Message + "\r\n\r\n";
 			rv += StackTrace;
-			return rv;
+			return rv.Replace("\0", "\\0");
 		}
 	}
 }

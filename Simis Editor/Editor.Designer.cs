@@ -85,7 +85,7 @@
 			treeNode10.Text = "No file loaded";
 			this.SimisTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
             treeNode10});
-			this.SimisTree.ShowRootLines = false;
+			this.SimisTree.ShowNodeToolTips = true;
 			this.SimisTree.Size = new System.Drawing.Size(484, 538);
 			this.SimisTree.TabIndex = 0;
 			this.SimisTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.SimisTree_AfterSelect);
@@ -118,7 +118,6 @@
 			// 
 			// newToolStripMenuItem
 			// 
-			this.newToolStripMenuItem.Enabled = false;
 			this.newToolStripMenuItem.Name = "newToolStripMenuItem";
 			this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
 			this.newToolStripMenuItem.Size = new System.Drawing.Size(155, 22);

@@ -58,18 +58,20 @@ namespace JGR.IO.Parser
 	public class BNFFile : BufferedMessageSource
 	{
 		public string Filename { get; private set; }
+		public List<string> BNFFileRoots { get; private set; }
 		public string BNFFileName { get; private set; }
-		public string BNFFileExt { get; private set; }
+		public string BNFFileExtension { get; private set; }
 		public string BNFFileType { get; private set; }
-		public int BNFFileTypeVer { get; private set; }
+		public int BNFFileTypeVersion { get; private set; }
 		public BNF BNF { get; private set; }
 
 		public BNFFile(string filename) {
 			Filename = filename;
+			BNFFileRoots = new List<string>();
 			BNFFileName = "";
-			BNFFileExt = "";
+			BNFFileExtension = "";
 			BNFFileType = "";
-			BNFFileTypeVer = 0;
+			BNFFileTypeVersion = 0;
 			BNF = new BNF(Filename);
 		}
 
@@ -89,14 +91,37 @@ namespace JGR.IO.Parser
 							MessageSend(LEVEL_DEBUG, rule.ToString());
 
 							if (rule is BNFDefinition) {
-								if ((rule.Symbol.Reference == "FILE_NAME") && (rule.Expression is StringOperator)) {
+								if (rule.Symbol.Reference == "FILE") {
+									Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan = null;
+									Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan2 = (op, finder) => {
+										if (op is UnaryOperator) {
+											return scan(((UnaryOperator)op).Right, finder);
+										}
+										if (op is LogicalOperator) {
+											return scan(((LogicalOperator)op).Left, finder).Concat(scan(((LogicalOperator)op).Right, finder));
+										}
+										return finder(op);
+									};
+									scan = scan2;
+
+									BNFFileRoots = new List<string>(
+										scan(rule.Expression, op => {
+											if (op is ReferenceOperator) {
+												return new string[] { ((ReferenceOperator)op).Reference };
+											}
+											return new string[] { };
+										})
+									);
+								} else if ((rule.Symbol.Reference == "FILE_NAME") && (rule.Expression is StringOperator)) {
 									BNFFileName = ((StringOperator)rule.Expression).Value;
 								} else if ((rule.Symbol.Reference == "FILE_EXT") && (rule.Expression is StringOperator)) {
-									BNFFileExt = ((StringOperator)rule.Expression).Value;
+									BNFFileExtension = ((StringOperator)rule.Expression).Value;
 								} else if ((rule.Symbol.Reference == "FILE_TYPE") && (rule.Expression is StringOperator)) {
 									BNFFileType = ((StringOperator)rule.Expression).Value;
 								} else if ((rule.Symbol.Reference == "FILE_TYPE_VER") && (rule.Expression is StringOperator)) {
-									BNFFileTypeVer = int.Parse(((StringOperator)rule.Expression).Value);
+									if (((StringOperator)rule.Expression).Value.Length > 0) {
+										BNFFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value);
+									}
 								}
 								BNF.Definitions.Add(rule.Symbol.Reference, (BNFDefinition)rule);
 							}
@@ -110,6 +135,9 @@ namespace JGR.IO.Parser
 				}
 			}
 			MessageSend(LEVEL_INFORMATION, "Done.");
+			if (BNFFileName== "") throw new InvalidDataException("BNF File <" + Filename + "> does not specify a name.");
+			if (BNFFileExtension == "") throw new InvalidDataException("BNF File <" + Filename + "> does not specify a file extension.");
+			if (BNFFileType == "") throw new InvalidDataException("BNF File <" + Filename + "> does not specify a valid Simis Format.");
 		}
 	}
 
