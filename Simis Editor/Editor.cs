@@ -8,7 +8,6 @@ using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -149,7 +148,11 @@ namespace SimisEditor
 			try {
 				File.WriteFile();
 			} catch (FileException ex) {
-				MessageBox.Show(ex.ToString(), "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				if (ex.InnerException is UnauthorizedAccessException) {
+					MessageBox.Show(ex.InnerException.Message, "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				} else {
+					MessageBox.Show(ex.ToString(), "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
 				return;
 			}
 
