@@ -25,15 +25,15 @@
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent() {
-			System.Windows.Forms.TreeNode treeNode6 = new System.Windows.Forms.TreeNode("Node2");
-			System.Windows.Forms.TreeNode treeNode7 = new System.Windows.Forms.TreeNode("Node3");
-			System.Windows.Forms.TreeNode treeNode8 = new System.Windows.Forms.TreeNode("Node4");
-			System.Windows.Forms.TreeNode treeNode9 = new System.Windows.Forms.TreeNode("Node5");
-			System.Windows.Forms.TreeNode treeNode10 = new System.Windows.Forms.TreeNode("No file loaded", new System.Windows.Forms.TreeNode[] {
-            treeNode6,
-            treeNode7,
-            treeNode8,
-            treeNode9});
+			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("Node2");
+			System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("Node3");
+			System.Windows.Forms.TreeNode treeNode3 = new System.Windows.Forms.TreeNode("Node4");
+			System.Windows.Forms.TreeNode treeNode4 = new System.Windows.Forms.TreeNode("Node5");
+			System.Windows.Forms.TreeNode treeNode5 = new System.Windows.Forms.TreeNode("No file loaded", new System.Windows.Forms.TreeNode[] {
+            treeNode1,
+            treeNode2,
+            treeNode3,
+            treeNode4});
 			this.SimisTree = new System.Windows.Forms.TreeView();
 			this.menuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -72,19 +72,19 @@
 			this.SimisTree.HideSelection = false;
 			this.SimisTree.Location = new System.Drawing.Point(0, 24);
 			this.SimisTree.Name = "SimisTree";
-			treeNode6.Name = "Node2";
-			treeNode6.Text = "Node2";
-			treeNode7.Name = "Node3";
-			treeNode7.Text = "Node3";
-			treeNode8.Name = "Node4";
-			treeNode8.Text = "Node4";
-			treeNode9.Name = "Node5";
-			treeNode9.Text = "Node5";
-			treeNode10.Name = "Node0";
-			treeNode10.NodeFont = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			treeNode10.Text = "No file loaded";
+			treeNode1.Name = "Node2";
+			treeNode1.Text = "Node2";
+			treeNode2.Name = "Node3";
+			treeNode2.Text = "Node3";
+			treeNode3.Name = "Node4";
+			treeNode3.Text = "Node4";
+			treeNode4.Name = "Node5";
+			treeNode4.Text = "Node5";
+			treeNode5.Name = "Node0";
+			treeNode5.NodeFont = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			treeNode5.Text = "No file loaded";
 			this.SimisTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode10});
+            treeNode5});
 			this.SimisTree.ShowNodeToolTips = true;
 			this.SimisTree.Size = new System.Drawing.Size(484, 538);
 			this.SimisTree.TabIndex = 0;
@@ -118,6 +118,7 @@
 			// 
 			// newToolStripMenuItem
 			// 
+			this.newToolStripMenuItem.Enabled = false;
 			this.newToolStripMenuItem.Name = "newToolStripMenuItem";
 			this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
 			this.newToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
