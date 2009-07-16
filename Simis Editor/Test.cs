@@ -37,7 +37,7 @@ namespace SimisEditor
 
 			SimisProvider = provider;
 
-			Extensions = new List<string>(SimisProvider.FileFormats.Values.Select<string, string>(s => s.Replace("*", "").ToLower()));
+			Extensions = new List<string>(SimisProvider.Formats.Select<SimisFormat, string>(f => "." + f.Extension.ToLower()));
 			Files = new List<string>();
 
 			FindFilesToTest();

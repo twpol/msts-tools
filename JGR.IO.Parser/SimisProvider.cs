@@ -14,17 +14,28 @@ using JGR.Grammar;
 
 namespace JGR.IO.Parser
 {
+	public class UnknownSimisFormatException : DescriptiveException
+	{
+		public UnknownSimisFormatException(string simisFormat, string root)
+			: base("Unknown Simis Format '" + simisFormat + "' with root '" + root + "'.") {
+		}
+
+		public UnknownSimisFormatException(string simisFormat, string root, Exception innerException)
+			: base("Unknown Simis Format '" + simisFormat + "' with root '" + root + "'.", innerException) {
+		}
+	}
+
 	public class SimisProvider
 	{
 		protected Thread BackgroundLoader;
 		protected Exception LoadError = null;
-		public Dictionary<string, string> FileFormats;
-		public Dictionary<string, BNF> BNFs;
+		public readonly List<SimisFormat> Formats;
+		protected Dictionary<string, SimisFormat> FormatByRoot;
 		public Dictionary<uint, string> TokenNames;
 
 		public SimisProvider(string directory) {
-			FileFormats = new Dictionary<string, string>();
-			BNFs = new Dictionary<string, BNF>();
+			Formats = new List<SimisFormat>();
+			FormatByRoot = new Dictionary<string, SimisFormat>();
 			TokenNames = new Dictionary<uint, string>();
 
 			BackgroundLoader = new Thread(() => BackgroundLoad(directory));
@@ -36,6 +47,14 @@ namespace JGR.IO.Parser
 			if (LoadError != null) throw LoadError;
 		}
 
+		public BNF GetBNF(string simisFormat, string root) {
+			var key = simisFormat + "|" + root;
+			if (FormatByRoot.ContainsKey(key)) {
+				return FormatByRoot[key].BNF;
+			}
+			throw new UnknownSimisFormatException(simisFormat, root);
+		}
+
 		private void BackgroundLoad(string directory) {
 			foreach (var filename in Directory.GetFiles(directory, "*.bnf")) {
 				var BNF = new BNFFile(filename);
@@ -44,9 +63,15 @@ namespace JGR.IO.Parser
 				} catch (FileException e) {
 					LoadError = e;
 					return;
+				} catch (InvalidDataException) {
+					// BNF didn't specify all required stuff, skip it.
+					continue;
 				}
-				FileFormats.Add(BNF.BNFFileName, BNF.BNFFileExt);
-				BNFs.Add(BNF.BNFFileType + BNF.BNFFileTypeVer, BNF.BNF);
+				var simisFormat = new SimisFormat(BNF);
+				Formats.Add(simisFormat);
+				foreach (var root in BNF.BNFFileRoots) {
+					FormatByRoot.Add(BNF.BNFFileType + BNF.BNFFileTypeVersion + "|" + root, simisFormat);
+				}
 			}
 
 			foreach (var filename in Directory.GetFiles(directory, "*.tok")) {

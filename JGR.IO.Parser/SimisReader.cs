@@ -53,7 +53,7 @@ namespace JGR.IO.Parser
 			StreamLength = BaseStream.Length;
 
 			WhitespaceChars = new char[] { ' ', '\t', '\r', '\n' };
-			WhitespaceAndSpecialChars = new char[] { ' ', '\t', '\r', '\n', '(', ')', '"' };
+			WhitespaceAndSpecialChars = new char[] { ' ', '\t', '\r', '\n', '(', ')', '"', ':' };
 			HexDigits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 			DataTypes = new string[] { "string", "uint", "sint", "dword", "float", "buffer" };
 
@@ -61,7 +61,7 @@ namespace JGR.IO.Parser
 			PendingTokens = new Queue<SimisToken>();
 			BNFState = null;
 			if (SimisFormat != "") {
-				BNFState = new BNFState(SimisProvider.BNFs[SimisFormat]);
+				BNFState = new BNFState(SimisProvider.GetBNF(simisFormat, ""));
 			}
 		}
 
@@ -151,7 +151,20 @@ namespace JGR.IO.Parser
 				return rv;
 			}
 
+			if (':' == BinaryReader.PeekChar()) {
+				BinaryReader.ReadChar();
+				return ReadTokenAsText();
+			}
+
 			string token = ReadTokenOrString();
+
+			if (BNFState == null) {
+				try {
+					BNFState = new BNFState(SimisProvider.GetBNF(SimisFormat, token));
+				} catch (UnknownSimisFormatException e) {
+					throw new ReaderException(BinaryReader, false, PinReaderChanged(), "", e);
+				}
+			}
 
 			if (BNFState.IsEnterBlockTime) {
 				// We should only end up here when called recursively by the
@@ -314,7 +327,7 @@ namespace JGR.IO.Parser
 		private SimisToken ReadTokenAsBinary() {
 			SimisToken rv = new SimisToken();
 
-			var validStates = BNFState.ValidStates.Where<string>(s => !s.StartsWith("<"));
+			var validStates = (BNFState == null ? new string[] { } : BNFState.ValidStates.Where<string>(s => !s.StartsWith("<")));
 			//if (validStates.Length == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found no non-meta states available.", new BNFStateException(BNFState, ""));
 
 			// If we have any valid data types, we read that instead of a block start. They should all be the same data type, too.
@@ -365,6 +378,14 @@ namespace JGR.IO.Parser
 
 				rv.Type = SimisProvider.TokenNames[token];
 				rv.Kind = SimisTokenKind.Block;
+
+				if (BNFState == null) {
+					try {
+						BNFState = new BNFState(SimisProvider.GetBNF(SimisFormat, rv.Type));
+					} catch(UnknownSimisFormatException e) {
+						throw new ReaderException(BinaryReader, true, PinReaderChanged(), "", e);
+					}
+				}
 
 				var contentsLength = BinaryReader.ReadUInt32();
 				if (contentsLength == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block with length of 0.", new BNFStateException(BNFState, ""));
@@ -501,7 +522,6 @@ namespace JGR.IO.Parser
 				}
 			}
 
-			BNFState = new BNFState(SimisProvider.BNFs[SimisFormat]);
 			DoneAutodetect = true;
 		}
 	}
