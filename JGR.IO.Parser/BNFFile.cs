@@ -8,10 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using JGR;
 using JGR.Grammar;
-using JGR.IO;
 
 namespace JGR.IO.Parser
 {

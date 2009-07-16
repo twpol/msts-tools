@@ -3,13 +3,11 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
-using System.Collections.Generic;
-using System;
 
 namespace JGR.IO.Parser
 {
