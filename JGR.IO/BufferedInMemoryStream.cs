@@ -14,18 +14,19 @@ namespace JGR.IO
 	public class BufferedInMemoryStream : Stream
 	{
 		private MemoryStream Memory;
-		private Stream Incomming;
+		private Stream Base;
+		private long WritePosition = 0;
 		private const int ChunkSize = 1024;
 
 		public BufferedInMemoryStream(Stream stream) {
 			Memory = new MemoryStream();
-			Incomming = stream;
-			ReadChunk(ChunkSize);
+			Base = stream;
+			if (Base.CanRead) ReadChunk(ChunkSize);
 		}
 
 		private void ReadChunk(int chunk) {
 			var buffer = new byte[chunk];
-			var bytes = Incomming.Read(buffer, 0, chunk);
+			var bytes = Base.Read(buffer, 0, chunk);
 			var oldPosition = Memory.Position;
 			Memory.Seek(0, SeekOrigin.End);
 			Memory.Write(buffer, 0, bytes);
@@ -41,17 +42,30 @@ namespace JGR.IO
 		}
 
 		public override bool CanWrite {
-			get { return false; }
+			get { return Base.CanWrite; }
 		}
 
 		public override void Flush() {
-			throw new NotImplementedException();
+		}
+
+		public void RealFlush() {
+			if (Memory.Position > WritePosition) {
+				var currentPosition = Memory.Position;
+				Memory.Seek(WritePosition, SeekOrigin.Begin);
+				var buffer = new byte[currentPosition - WritePosition];
+				Memory.Read(buffer, 0, buffer.Length);
+				Base.Write(buffer, 0, buffer.Length);
+				WritePosition = currentPosition;
+				Memory.Position = currentPosition;
+			}
+
+			Base.Flush();
 		}
 
 		public override long Length {
 			get {
-				if (Incomming.CanSeek) return Incomming.Length;
-				if (Memory.Position + ChunkSize >= Memory.Length) ReadChunk(ChunkSize);
+				if (Base.CanSeek) return Base.Length;
+				if (Base.CanRead && (Memory.Position + ChunkSize >= Memory.Length)) ReadChunk(ChunkSize);
 				return Memory.Length;
 			}
 		}
@@ -79,7 +93,7 @@ namespace JGR.IO
 		}
 
 		public override void Write(byte[] buffer, int offset, int count) {
-			throw new NotImplementedException();
+			Memory.Write(buffer, offset, count);
 		}
 	}
 }

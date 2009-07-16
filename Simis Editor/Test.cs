@@ -72,27 +72,72 @@ namespace SimisEditor
 			TestProgress.Maximum = Files.Count;
 			TestProgress.Value = 0;
 			TestFileStatus.Text = "Testing " + Files.Count + " files...";
+
 			BackgroundThread = new Thread(() => {
 				var messageLog = new BufferedMessageSource();
 				var count = 0;
 				var successCount = 0;
-				var totalTime = (double)0;
+
 				foreach (var file in Files) {
-					var success = false;
-					var time_start = DateTime.Now;
+					var success = true;
 					var newFile = new SimisFile(file, SimisProvider);
-					try {
-						newFile.ReadFile();
-						success = true;
-					} catch (FileException ex) {
-						messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
+					Stream readStream = File.OpenRead(file);
+					Stream saveStream = new MemoryStream();
+
+					// First, read the file in.
+					if (success) {
+						try {
+							newFile.ReadFile();
+						} catch (FileException ex) {
+							success = false;
+							messageLog.MessageAccept("Read", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
+						}
 					}
-					var time_end = DateTime.Now;
+
+					// Second, write the file out into memory.
+					if (success) {
+						//if (newFile.StreamFormat == SimisStreamFormat.Text) {
+						//    try {
+						//        readStream = new MemoryStream();
+						//        newFile.WriteStream(readStream);
+						//        readStream.Seek(0, SeekOrigin.Begin);
+						//        newFile.ReadStream(readStream);
+						//    } catch (FileException ex) {
+						//        success = false;
+						//        messageLog.MessageAccept("RW", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
+						//    }
+						//}
+						try {
+							newFile.WriteStream(saveStream);
+						} catch (FileException ex) {
+							success = false;
+							messageLog.MessageAccept("Write", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
+						}
+					}
+
+					// Third, verify that the output is the same as the input.
+					if (success) {
+						if (readStream.Length != saveStream.Length) {
+							success = false;
+							messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.", file, readStream.Length, saveStream.Length));
+						} else {
+							readStream.Seek(0, SeekOrigin.Begin);
+							saveStream.Seek(0, SeekOrigin.Begin);
+							for (var i = 0; i < saveStream.Length; i++) {
+								var fileByte = readStream.ReadByte();
+								var saveByte = saveStream.ReadByte();
+								if (fileByte != saveByte) {
+									success = false;
+									messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile byte {1:N0} does not match: {2:X2} vs {3:X2}.", file, i, fileByte, saveByte));
+									break;
+								}
+							}
+						}
+					}
 					if (success) {
 						successCount++;
-						totalTime += (time_end - time_start).TotalMilliseconds;
+						messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_INFORMATION, String.Format("{0}\n\nFile successfully read and written.", file));
 					}
-					//messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_INFORMATION, (time_end - time_start).TotalMilliseconds + "ms for <" + file + ">.");
 
 					count++;
 					this.Invoke((MethodInvoker)(() => {
@@ -100,7 +145,9 @@ namespace SimisEditor
 						TestProgress.Value = count;
 					}));
 				}
-				messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_INFORMATION, "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%). Took " + totalTime + "ms, " + (totalTime / count).ToString("F0") + "ms/file.");
+
+				messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_INFORMATION, "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%).");
+				
 				this.Invoke((MethodInvoker)(() => {
 					TestRun.Enabled = true;
 					TestFileStatus.Text = "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%)";
