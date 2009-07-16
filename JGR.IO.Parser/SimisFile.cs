@@ -28,66 +28,76 @@ namespace JGR.IO.Parser
 		public void ReadFile() {
 			try {
 				using (var fileStream = File.OpenRead(Filename)) {
-					var reader = new SimisReader(new BufferedInMemoryStream(fileStream), SimisProvider);
-
-					var blockStack = new Stack<SimisBlock>();
-					while (!reader.EndOfStream) {
-						var token = reader.ReadToken();
-						var key = (blockStack.Count > 0 ? blockStack.Peek().Key + "." : "");
-						var name = "";
-						if ((reader.BNFState != null) && (reader.BNFState.State != null) && (reader.BNFState.State.Op is NamedReferenceOperator)) {
-							name = ((NamedReferenceOperator)reader.BNFState.State.Op).Name;
-						}
-						key += (token.Kind == SimisTokenKind.Block ? token.Type : name);
-
-						switch (token.Kind) {
-							case SimisTokenKind.Block:
-								var block = new SimisBlock(this, key, token.Type, token.String);
-								if (blockStack.Count == 0) {
-									Roots.Add(block);
-								} else {
-									blockStack.Peek().Nodes.Add(block);
-								}
-								blockStack.Push(block);
-								break;
-							case SimisTokenKind.BlockBegin:
-								break;
-							case SimisTokenKind.BlockEnd:
-								blockStack.Pop();
-								break;
-							case SimisTokenKind.String:
-								blockStack.Peek().Nodes.Add(new SimisBlockValueString(this, key, token.Type, name, token.String));
-								break;
-							case SimisTokenKind.Integer:
-								blockStack.Peek().Nodes.Add(new SimisBlockValueInteger(this, key, token.Type, name, token.Integer));
-								break;
-							case SimisTokenKind.Float:
-								blockStack.Peek().Nodes.Add(new SimisBlockValueFloat(this, key, token.Type, name, token.Float));
-								break;
-						}
-					}
-
-					// We need to do this AFTER reading the file, otherwise they'll not be correct.
-					StreamFormat = reader.StreamFormat;
-					StreamCompressed = reader.StreamCompressed;
-					SimisFormat = reader.SimisFormat;
+					ReadStream(fileStream);
 				}
 			} catch (ReaderException e) {
 				throw new FileException(Filename, e);
 			}
 		}
 
+		public void ReadStream(Stream stream) {
+			var reader = new SimisReader(new BufferedInMemoryStream(stream), SimisProvider);
+
+			Roots = new List<SimisBlock>();
+			var blockStack = new Stack<SimisBlock>();
+			while (!reader.EndOfStream) {
+				var token = reader.ReadToken();
+				var key = (blockStack.Count > 0 ? blockStack.Peek().Key + "." : "");
+				var name = "";
+				if ((reader.BNFState != null) && (reader.BNFState.State != null) && (reader.BNFState.State.Op is NamedReferenceOperator)) {
+					name = ((NamedReferenceOperator)reader.BNFState.State.Op).Name;
+				}
+				key += (token.Kind == SimisTokenKind.Block ? token.Type : name);
+
+				switch (token.Kind) {
+					case SimisTokenKind.Block:
+						var block = new SimisBlock(this, key, token.Type, token.String);
+						if (blockStack.Count == 0) {
+							Roots.Add(block);
+						} else {
+							blockStack.Peek().Nodes.Add(block);
+						}
+						blockStack.Push(block);
+						break;
+					case SimisTokenKind.BlockBegin:
+						break;
+					case SimisTokenKind.BlockEnd:
+						blockStack.Pop();
+						break;
+					case SimisTokenKind.String:
+						blockStack.Peek().Nodes.Add(new SimisBlockValueString(this, key, token.Type, name, token.String));
+						break;
+					case SimisTokenKind.Integer:
+						blockStack.Peek().Nodes.Add(new SimisBlockValueInteger(this, key, token.Type, name, token.Integer));
+						break;
+					case SimisTokenKind.Float:
+						blockStack.Peek().Nodes.Add(new SimisBlockValueFloat(this, key, token.Type, name, token.Float));
+						break;
+				}
+			}
+
+			// We need to do this AFTER reading the file, otherwise they'll not be correct.
+			StreamFormat = reader.StreamFormat;
+			StreamCompressed = reader.StreamCompressed;
+			SimisFormat = reader.SimisFormat;
+		}
+
 		public void WriteFile() {
 			try {
 				using (var fileStream = File.Create(Filename)) {
-					var writer = new SimisWriter(fileStream, SimisProvider, StreamFormat, StreamCompressed, SimisFormat);
-					foreach (var root in Roots) {
-						WriteBlock(writer, root);
-					}
+					WriteStream(fileStream);
 				}
 			} catch (Exception e) {
 				throw new FileException(Filename, e);
 			}
+		}
+
+		public void WriteStream(Stream stream) {
+			var writer = new SimisWriter(stream, SimisProvider, StreamFormat, StreamCompressed, SimisFormat);
+			foreach (var root in Roots) {
+				WriteBlock(writer, root);
+			}
+			writer.WriteEnd();
 		}
 
 		private void WriteBlock(SimisWriter writer, SimisBlock block) {
