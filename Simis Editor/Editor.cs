@@ -43,14 +43,12 @@ namespace SimisEditor
 
 		public Editor() {
 			InitializeComponent();
+			InitializeSimisProvider();
+			InitializeNewVersionCheck();
 			NewFile();
+		}
 
-			var resourcesDirectory = Application.ExecutablePath;
-			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
-			SimisProvider = new SimisProvider(resourcesDirectory);
-			var thread = new Thread(() => WaitForSimisProvider());
-			thread.Start();
-
+		private void InitializeNewVersionCheck() {
 			if (!Environment.GetCommandLineArgs().Contains("/noversioncheck")) {
 				var versionCheck = new CodePlexVersionCheck(Settings.Default.UpdateCheckCodePlexProjectUrl, Settings.Default.UpdateCheckCodePlexProjectName, Settings.Default.UpdateCheckCodePlexReleaseDate);
 				versionCheck.CheckComplete += new EventHandler((o, e) => this.Invoke((MethodInvoker)(() => {
@@ -59,10 +57,6 @@ namespace SimisEditor
 							var item = menuStrip.Items.Add("New Version: " + versionCheck.LatestVersionTitle);
 							item.Alignment = ToolStripItemAlignment.Right;
 							item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
-							//} else {
-							//    var item = menuStrip.Items.Add("Current Version: " + versionCheck.LatestVersionTitle);
-							//    item.Alignment = ToolStripItemAlignment.Right;
-							//    item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
 						}
 					} else {
 						var item = menuStrip.Items.Add("Error Checking for New Version");
@@ -74,19 +68,21 @@ namespace SimisEditor
 			}
 		}
 
+		private void InitializeSimisProvider() {
+			var resourcesDirectory = Application.ExecutablePath;
+			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
+			SimisProvider = new SimisProvider(resourcesDirectory);
+			var thread = new Thread(() => WaitForSimisProvider());
+			thread.Start();
+		}
+
 		private void WaitForSimisProvider() {
 			try {
 				SimisProvider.Join();
 			} catch (FileException ex) {
-				//using (var messages = new Messages()) {
-					//bnf.RegisterMessageSink(messages);
-					//messages.MessageAccept("Editor", BufferedMessageSource.LEVEL_CRITIAL, ex.ToString());
-					this.Invoke((MethodInvoker)(() => {
-						//messages.ShowDialog(this);
-						MessageBox.Show(ex.ToString(), "Load Resources - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-					}));
-					//bnf.UnregisterMessageSink(messages);
-				//}
+				this.Invoke((MethodInvoker)(() => {
+					MessageBox.Show(ex.ToString(), "Load Resources - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}));
 			}
 
 			this.Invoke((MethodInvoker)(() => UpdateFromSimisProvider()));
@@ -114,12 +110,6 @@ namespace SimisEditor
 			File = new SimisFile("", SimisProvider);
 			SelectNode(null);
 			SimisTree.Nodes.Clear();
-            var node = SimisTree.Nodes.Add("No file loaded.");
-            node.NodeFont = new Font(SimisTree.Font, FontStyle.Italic);
-			SimisTree.ExpandAll();
-			if (SimisTree.Nodes.Count > 0) {
-				SimisTree.TopNode = SimisTree.Nodes[0];
-			}
 			UpdateTitle();
 		}
 
@@ -213,6 +203,11 @@ namespace SimisEditor
 			return block.Type;
 		}
 
+		private static string BlockToNameOnlyString(SimisBlock block) {
+			if (block.Name.Length > 0) return block.Name;
+			return block.Type;
+		}
+
 		private static string BlockToValueString(SimisBlockValue block) {
 			if (block is SimisBlockValueString) {
 				return "\"" + block.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
@@ -228,21 +223,21 @@ namespace SimisEditor
 
 			// Just a single value child, easy.
 			if (block.Nodes.Count == 1) {
-				return BlockToNameString(block) + "=" + BlockToValueString((SimisBlockValue)block.Nodes[0]);
+				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisBlockValue)block.Nodes[0]);
 			}
 
-			// Multiple value children. Quite easy.
+			// Multiple value children, quite easy.
 			if (block.Nodes.Count > 1) {
 				var values = new List<string>();
 				foreach (var child in block.Nodes) {
-					values.Add(BlockToNameString(child) + "=" + BlockToValueString((SimisBlockValue)child));
+					values.Add(BlockToNameOnlyString(child) + "=" + BlockToValueString((SimisBlockValue)child));
 				}
 				return BlockToNameString(block) + " (" + String.Join(" ", values.ToArray()) + ")";
 			}
 
 			// No children.
 			if (block is SimisBlockValue) {
-				return BlockToNameString(block) + "=" + BlockToValueString((SimisBlockValue)block);
+				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisBlockValue)block);
 			}
 
 			return BlockToNameString(block);
