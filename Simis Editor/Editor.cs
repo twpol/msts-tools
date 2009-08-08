@@ -108,7 +108,7 @@ namespace SimisEditor
 			Filename = "";
 			File = new SimisFile("", SimisProvider);
 			SelectNode(null);
-			SimisTree.Nodes.Clear();
+			ResyncSimisNodes();
 			UpdateTitle();
 		}
 
@@ -125,10 +125,7 @@ namespace SimisEditor
 			Filename = filename;
 			File = newFile;
 			SelectNode(null);
-			SimisTree.Nodes.Clear();
-			foreach (var root in File.Roots) {
-				InsertSimisBlock(SimisTree.Nodes, root);
-			}
+			ResyncSimisNodes();
 			SimisTree.ExpandAll();
 			if (SimisTree.Nodes.Count > 0) {
 				SimisTree.TopNode = SimisTree.Nodes[0];
@@ -178,18 +175,84 @@ namespace SimisEditor
 			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
 		}
 
-		private void InsertSimisBlock(TreeNodeCollection treeNodes, SimisBlock block) {
-			var treeNode = treeNodes.Add(GetNodeText(block));
-			treeNode.ToolTipText = block.Key;
-			treeNode.Tag = block;
+		private void ResyncSimisNodes() {
+			Debug.WriteLine(File.Tree.Root.ToString());
+			ResyncSimisNodes(SimisTree.Nodes, File.Tree.Root.Children);
+		}
 
-			if (block.Nodes.Any<SimisBlock>(b => !(b is SimisBlockValue))) {
-				// If we have any non-value child blocks, add everything.
-				foreach (var child in block.Nodes) {
-					InsertSimisBlock(treeNode.Nodes, child);
+		private void ResyncSimisNodes(TreeNodeCollection viewTreeNodes, SimisTreeNode[] simisTreeNodes) {
+			var viewTreeNodeIndex = 0;
+			var simisTreeNodeIndex = 0;
+
+			while ((viewTreeNodeIndex < viewTreeNodes.Count) && (simisTreeNodeIndex < simisTreeNodes.Length)) {
+				if (viewTreeNodes[viewTreeNodeIndex].Tag == simisTreeNodes[simisTreeNodeIndex]) {
+					// This view node is the same simis node, so it is unchanged.
+					viewTreeNodeIndex++;
+					simisTreeNodeIndex++;
+					continue;
 				}
+
+				if (simisTreeNodes[simisTreeNodeIndex].EqualsByValue(viewTreeNodes[viewTreeNodeIndex].Tag)) {
+					viewTreeNodes[viewTreeNodeIndex].Text = GetNodeText(simisTreeNodes[simisTreeNodeIndex]);
+					viewTreeNodes[viewTreeNodeIndex].Tag = simisTreeNodes[simisTreeNodeIndex];
+					Debug.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Updated]");
+					ResyncSimisNodes(viewTreeNodes[viewTreeNodeIndex].Nodes, simisTreeNodes[simisTreeNodeIndex].Children);
+					viewTreeNodeIndex++;
+					simisTreeNodeIndex++;
+					continue;
+				}
+
+				// View node may have been deleted or had a node inserted before in simis tree.
+				for (var i = simisTreeNodeIndex + 1; i < simisTreeNodes.Length; i++) {
+					if (viewTreeNodes[viewTreeNodeIndex].Tag == simisTreeNodes[i]) {
+						// View node has had at least one node inserted before it in the simis tree.
+						for (var j = simisTreeNodeIndex; j < i; j++) {
+							var viewNode = viewTreeNodes.Insert(viewTreeNodeIndex++, GetNodeText(simisTreeNodes[j]));
+							viewNode.Tag = simisTreeNodes[j];
+							Debug.WriteLine(viewNode.FullPath + " [VN:Insert]");
+							ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[j].Children);
+						}
+						simisTreeNodeIndex = i;
+						continue;
+					}
+				}
+				// This view node wasn't found, remove it.
+				Debug.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Remove]");
+				viewTreeNodes.RemoveAt(viewTreeNodeIndex);
+			}
+
+			while (viewTreeNodeIndex < viewTreeNodes.Count) {
+				viewTreeNodes.RemoveAt(viewTreeNodeIndex);
+			}
+
+			while (simisTreeNodeIndex < simisTreeNodes.Length) {
+				var viewNode = viewTreeNodes.Add(GetNodeText(simisTreeNodes[simisTreeNodeIndex]));
+				viewNode.Tag = simisTreeNodes[simisTreeNodeIndex];
+				Debug.WriteLine(viewNode.FullPath + " [VN:Add]");
+				ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[simisTreeNodeIndex].Children);
+				simisTreeNodeIndex++;
 			}
 		}
+
+		private void ResyncSimisNodes(TreeNode viewTreeNode, SimisTreeNode simisTreeNode) {
+			viewTreeNode.Text = GetNodeText(simisTreeNode);
+			viewTreeNode.Nodes.Clear();
+			if (simisTreeNode.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
+				ResyncSimisNodes(viewTreeNode.Nodes, simisTreeNode.Children);
+			}
+		}
+
+		//private void InsertSimisBlock(TreeNodeCollection treeNodes, SimisTreeNode block) {
+		//    var treeNode = treeNodes.Add(GetNodeText(block));
+		//    treeNode.Tag = block;
+
+		//    if (block.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
+		//        // If we have any non-value child blocks, add everything.
+		//        foreach (var child in block.Children) {
+		//            InsertSimisBlock(treeNode.Nodes, child);
+		//        }
+		//    }
+		//}
 
         private void SelectNode(TreeNode treeNode) {
 			if ((treeNode == null) || (treeNode.Tag == null)) {
@@ -198,56 +261,56 @@ namespace SimisEditor
 				return;
 			}
 			SelectedNode = treeNode;
-			SimisProperties.SelectedObject = CreateEditObjectFor((SimisBlock)SelectedNode.Tag);
+			SimisProperties.SelectedObject = CreateEditObjectFor((SimisTreeNode)SelectedNode.Tag);
         }
 
-		private static string BlockToNameString(SimisBlock block) {
+		private static string BlockToNameString(SimisTreeNode block) {
 			if (block.Name.Length > 0) return block.Type + " \"" + block.Name + "\"";
 			return block.Type;
 		}
 
-		private static string BlockToNameOnlyString(SimisBlock block) {
+		private static string BlockToNameOnlyString(SimisTreeNode block) {
 			if (block.Name.Length > 0) return block.Name;
 			return block.Type;
 		}
 
-		private static string BlockToValueString(SimisBlockValue block) {
-			if (block is SimisBlockValueString) {
+		private static string BlockToValueString(SimisTreeNodeValue block) {
+			if (block is SimisTreeNodeValueString) {
 				return "\"" + block.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
 			}
 			return block.ToString();
 		}
 
-		private string GetNodeText(SimisBlock block) {
+		private string GetNodeText(SimisTreeNode block) {
 			// Non-trivial node, don't bother trying.
-			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) {
+			if (block.Children.Count<SimisTreeNode>(b => !(b is SimisTreeNodeValue)) > 0) {
 				return BlockToNameString(block);
 			}
 
 			// Just a single value child, easy.
-			if (block.Nodes.Count == 1) {
-				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisBlockValue)block.Nodes[0]);
+			if (block.Children.Length == 1) {
+				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisTreeNodeValue)block.Children[0]);
 			}
 
 			// Multiple value children, quite easy.
-			if (block.Nodes.Count > 1) {
+			if (block.Children.Length > 1) {
 				var values = new List<string>();
-				foreach (var child in block.Nodes) {
-					values.Add(BlockToNameOnlyString(child) + "=" + BlockToValueString((SimisBlockValue)child));
+				foreach (var child in block.Children) {
+					values.Add(BlockToNameOnlyString(child) + "=" + BlockToValueString((SimisTreeNodeValue)child));
 				}
 				return BlockToNameString(block) + " (" + String.Join(" ", values.ToArray()) + ")";
 			}
 
 			// No children.
-			if (block is SimisBlockValue) {
-				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisBlockValue)block);
+			if (block is SimisTreeNodeValue) {
+				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisTreeNodeValue)block);
 			}
 
 			return BlockToNameString(block);
 		}
 
-		private static object CreateEditObjectFor(SimisBlock block) {
-			if (block.Nodes.Count<SimisBlock>(b => !(b is SimisBlockValue)) > 0) return null;
+		private static object CreateEditObjectFor(SimisTreeNode block) {
+			if (block.Children.Count<SimisTreeNode>(b => !(b is SimisTreeNodeValue)) > 0) return null;
 
 			var dClassName = "block_" + block.Type.Replace(".", "_");
 
@@ -260,31 +323,31 @@ namespace SimisEditor
 			var dProperties = new List<CodeMemberProperty>();
 			var dBlockNames = new List<string>();
 			var dPropertyValues = new Dictionary<string, object>();
-			foreach (var child in block.Nodes) {
+			foreach (var child in block.Children) {
 				var dPropertyName = child.Name.Length > 0 ? child.Name : child.Type;
-				if (block.Nodes.Count<SimisBlock>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
+				if (block.Children.Count<SimisTreeNode>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
 					var index = 1;
 					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "_" + index))) index++;
 					dPropertyName += "_" + index;
 					dBlockNames.Add(dPropertyName);
 				}
-				if (block.Nodes.Count == 1) {
+				if (block.Children.Length == 1) {
 					dPropertyName = block.Type;
 				}
 
-				if (child is SimisBlockValue) {
+				if (child is SimisTreeNodeValue) {
 					// Store the SimisBlockValue in a way we can find later.
-					var dSimisProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName + "_SimisBlockValue", new CodeTypeReference(typeof(SimisBlockValue)));
+					var dSimisProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName + "_SimisTreeNodeValue", new CodeTypeReference(typeof(SimisTreeNodeValue)));
 					dSimisProperty.CustomAttributes.Add(new CodeAttributeDeclaration("BrowsableAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
-					dPropertyValues.Add(dSimisProperty.Name, (SimisBlockValue)child);
+					dPropertyValues.Add(dSimisProperty.Name, (SimisTreeNodeValue)child);
 				}
 
 				CodeTypeReference type;
-				if (child is SimisBlockValueInteger) {
+				if (child is SimisTreeNodeValueInteger) {
 					type = new CodeTypeReference(typeof(long));
-				} else if (child is SimisBlockValueFloat) {
+				} else if (child is SimisTreeNodeValueFloat) {
 					type = new CodeTypeReference(typeof(double));
-				} else if (child is SimisBlockValueString) {
+				} else if (child is SimisTreeNodeValueString) {
 					type = new CodeTypeReference(typeof(string));
 				} else {
 					// SetupDynamicTypesFor(doneTypes, dNamespace, child)
@@ -293,13 +356,13 @@ namespace SimisEditor
 				}
 
 				var dProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName, type);
-				if (child is SimisBlockValueString) {
+				if (child is SimisTreeNodeValueString) {
 					//dProperty.CustomAttributes.Add(new CodeAttributeDeclaration("Editor", new CodeAttributeArgument(new CodePrimitiveExpression("System.ComponentModel.Design.ArrayEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")), new CodeAttributeArgument(new CodeTypeOfExpression("UITypeEditor"))));
 					dProperty.CustomAttributes.Add(new CodeAttributeDeclaration("Editor", new CodeAttributeArgument(new CodePrimitiveExpression("System.ComponentModel.Design.MultilineStringEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")), new CodeAttributeArgument(new CodeTypeOfExpression("UITypeEditor"))));
 				}
 
-				if (child is SimisBlockValue) {
-					dPropertyValues.Add(dProperty.Name, ((SimisBlockValue)child).Value);
+				if (child is SimisTreeNodeValue) {
+					dPropertyValues.Add(dProperty.Name, ((SimisTreeNodeValue)child).Value);
 				}
 			}
 
@@ -426,19 +489,28 @@ namespace SimisEditor
 		private void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
 			if (SelectedNode == null) return;
 
-			var block = (SimisBlock)SelectedNode.Tag;
-			var child = (SimisBlockValue)SimisProperties.SelectedObject.GetType().GetProperty(e.ChangedItem.Label + "_SimisBlockValue").GetValue(SimisProperties.SelectedObject, null);
+			var node = SelectedNode;
+			var block = (SimisTreeNode)node.Tag;
+			var blockPath = new Stack<SimisTreeNode>();
+			while (node != null) {
+				blockPath.Push((SimisTreeNode)node.Tag);
+				node = node.Parent;
+			}
+			blockPath.Push(File.Tree.Root);
+
+			var child = (SimisTreeNodeValue)SimisProperties.SelectedObject.GetType().GetProperty(e.ChangedItem.Label + "_SimisTreeNodeValue").GetValue(SimisProperties.SelectedObject, null);
 			var value = e.ChangedItem.Value;
 
-			if (child is SimisBlockValueInteger) {
-				child.Value = (long)value;
-			} else if (child is SimisBlockValueFloat) {
-				child.Value = (double)value;
-			} else if (child is SimisBlockValueString) {
-				child.Value = (string)value;
+			if (child is SimisTreeNodeValueInteger) {
+				File.Tree.ReplaceChild(blockPath, new SimisTreeNodeValueInteger(child.Type, child.Name, (long)value), child);
+			} else if (child is SimisTreeNodeValueFloat) {
+				File.Tree.ReplaceChild(blockPath, new SimisTreeNodeValueFloat(child.Type, child.Name, (double)value), child);
+			} else if (child is SimisTreeNodeValueString) {
+				File.Tree.ReplaceChild(blockPath, new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child);
 			}
 
-			SelectedNode.Text = GetNodeText(block);
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
 		}
 
 		private void testToolStripMenuItem_Click(object sender, EventArgs e) {
