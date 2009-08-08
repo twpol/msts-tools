@@ -86,6 +86,7 @@
 			this.SimisTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
             treeNode5});
 			this.SimisTree.ShowNodeToolTips = true;
+			this.SimisTree.ShowRootLines = false;
 			this.SimisTree.Size = new System.Drawing.Size(484, 538);
 			this.SimisTree.TabIndex = 0;
 			this.SimisTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.SimisTree_AfterSelect);

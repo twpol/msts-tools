@@ -13,7 +13,7 @@ namespace JGR.IO.Parser
 	public class SimisFile
 	{
 		public string Filename { get; set; }
-		public List<SimisBlock> Roots;
+		public SimisTree Tree;
 		public SimisStreamFormat StreamFormat;
 		public bool StreamCompressed;
 		public string SimisFormat;
@@ -21,7 +21,7 @@ namespace JGR.IO.Parser
 
 		public SimisFile(string filename, SimisProvider provider) {
 			Filename = filename;
-			Roots = new List<SimisBlock>();
+			Tree = new SimisTree();
 			SimisProvider = provider;
 		}
 
@@ -38,40 +38,37 @@ namespace JGR.IO.Parser
 		public void ReadStream(Stream stream) {
 			var reader = new SimisReader(new BufferedInMemoryStream(stream), SimisProvider);
 
-			Roots = new List<SimisBlock>();
-			var blockStack = new Stack<SimisBlock>();
+			Tree = new SimisTree();
+			var blockStack = new List<SimisTreeNode>();
+			blockStack.Add(Tree.Root);
 			while (!reader.EndOfStream) {
 				var token = reader.ReadToken();
-				var key = (blockStack.Count > 0 ? blockStack.Peek().Key + "." : "");
+				//var key = (blockStack.Count > 0 ? blockStack.Peek().Key + "." : "");
 				var name = "";
 				if ((reader.BNFState != null) && (reader.BNFState.State != null) && (reader.BNFState.State.Op is NamedReferenceOperator)) {
 					name = ((NamedReferenceOperator)reader.BNFState.State.Op).Name;
 				}
-				key += (token.Kind == SimisTokenKind.Block ? token.Type : name);
+				//key += (token.Kind == SimisTokenKind.Block ? token.Type : name);
 
 				switch (token.Kind) {
 					case SimisTokenKind.Block:
-						var block = new SimisBlock(this, key, token.Type, token.String);
-						if (blockStack.Count == 0) {
-							Roots.Add(block);
-						} else {
-							blockStack.Peek().Nodes.Add(block);
-						}
-						blockStack.Push(block);
+						var block = new SimisTreeNode(token.Type, token.String);
+						blockStack = new List<SimisTreeNode>(Tree.AppendChild(blockStack, block));
+						blockStack.Add(block);
 						break;
 					case SimisTokenKind.BlockBegin:
 						break;
 					case SimisTokenKind.BlockEnd:
-						blockStack.Pop();
-						break;
-					case SimisTokenKind.String:
-						blockStack.Peek().Nodes.Add(new SimisBlockValueString(this, key, token.Type, name, token.String));
+						blockStack.RemoveAt(blockStack.Count - 1);
 						break;
 					case SimisTokenKind.Integer:
-						blockStack.Peek().Nodes.Add(new SimisBlockValueInteger(this, key, token.Type, name, token.Integer));
+						blockStack = new List<SimisTreeNode>(Tree.AppendChild(blockStack, new SimisTreeNodeValueInteger(token.Type, name, token.Integer)));
 						break;
 					case SimisTokenKind.Float:
-						blockStack.Peek().Nodes.Add(new SimisBlockValueFloat(this, key, token.Type, name, token.Float));
+						blockStack = new List<SimisTreeNode>(Tree.AppendChild(blockStack, new SimisTreeNodeValueFloat(token.Type, name, token.Float)));
+						break;
+					case SimisTokenKind.String:
+						blockStack = new List<SimisTreeNode>(Tree.AppendChild(blockStack, new SimisTreeNodeValueString(token.Type, name, token.String)));
 						break;
 				}
 			}
@@ -94,95 +91,27 @@ namespace JGR.IO.Parser
 
 		public void WriteStream(Stream stream) {
 			var writer = new SimisWriter(stream, SimisProvider, StreamFormat, StreamCompressed, SimisFormat);
-			foreach (var root in Roots) {
-				WriteBlock(writer, root);
+			foreach (var child in Tree.Root.Children) {
+				WriteBlock(writer, child);
 			}
 			writer.WriteEnd();
 		}
 
-		private void WriteBlock(SimisWriter writer, SimisBlock block) {
+		private void WriteBlock(SimisWriter writer, SimisTreeNode block) {
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, String = block.Name });
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
-			foreach (var child in block.Nodes) {
-				if (child is SimisBlockValueInteger) {
-					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Integer, Integer = (long)((SimisBlockValueInteger)child).Value });
-				} else if (child is SimisBlockValueFloat) {
-					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (double)((SimisBlockValueFloat)child).Value });
-				} else if (child is SimisBlockValueString) {
-					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.String, String = (string)((SimisBlockValueString)child).Value });
+			foreach (var child in block.Children) {
+				if (child is SimisTreeNodeValueInteger) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Integer, Integer = (long)((SimisTreeNodeValueInteger)child).Value });
+				} else if (child is SimisTreeNodeValueFloat) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (double)((SimisTreeNodeValueFloat)child).Value });
+				} else if (child is SimisTreeNodeValueString) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.String, String = (string)((SimisTreeNodeValueString)child).Value });
 				} else {
 					WriteBlock(writer, child);
 				}
 			}
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockEnd });
-		}
-	}
-
-	public class SimisBlock
-	{
-		public readonly SimisFile File;
-		public readonly string Key;
-		public string Type;
-		public string Name;
-		public readonly List<SimisBlock> Nodes;
-
-		public SimisBlock(SimisFile file, string key, string type, string name) {
-			File = file;
-			Key = key;
-			Type = type;
-			Name = name;
-			Nodes = new List<SimisBlock>();
-		}
-	}
-
-	public class SimisBlockValue : SimisBlock
-	{
-		protected object _value;
-		protected SimisBlockValue(SimisFile file, string key, string type, string name, object value)
-			: base(file, key, type, name) {
-			_value = value;
-		}
-
-		public object Value {
-			get {
-				return _value;
-			}
-			set {
-				_value = value;
-			}
-		}
-	}
-
-	public class SimisBlockValueInteger : SimisBlockValue
-	{
-		public SimisBlockValueInteger(SimisFile file, string key, string type, string name, long value)
-			: base(file, key, type, name, value) {
-		}
-
-		public override string ToString() {
-			return ((long)_value).ToString();
-		}
-	}
-
-	public class SimisBlockValueFloat : SimisBlockValue
-	{
-		public SimisBlockValueFloat(SimisFile file, string key, string type, string name, double value)
-			: base(file, key, type, name, value) {
-		}
-
-		public override string ToString() {
-			return ((double)_value).ToString("G6");
-		}
-	}
-
-	public class SimisBlockValueString : SimisBlockValue
-	{
-		public SimisBlockValueString(SimisFile file, string key, string type, string name, string value)
-			: base(file, key, type, name, value) {
-		}
-
-		public override string ToString() {
-			return (string)_value;
 		}
 	}
 }
