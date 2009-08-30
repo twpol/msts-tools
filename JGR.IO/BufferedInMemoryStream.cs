@@ -4,13 +4,20 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace JGR.IO
 {
+	/// <summary>
+	/// A <see cref="Stream"/> which buffers both reads and writes in memory (courtesy of <see cref="MemoryStream"/>).
+	/// <para>When reading, the length may be variable as it represents the amount buffered if the underlying stream does not report a length itself.
+	/// Otherwise, it should act normally; each read will only read from the underlying stream if necessary, all data is buffered sequentially, and seeking
+	/// will work within the already buffered length.</para>
+	/// <para>When writing, <see cref="Flush"/> is a no-op and <see cref="SetLength"/> is not implemented; otherwise, it should act normally; each write and
+	/// seek operate on the internal buffer. To actually flush the write out, you must call <see cref="RealFlush"/>; you can continue using the stream after
+	/// this, but bear in mind that <see cref="RealFlush"/> only ever writes out any given byte once: if you seek back and change it after a
+	/// <see cref="RealFlush"/>, the new values will never be written out.</para>
+	/// </summary>
 	public class BufferedInMemoryStream : Stream
 	{
 		private MemoryStream Memory;
@@ -22,6 +29,11 @@ namespace JGR.IO
 			Memory = new MemoryStream();
 			Base = stream;
 			if (Base.CanRead) ReadChunk(ChunkSize);
+		}
+
+		public override void Close() {
+			base.Close();
+			Base.Close();
 		}
 
 		private void ReadChunk(int chunk) {

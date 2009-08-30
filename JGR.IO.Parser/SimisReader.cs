@@ -16,7 +16,7 @@ namespace JGR.IO.Parser
 {
 	public class SimisReader //: BufferedMessageSource
 	{
-		protected Stream BaseStream { get; set; }
+		protected UnclosableStream BaseStream { get; set; }
 		protected SimisProvider SimisProvider { get; set; }
 		protected BinaryReader BinaryReader { get; set; }
 		public SimisStreamFormat StreamFormat { get; protected set; }
@@ -42,7 +42,7 @@ namespace JGR.IO.Parser
 		public SimisReader(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
 			if (!stream.CanRead) throw new InvalidDataException("Stream must support reading.");
 			if (!stream.CanSeek) throw new InvalidDataException("Stream must support seeking.");
-			BaseStream = stream;
+			BaseStream = new UnclosableStream(stream);
 			SimisProvider = provider;
 			BinaryReader = new BinaryReader(BaseStream, new ByteEncoding());
 			StreamFormat = format;
@@ -439,6 +439,7 @@ namespace JGR.IO.Parser
 				sr.ReadLine();
 				if (!(sr.CurrentEncoding is UTF8Encoding)) {
 					streamIsBinary = false;
+					BinaryReader.Close();
 					BinaryReader = new BinaryReader(BaseStream, sr.CurrentEncoding);
 					start += sr.CurrentEncoding.GetPreamble().Length;
 				}
@@ -477,7 +478,8 @@ namespace JGR.IO.Parser
 
 				// BinaryReader -> BufferedInMemoryStream -> DeflateStream -> BinaryReader -> BaseStream.
 				// The BufferedInMemoryStream is needed because DeflateStream only supports reading forwards - no seeking - and we'll potentially be jumping around.
-				BinaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(BinaryReader.BaseStream, CompressionMode.Decompress)), new ByteEncoding());
+				BinaryReader.Close();
+				BinaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(BaseStream, CompressionMode.Decompress)), new ByteEncoding());
 			} else {
 				PinReader();
 				var signature = String.Join("", BinaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray<string>());

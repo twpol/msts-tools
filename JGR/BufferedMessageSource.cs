@@ -10,6 +10,9 @@ using System.Text;
 
 namespace JGR
 {
+	/// <summary>
+	/// A single message to be reported through <see cref="BufferedMessageSource"/>.
+	/// </summary>
 	public class MessageItem
 	{
 		public readonly string Source;
@@ -23,6 +26,9 @@ namespace JGR
 		}
 	}
 
+	/// <summary>
+	/// A utility class for keepting track of how many messages have been read from a given <see cref="IMessageSink"/>.
+	/// </summary>
 	public class MessageSink
 	{
 		public readonly IMessageSink Sink;
@@ -34,6 +40,9 @@ namespace JGR
 		}
 	}
 
+	/// <summary>
+	/// A base class which can be used to get a simple, but useful, implementation of both <see cref="IMessageSource"/> and <see cref="IMessageSink"/>.
+	/// </summary>
 	public class BufferedMessageSource : IMessageSource, IMessageSink
 	{
 		public const byte LEVEL_DEBUG = 0;

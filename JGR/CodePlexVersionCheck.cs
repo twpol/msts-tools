@@ -15,6 +15,9 @@ using System.Xml.XPath;
 
 namespace JGR
 {
+	/// <summary>
+	/// Checks for CodePlex project releases newer than a given <see cref="DateTime"/>.
+	/// </summary>
 	public class CodePlexVersionCheck
 	{
 		Uri Feed;
@@ -26,6 +29,12 @@ namespace JGR
 		public Uri LatestVersionUri { get; protected set; }
 		public bool IsNewVersion { get; protected set; }
 
+		/// <summary>
+		/// Initializes the CodePlex check.
+		/// </summary>
+		/// <param name="projectName">The name of the CodePlex project, as used in the hostname of the CodePlex website.</param>
+		/// <param name="releaseName">The prefix of the releases to include, e.g. "Foo Editor" will match any release who's name starts "Foo Editor". An empty string will match all releases in the project.</param>
+		/// <param name="currentVersionReleaseDate">The data and time with which to compare.</param>
 		public CodePlexVersionCheck(string projectName, string releaseName, DateTime currentVersionReleaseDate) {
 			Feed = new Uri("http://" + projectName + ".codeplex.com/Project/ProjectRss.aspx?ProjectRSSFeed=" + Uri.EscapeDataString("codeplex://release/" + projectName), UriKind.Absolute);
 			ReleaseName = releaseName;
@@ -36,6 +45,9 @@ namespace JGR
 			IsNewVersion = false;
 		}
 
+		/// <summary>
+		/// Starts the check going in the background. <see cref="CheckComplete"/> will be called when the check is done.
+		/// </summary>
 		public void Check() {
 			var thread = new Thread(() => CheckThread());
 			thread.Start();

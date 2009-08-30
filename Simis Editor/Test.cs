@@ -11,6 +11,8 @@ using System.Threading;
 using System.Windows.Forms;
 using JGR;
 using JGR.IO.Parser;
+using JGR.IO;
+using System.Text;
 
 namespace SimisEditor
 {
@@ -96,17 +98,6 @@ namespace SimisEditor
 
 					// Second, write the file out into memory.
 					if (success) {
-						//if (newFile.StreamFormat == SimisStreamFormat.Text) {
-						//    try {
-						//        readStream = new MemoryStream();
-						//        newFile.WriteStream(readStream);
-						//        readStream.Seek(0, SeekOrigin.Begin);
-						//        newFile.ReadStream(readStream);
-						//    } catch (FileException ex) {
-						//        success = false;
-						//        messageLog.MessageAccept("RW", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
-						//    }
-						//}
 						try {
 							newFile.WriteStream(saveStream);
 						} catch (FileException ex) {
@@ -117,21 +108,27 @@ namespace SimisEditor
 
 					// Third, verify that the output is the same as the input.
 					if (success) {
-						if (readStream.Length != saveStream.Length) {
-							success = false;
-							messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.", file, readStream.Length, saveStream.Length));
-						} else {
-							readStream.Seek(0, SeekOrigin.Begin);
-							saveStream.Seek(0, SeekOrigin.Begin);
-							for (var i = 0; i < saveStream.Length; i++) {
-								var fileByte = readStream.ReadByte();
-								var saveByte = saveStream.ReadByte();
-								if (fileByte != saveByte) {
-									success = false;
-									messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile byte {1:N0} does not match: {2:X2} vs {3:X2}.", file, i, fileByte, saveByte));
-									break;
-								}
+						readStream.Seek(0, SeekOrigin.Begin);
+						saveStream.Seek(0, SeekOrigin.Begin);
+						var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+						var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+						while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
+							var oldPos = readReader.BaseStream.Position;
+							var fileChar = readReader.ReadChar();
+							var saveChar = saveReader.ReadChar();
+							if (fileChar != saveChar) {
+								success = false;
+								var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+								var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+								messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+								break;
 							}
+						}
+						if (success && (readReader.BaseStream.Length != saveReader.BaseStream.Length)) {
+							success = false;
+							var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+							var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+							messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
 						}
 					}
 					if (success) {

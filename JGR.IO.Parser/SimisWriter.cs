@@ -14,7 +14,7 @@ namespace JGR.IO.Parser
 {
 	class SimisWriter
 	{
-		protected Stream BaseStream { get; set; }
+		protected UnclosableStream BaseStream { get; set; }
 		protected SimisProvider SimisProvider { get; set; }
 		protected BinaryWriter BinaryWriter { get; set; }
 		public SimisStreamFormat StreamFormat { get; protected set; }
@@ -31,7 +31,7 @@ namespace JGR.IO.Parser
 		public SimisWriter(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
 			if (!stream.CanWrite) throw new InvalidDataException("Stream must support writing.");
 			if (!stream.CanSeek) throw new InvalidDataException("Stream must support seeking.");
-			BaseStream = stream;
+			BaseStream = new UnclosableStream(stream);
 			SimisProvider = provider;
 			BinaryWriter = new BinaryWriter(BaseStream, new ByteEncoding());
 			StreamFormat = format;
@@ -45,7 +45,7 @@ namespace JGR.IO.Parser
 			Debug.Assert(StreamFormat != SimisStreamFormat.Autodetect, "Cannot save a stream in Autodetect format - must be Binary or Text.");
 			//Debug.Assert(StreamCompressed == false, "Compressed streams are not currently supported.");
 
-			SafeTokenCharacters = ".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+			SafeTokenCharacters = "._!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		}
 
 		public void WriteToken(SimisToken token) {
@@ -98,7 +98,11 @@ namespace JGR.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						BinaryWriter.Write(token.Float.ToString("G6").ToCharArray());
+						if (token.Float.ToString("G6").IndexOf("E") >= 0) {
+							BinaryWriter.Write(token.Float.ToString("0.#####e000").ToCharArray());
+						} else {
+							BinaryWriter.Write(token.Float.ToString("G6").ToCharArray());
+						}
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -175,8 +179,19 @@ namespace JGR.IO.Parser
 				BinaryWriter.Write("\r\n".ToCharArray());
 			}
 			if (StreamCompressed) {
+				var uncompressedSize = BinaryWriter.BaseStream.Position;
 				((BufferedInMemoryStream)BinaryWriter.BaseStream).RealFlush();
+				BinaryWriter.Close();
+				if (StreamFormat == SimisStreamFormat.Text) {
+					BinaryWriter = new BinaryWriter(BaseStream, Encoding.Unicode);
+					BinaryWriter.Seek(8 + Encoding.Unicode.GetPreamble().Length, SeekOrigin.Begin);
+				} else {
+					BinaryWriter = new BinaryWriter(BaseStream, new ByteEncoding());
+					BinaryWriter.Seek(8, SeekOrigin.Begin);
+				}
+				BinaryWriter.Write((uint)uncompressedSize);
 			}
+			BinaryWriter.Close();
 		}
 
 		private void WriteHeader() {
@@ -187,6 +202,7 @@ namespace JGR.IO.Parser
 
 			if (StreamFormat == SimisStreamFormat.Text) {
 				BinaryWriter.Write(Encoding.Unicode.GetPreamble());
+				BinaryWriter.Close();
 				BinaryWriter = new BinaryWriter(BaseStream, Encoding.Unicode);
 			}
 
@@ -201,8 +217,8 @@ namespace JGR.IO.Parser
 				BinaryWriter.Write("@@@@".ToCharArray());
 				BinaryWriter.Write((byte)0x78);
 				BinaryWriter.Write((byte)0x9C);
-				var compressedStream = new DeflateStream(BaseStream, CompressionMode.Compress);
-				BinaryWriter = new BinaryWriter(new BufferedInMemoryStream(compressedStream), new ByteEncoding());
+				BinaryWriter.Close();
+				BinaryWriter = new BinaryWriter(new BufferedInMemoryStream(new DeflateStream(BaseStream, CompressionMode.Compress)), new ByteEncoding());
 			}
 
 			if (StreamFormat == SimisStreamFormat.Text) {

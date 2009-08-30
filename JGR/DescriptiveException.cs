@@ -7,6 +7,9 @@ using System;
 
 namespace JGR
 {
+	/// <summary>
+	/// A base class for exceptions which prefer an "e-mail quotting" nesting of messages. Useful for specially formatted, multi-line exception messages.
+	/// </summary>
 	public class DescriptiveException : Exception
 	{
 		public DescriptiveException(string message)

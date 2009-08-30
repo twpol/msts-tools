@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+﻿//------------------------------------------------------------------------------
+// JGR.IO library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System.Collections.Generic;
 using JGR.Grammar;
 
 namespace JGR.IO.Parser
