@@ -10,6 +10,9 @@ using System.Text;
 
 namespace JGR.IO
 {
+	/// <summary>
+	/// A basic encoding which maps bytes 0-255 to Unicode characters 0-255.
+	/// </summary>
 	public class ByteEncoding : Encoding
 	{
 		public ByteEncoding() {

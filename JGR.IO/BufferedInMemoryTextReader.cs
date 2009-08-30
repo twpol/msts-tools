@@ -11,6 +11,13 @@ using System.Text;
 
 namespace JGR.IO
 {
+	/// <summary>
+	/// A <see cref="TextReader"/> which buffers all the data in memory (as a string).
+	/// <para>This class should behave in all ways like a normal <see cref="TextReader"/>, but with speed improvements in cases where the same data is read
+	/// multiple times (e.g. calling <see cref="Peek"/> a lot without advancing the stream).</para>
+	/// <para>An additional advantage is that reads to the underlying reader are done in large chunks (currently 1K), which can improve read speed for file
+	/// accesses.</para>
+	/// </summary>
 	public class BufferedInMemoryTextReader : TextReader
 	{
 		private string Memory;

@@ -19,13 +19,19 @@ namespace JGR.IO.Parser
 			Root = new SimisTreeNode("", "");
 		}
 
+		[Conditional("DEBUG")]
+		protected void VerifyRoute(IEnumerable<SimisTreeNode> route, SimisTreeNode extra) {
+			VerifyRoute(route.Concat(new SimisTreeNode[] { extra }));
+		}
+
+		[Conditional("DEBUG")]
 		protected void VerifyRoute(IEnumerable<SimisTreeNode> route) {
-			if (route.Count() == 0) throw new InvalidDataException("Route is empty.");
-			if (route.First() != Root) throw new InvalidDataException("Node " + route.First() + " is not the root node. Route is invalid.");
+			Debug.Assert(route.Count() != 0, "Route is empty.");
+			Debug.Assert(route.First() == Root, "Node is not the root node. Route is invalid.");
 			SimisTreeNode last = null;
 			foreach (var node in route) {
 				if (null != last) {
-					if (!last.HasChild(node)) throw new InvalidDataException("Node " + node + " is not a child of " + last + ". Route is invalid.");
+					Debug.Assert(last.HasChild(node), "Node is not a child of previous node. Route is invalid.");
 				}
 				last = node;
 			}
@@ -43,31 +49,31 @@ namespace JGR.IO.Parser
 
 		public IEnumerable<SimisTreeNode> AppendChild(IEnumerable<SimisTreeNode> route, SimisTreeNode child) {
 			VerifyRoute(route);
-			Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [AppendChild] " + child.ToString());
+			//Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [AppendChild] " + child.ToString());
 			route = UpdateRoute(route, node => node.AppendChild(child));
 			Root = route.First();
 			return route;
 		}
 
 		public IEnumerable<SimisTreeNode> InsertChild(IEnumerable<SimisTreeNode> route, SimisTreeNode child, SimisTreeNode before) {
-			VerifyRoute(route.Concat(new SimisTreeNode[] { before }));
-			Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [InsertChild] " + child.ToString() + " [before] " + before.ToString());
+			VerifyRoute(route, before);
+			//Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [InsertChild] " + child.ToString() + " [before] " + before.ToString());
 			route = UpdateRoute(route, node => node.InsertChild(child, before));
 			Root = route.First();
 			return route;
 		}
 
 		public IEnumerable<SimisTreeNode> ReplaceChild(IEnumerable<SimisTreeNode> route, SimisTreeNode child, SimisTreeNode oldChild) {
-			VerifyRoute(route.Concat(new SimisTreeNode[] { oldChild }));
-			Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [ReplaceChild] " + child.ToString() + " [from] " + oldChild.ToString());
+			VerifyRoute(route, oldChild);
+			//Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [ReplaceChild] " + child.ToString() + " [from] " + oldChild.ToString());
 			route = UpdateRoute(route, node => node.ReplaceChild(child, oldChild));
 			Root = route.First();
 			return route;
 		}
 
 		public IEnumerable<SimisTreeNode> RemoveChild(IEnumerable<SimisTreeNode> route, SimisTreeNode child) {
-			VerifyRoute(route.Concat(new SimisTreeNode[] { child }));
-			Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [RemoveChild] " + child.ToString());
+			VerifyRoute(route, child);
+			//Debug.WriteLine(String.Join("\\", route.Select<SimisTreeNode, string>(n => n.Type).ToArray()) + " [RemoveChild] " + child.ToString());
 			route = UpdateRoute(route, node => node.RemoveChild(child));
 			Root = route.First();
 			return route;
@@ -79,6 +85,7 @@ namespace JGR.IO.Parser
 		public readonly string Type;
 		public readonly string Name;
 		public readonly SimisTreeNode[] Children;
+
 		private static int GlobalCounter;
 		protected int Counter;
 
@@ -99,7 +106,7 @@ namespace JGR.IO.Parser
 
 		public bool EqualsByValue(object obj) {
 			if ((obj == null) || (GetType() != obj.GetType())) return false;
-			var stn = (SimisTreeNode)obj;
+			var stn = obj as SimisTreeNode;
 			return (Type == stn.Type) && (Name == stn.Name);
 		}
 
@@ -168,7 +175,7 @@ namespace JGR.IO.Parser
 
 	public class SimisTreeNodeValue : SimisTreeNode
 	{
-		protected object _value;
+		protected readonly object _value;
 		protected SimisTreeNodeValue(string type, string name, object value)
 			: base(type, name) {
 			_value = value;

@@ -4,14 +4,11 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace JGR
 {
 	/// <summary>
-	/// Represents errors that occur during application processing of a specific file.
+	/// An exception which has occured during application processing of a specific file.
 	/// </summary>
 	/// <remarks>
 	/// <para>This class requires a filename to be provided when throwing; the filename is prepended to the provided message in a user-readable manner.</para>
