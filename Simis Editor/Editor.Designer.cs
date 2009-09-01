@@ -99,7 +99,7 @@
             this.helpToolStripMenuItem});
 			this.menuStrip.Location = new System.Drawing.Point(0, 0);
 			this.menuStrip.Name = "menuStrip";
-			this.menuStrip.Padding = new System.Windows.Forms.Padding(2);
+			this.menuStrip.Padding = new System.Windows.Forms.Padding(0, 0, 0, 1);
 			this.menuStrip.Size = new System.Drawing.Size(784, 24);
 			this.menuStrip.TabIndex = 1;
 			this.menuStrip.Text = "menuStrip1";
@@ -114,7 +114,7 @@
             this.toolStripMenuItem1,
             this.exitToolStripMenuItem});
 			this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-			this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+			this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 23);
 			this.fileToolStripMenuItem.Text = "&File";
 			// 
 			// newToolStripMenuItem
@@ -172,7 +172,7 @@
             this.pasteToolStripMenuItem,
             this.deleteToolStripMenuItem});
 			this.editToolStripMenuItem.Name = "editToolStripMenuItem";
-			this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
+			this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 23);
 			this.editToolStripMenuItem.Text = "&Edit";
 			// 
 			// undoToolStripMenuItem
@@ -238,7 +238,7 @@
             this.toolStripMenuItem4,
             this.testToolStripMenuItem});
 			this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-			this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
+			this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
 			this.helpToolStripMenuItem.Text = "&Help";
 			// 
 			// homepageToolStripMenuItem

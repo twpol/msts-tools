@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using JGR;
+using JGR.GUI;
 using JGR.IO.Parser;
 using Microsoft.CSharp;
 using SimisEditor.Properties;
@@ -42,6 +43,7 @@ namespace SimisEditor
 
 		public Editor() {
 			InitializeComponent();
+			ToolStripManager.Renderer = new ToolStripNativeRenderer();
 			InitializeSimisProvider();
 			InitializeNewVersionCheck();
 			NewFile();

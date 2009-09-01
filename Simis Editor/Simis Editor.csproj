@@ -121,6 +121,10 @@
       <Project>{2C591A6F-D05C-41F7-AE04-CFFD179AB641}</Project>
       <Name>JGR.Grammar</Name>
     </ProjectReference>
+    <ProjectReference Include="..\JGR.GUI\JGR.GUI.csproj">
+      <Project>{CE8C7450-8044-4158-8F93-CAD730CB2946}</Project>
+      <Name>JGR.GUI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\JGR.IO.Parser\JGR.IO.Parser.csproj">
       <Project>{C0430CE2-1634-4E34-9170-5CF954E00965}</Project>
       <Name>JGR.IO.Parser</Name>
