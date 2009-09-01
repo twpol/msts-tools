@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR.IO.Parser", "JGR.IO.Par
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR.Grammar", "JGR.Grammar\JGR.Grammar.csproj", "{2C591A6F-D05C-41F7-AE04-CFFD179AB641}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Normalize", "Normalize\Normalize.csproj", "{E2F042A3-83CC-401E-AA66-582809C0DFE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR.GUI", "JGR.GUI\JGR.GUI.csproj", "{CE8C7450-8044-4158-8F93-CAD730CB2946}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +41,14 @@ Global
 		{2C591A6F-D05C-41F7-AE04-CFFD179AB641}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C591A6F-D05C-41F7-AE04-CFFD179AB641}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C591A6F-D05C-41F7-AE04-CFFD179AB641}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2F042A3-83CC-401E-AA66-582809C0DFE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2F042A3-83CC-401E-AA66-582809C0DFE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2F042A3-83CC-401E-AA66-582809C0DFE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2F042A3-83CC-401E-AA66-582809C0DFE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
