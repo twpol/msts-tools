@@ -50,7 +50,7 @@ namespace SimisEditor
 		}
 
 		private void InitializeNewVersionCheck() {
-			if (Environment.GetCommandLineArgs().Contains("/noversioncheck") || ((Settings.Default.UpdateCheckLastTime != null) && (Settings.Default.UpdateCheckLastTime >= DateTime.Today))) {
+			if (Environment.GetCommandLineArgs().Contains("/noversioncheck") || (Settings.Default.UpdateCheckLastTime >= DateTime.Today)) {
 				return;
 			}
 
