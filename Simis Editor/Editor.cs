@@ -545,5 +545,28 @@ namespace SimisEditor
 		private void issueTrackerToolStripMenuItem_Click(object sender, EventArgs e) {
 			Process.Start(Settings.Default.AboutIssuesUrl);
 		}
+
+		private void Editor_DragEnter(object sender, DragEventArgs e) {
+			e.Effect = DragDropEffects.None;
+			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
+				return;
+			}
+			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			if (files.Length != 1) {
+				return;
+			}
+			if (!SimisProvider.Formats.Any<SimisFormat>((f) => files[0].EndsWith("." + f.Extension))) {
+				return;
+			}
+			e.Effect = DragDropEffects.Copy;
+		}
+
+		private void Editor_DragDrop(object sender, DragEventArgs e) {
+			if (!SaveFileIfModified()) {
+				return;
+			}
+			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			OpenFile(files[0]);
+		}
 	}
 }
