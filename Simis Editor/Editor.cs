@@ -50,23 +50,28 @@ namespace SimisEditor
 		}
 
 		private void InitializeNewVersionCheck() {
-			if (!Environment.GetCommandLineArgs().Contains("/noversioncheck")) {
-				var versionCheck = new CodePlexVersionCheck(Settings.Default.UpdateCheckCodePlexProjectUrl, Settings.Default.UpdateCheckCodePlexProjectName, Settings.Default.UpdateCheckCodePlexReleaseDate);
-				versionCheck.CheckComplete += new EventHandler((o, e) => this.Invoke((MethodInvoker)(() => {
-					if (versionCheck.HasLatestVersion) {
-						if (versionCheck.IsNewVersion) {
-							var item = menuStrip.Items.Add("New Version: " + versionCheck.LatestVersionTitle);
-							item.Alignment = ToolStripItemAlignment.Right;
-							item.Click += new EventHandler((o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri));
-						}
-					} else {
-						var item = menuStrip.Items.Add("Error Checking for New Version");
-						item.Alignment = ToolStripItemAlignment.Right;
-						item.Click += new EventHandler((o2, e2) => Process.Start(Settings.Default.AboutUpdatesUrl));
-					}
-				})));
-				versionCheck.Check();
+			if (Environment.GetCommandLineArgs().Contains("/noversioncheck") || ((Settings.Default.UpdateCheckLastTime != null) && (Settings.Default.UpdateCheckLastTime >= DateTime.Today))) {
+				return;
 			}
+
+			Settings.Default.UpdateCheckLastTime = DateTime.Today;
+			Settings.Default.Save();
+
+			var versionCheck = new CodePlexVersionCheck(Settings.Default.UpdateCheckCodePlexProjectUrl, Settings.Default.UpdateCheckCodePlexProjectName, Settings.Default.UpdateCheckCodePlexReleaseDate);
+			versionCheck.CheckComplete += (o, e) => this.Invoke((MethodInvoker)(() => {
+				if (versionCheck.HasLatestVersion) {
+					if (versionCheck.IsNewVersion) {
+						var item = menuStrip.Items.Add("New Version: " + versionCheck.LatestVersionTitle);
+						item.Alignment = ToolStripItemAlignment.Right;
+						item.Click += (o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri);
+					}
+				} else {
+					var item = menuStrip.Items.Add("Error Checking for New Version");
+					item.Alignment = ToolStripItemAlignment.Right;
+					item.Click += (o2, e2) => Process.Start(Settings.Default.AboutUpdatesUrl);
+				}
+			}));
+			versionCheck.Check();
 		}
 
 		private void InitializeSimisProvider() {

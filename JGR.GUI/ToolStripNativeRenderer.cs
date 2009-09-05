@@ -18,7 +18,6 @@ namespace JGR.GUI
 			}
 		}
 
-
 		protected override void OnRenderImageMargin(ToolStripRenderEventArgs e) {
 			var rect = e.ToolStrip.ClientRectangle;
 			rect.Width = e.ToolStrip.Width - e.ToolStrip.DisplayRectangle.Width - 2;
