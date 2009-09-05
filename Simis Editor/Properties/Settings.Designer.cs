@@ -85,5 +85,16 @@ namespace SimisEditor.Properties {
                 return ((string)(this["AboutDiscussionsUrl"]));
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.DateTime UpdateCheckLastTime {
+            get {
+                return ((global::System.DateTime)(this["UpdateCheckLastTime"]));
+            }
+            set {
+                this["UpdateCheckLastTime"] = value;
+            }
+        }
     }
 }
