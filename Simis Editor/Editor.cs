@@ -191,6 +191,10 @@ namespace SimisEditor
 			var viewTreeNodeIndex = 0;
 			var simisTreeNodeIndex = 0;
 
+			if (simisTreeNodes.All<SimisTreeNode>(n => n is SimisTreeNodeValue)) {
+				simisTreeNodes = new SimisTreeNode[] { };
+			}
+
 			while ((viewTreeNodeIndex < viewTreeNodes.Count) && (simisTreeNodeIndex < simisTreeNodes.Length)) {
 				if (viewTreeNodes[viewTreeNodeIndex].Tag == simisTreeNodes[simisTreeNodeIndex]) {
 					// This view node is the same simis node, so it is unchanged.
@@ -317,7 +321,7 @@ namespace SimisEditor
 		}
 
 		private static object CreateEditObjectFor(SimisTreeNode block) {
-			if (block.Children.Count<SimisTreeNode>(b => !(b is SimisTreeNodeValue)) > 0) return null;
+			if (block.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) return null;
 
 			var dClassName = "block_" + block.Type.Replace(".", "_");
 
@@ -325,13 +329,15 @@ namespace SimisEditor
 			var dConstructor = new CodeConstructor();
 			dConstructor.Attributes = MemberAttributes.Public;
 
-			// Go through the Simis data to find suitable things for editing.
+			// Storage and action for adding a property to our class. Converts
+			// a single SimisTreeNode into a single property, with correct
+			// naming and typing.
 			var dFields = new List<CodeMemberField>();
 			var dProperties = new List<CodeMemberProperty>();
 			var dBlockNames = new List<string>();
 			var dPropertyValues = new Dictionary<string, object>();
-			foreach (var child in block.Children) {
-				var dPropertyName = child.Name.Length > 0 ? child.Name : child.Type;
+			Action<SimisTreeNode> AddPropertyFor = (node) => {
+				var dPropertyName = node.Name.Length > 0 ? node.Name : node.Type;
 				if (block.Children.Count<SimisTreeNode>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
 					var index = 1;
 					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "_" + index))) index++;
@@ -342,34 +348,41 @@ namespace SimisEditor
 					dPropertyName = block.Type;
 				}
 
-				if (child is SimisTreeNodeValue) {
+				if (node is SimisTreeNodeValue) {
 					// Store the SimisBlockValue in a way we can find later.
 					var dSimisProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName + "_SimisTreeNodeValue", new CodeTypeReference(typeof(SimisTreeNodeValue)));
 					dSimisProperty.CustomAttributes.Add(new CodeAttributeDeclaration("BrowsableAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
-					dPropertyValues.Add(dSimisProperty.Name, (SimisTreeNodeValue)child);
+					dPropertyValues.Add(dSimisProperty.Name, (SimisTreeNodeValue)node);
 				}
 
 				CodeTypeReference type;
-				if (child is SimisTreeNodeValueInteger) {
+				if (node is SimisTreeNodeValueInteger) {
 					type = new CodeTypeReference(typeof(long));
-				} else if (child is SimisTreeNodeValueFloat) {
+				} else if (node is SimisTreeNodeValueFloat) {
 					type = new CodeTypeReference(typeof(double));
-				} else if (child is SimisTreeNodeValueString) {
+				} else if (node is SimisTreeNodeValueString) {
 					type = new CodeTypeReference(typeof(string));
 				} else {
-					// SetupDynamicTypesFor(doneTypes, dNamespace, child)
-					//type = new CodeTypeReference(typeof(string));
-					continue;
+					return;
 				}
 
 				var dProperty = CreateEditObjectFor_AddProperty(dFields, dProperties, dPropertyName, type);
-				if (child is SimisTreeNodeValueString) {
+				if (node is SimisTreeNodeValueString) {
 					//dProperty.CustomAttributes.Add(new CodeAttributeDeclaration("Editor", new CodeAttributeArgument(new CodePrimitiveExpression("System.ComponentModel.Design.ArrayEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")), new CodeAttributeArgument(new CodeTypeOfExpression("UITypeEditor"))));
 					dProperty.CustomAttributes.Add(new CodeAttributeDeclaration("Editor", new CodeAttributeArgument(new CodePrimitiveExpression("System.ComponentModel.Design.MultilineStringEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")), new CodeAttributeArgument(new CodeTypeOfExpression("UITypeEditor"))));
 				}
 
-				if (child is SimisTreeNodeValue) {
-					dPropertyValues.Add(dProperty.Name, ((SimisTreeNodeValue)child).Value);
+				if (node is SimisTreeNodeValue) {
+					dPropertyValues.Add(dProperty.Name, ((SimisTreeNodeValue)node).Value);
+				}
+			};
+
+			// Go through the Simis data to find suitable things for editing.
+			if (block is SimisTreeNodeValue) {
+				AddPropertyFor(block);
+			} else {
+				foreach (var child in block.Children) {
+					AddPropertyFor(child);
 				}
 			}
 
