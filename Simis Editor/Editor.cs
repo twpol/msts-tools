@@ -46,11 +46,11 @@ namespace SimisEditor
 			ToolStripManager.Renderer = new ToolStripNativeRenderer();
 			InitializeSimisProvider();
 			InitializeNewVersionCheck();
-			NewFile();
+			InitializeFromCommandLine();
 		}
 
 		private void InitializeNewVersionCheck() {
-			if (Environment.GetCommandLineArgs().Contains("/noversioncheck") || (Settings.Default.UpdateCheckLastTime >= DateTime.Today)) {
+			if (Environment.GetCommandLineArgs().Contains("/noversioncheck") || Environment.GetCommandLineArgs().Contains("-noversioncheck") || (Settings.Default.UpdateCheckLastTime >= DateTime.Today)) {
 				return;
 			}
 
@@ -108,6 +108,17 @@ namespace SimisEditor
 
 			var streamFormats = new string[] { "Text", "Binary", "Compressed Binary" };
 			saveFileDialog.Filter = String.Join("|", streamFormats.Select<string, string>(s => s + " " + generalName + "|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
+		}
+
+		private void InitializeFromCommandLine() {
+			this.Shown += (o, e) => {
+				NewFile();
+				foreach (var argument in Environment.GetCommandLineArgs().Where<string>((s, i) => i > 0)) {
+					if (argument.StartsWith("/") || argument.StartsWith("-")) continue;
+					OpenFile(argument);
+					break;
+				}
+			};
 		}
 
 		private void NewFile() {
