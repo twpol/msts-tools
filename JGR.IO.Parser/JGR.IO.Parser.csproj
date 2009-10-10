@@ -8,7 +8,7 @@
     <ProjectGuid>{C0430CE2-1634-4E34-9170-5CF954E00965}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>JGR.IO.Parser</RootNamespace>
+    <RootNamespace>Jgr.IO.Parser</RootNamespace>
     <AssemblyName>JGR.IO.Parser</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

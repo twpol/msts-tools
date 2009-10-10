@@ -10,23 +10,22 @@ using System.Linq;
 using System.Text;
 using System.IO.Compression;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	class SimisWriter
 	{
-		protected UnclosableStream BaseStream { get; set; }
-		protected SimisProvider SimisProvider { get; set; }
-		protected BinaryWriter BinaryWriter { get; set; }
-		public SimisStreamFormat StreamFormat { get; protected set; }
-		public bool StreamCompressed { get; protected set; }
-		public string SimisFormat { get; protected set; }
-		protected bool DoneHeader { get; set; }
-		protected int TextIndent { get; set; }
-		protected bool TextBlocked { get; set; }
-		protected bool TextBlockEmpty { get; set; }
-		protected Stack<long> BlockStarts { get; set; }
-
-		protected readonly string SafeTokenCharacters;
+		public SimisStreamFormat StreamFormat { get; private set; }
+		public bool StreamCompressed { get; private set; }
+		public string SimisFormat { get; private set; }
+		UnclosableStream BaseStream;
+		SimisProvider SimisProvider;
+		BinaryWriter BinaryWriter;
+		bool DoneHeader;
+		int TextIndent;
+		bool TextBlocked;
+		bool TextBlockEmpty;
+		Stack<long> BlockStarts;
+		static readonly string SafeTokenCharacters = "._!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		public SimisWriter(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
 			if (!stream.CanWrite) throw new InvalidDataException("Stream must support writing.");
@@ -42,10 +41,7 @@ namespace JGR.IO.Parser
 			TextBlocked = true;
 			TextBlockEmpty = false;
 			BlockStarts = new Stack<long>();
-			Debug.Assert(StreamFormat != SimisStreamFormat.Autodetect, "Cannot save a stream in Autodetect format - must be Binary or Text.");
-			//Debug.Assert(StreamCompressed == false, "Compressed streams are not currently supported.");
-
-			SafeTokenCharacters = "._!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+			Debug.Assert(StreamFormat != SimisStreamFormat.AutoDetect, "Cannot save a stream in Autodetect format - must be Binary or Text.");
 		}
 
 		public void WriteToken(SimisToken token) {
@@ -194,7 +190,7 @@ namespace JGR.IO.Parser
 			BinaryWriter.Close();
 		}
 
-		private void WriteHeader() {
+		void WriteHeader() {
 			// We support:
 			//   Text (uncompressed)   ==> UTF16LE text
 			//   Binary (uncompressed) ==> binary

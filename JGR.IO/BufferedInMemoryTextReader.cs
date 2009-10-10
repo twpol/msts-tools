@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace JGR.IO
+namespace Jgr.IO
 {
 	/// <summary>
 	/// A <see cref="TextReader"/> which buffers all the data in memory (as a string).
@@ -20,21 +20,20 @@ namespace JGR.IO
 	/// </summary>
 	public class BufferedInMemoryTextReader : TextReader
 	{
-		private string Memory;
-		private long MemoryPosition;
-		private TextReader Incomming;
-		private const int ChunkSize = 1024;
+		string Memory;
+		long MemoryPosition;
+		TextReader Incomming;
+		const int ChunkSize = 1024;
 
 		public BufferedInMemoryTextReader(TextReader reader) {
 			Memory = "";
-			MemoryPosition = 0;
 			Incomming = reader;
 			ReadChunk(ChunkSize);
 		}
 
-		private void ReadChunk(int chunk) {
+		void ReadChunk(int chunk) {
 			var buffer = new char[chunk];
-			var chars = Incomming.Read(buffer, 0, chunk);
+			Incomming.Read(buffer, 0, chunk);
 			Memory += new String(buffer);
 		}
 

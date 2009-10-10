@@ -9,23 +9,23 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class SimisTree
 	{
-		public SimisTreeNode Root { get; protected set; }
+		public SimisTreeNode Root { get; private set; }
 
 		public SimisTree() {
 			Root = new SimisTreeNode("", "");
 		}
 
 		[Conditional("DEBUG")]
-		protected void VerifyRoute(IEnumerable<SimisTreeNode> route, SimisTreeNode extra) {
+		void VerifyRoute(IEnumerable<SimisTreeNode> route, SimisTreeNode extra) {
 			VerifyRoute(route.Concat(new SimisTreeNode[] { extra }));
 		}
 
 		[Conditional("DEBUG")]
-		protected void VerifyRoute(IEnumerable<SimisTreeNode> route) {
+		void VerifyRoute(IEnumerable<SimisTreeNode> route) {
 			Debug.Assert(route.Count() != 0, "Route is empty.");
 			Debug.Assert(route.First() == Root, "Node is not the root node. Route is invalid.");
 			SimisTreeNode last = null;
@@ -37,7 +37,7 @@ namespace JGR.IO.Parser
 			}
 		}
 
-		private IEnumerable<SimisTreeNode> UpdateRoute(IEnumerable<SimisTreeNode> route, Func<SimisTreeNode, SimisTreeNode> update) {
+		IEnumerable<SimisTreeNode> UpdateRoute(IEnumerable<SimisTreeNode> route, Func<SimisTreeNode, SimisTreeNode> update) {
 			var newRoute = route.ToArray();
 			var oldRoute = route.ToArray();
 			newRoute[newRoute.Length - 1] = update(newRoute[newRoute.Length - 1]);
@@ -82,18 +82,17 @@ namespace JGR.IO.Parser
 
 	public class SimisTreeNode
 	{
-		public readonly string Type;
-		public readonly string Name;
-		public readonly SimisTreeNode[] Children;
-
-		private static int GlobalCounter;
-		protected int Counter;
+		public string Type { get; private set; }
+		public string Name { get; private set; }
+		public SimisTreeNode[] Children { get; private set; }
+		int Counter;
+		static int GlobalCounter;
 
 		public SimisTreeNode(string type, string name)
 			: this(type, name, new SimisTreeNode[] { }) {
 		}
 
-		protected SimisTreeNode(string type, string name, SimisTreeNode[] children) {
+		SimisTreeNode(string type, string name, SimisTreeNode[] children) {
 			Type = type;
 			Name = name;
 			Children = children;
@@ -110,7 +109,7 @@ namespace JGR.IO.Parser
 			return (Type == stn.Type) && (Name == stn.Name);
 		}
 
-		protected int FindChildIndex(SimisTreeNode child) {
+		int FindChildIndex(SimisTreeNode child) {
 			for (var i = 0; i < Children.Length; i++) {
 				if (Children[i] == child) return i;
 			}
@@ -175,16 +174,11 @@ namespace JGR.IO.Parser
 
 	public class SimisTreeNodeValue : SimisTreeNode
 	{
-		protected readonly object _value;
+		public object Value { get; private set; }
+
 		protected SimisTreeNodeValue(string type, string name, object value)
 			: base(type, name) {
-			_value = value;
-		}
-
-		public object Value {
-			get {
-				return _value;
-			}
+			Value = value;
 		}
 	}
 
@@ -195,7 +189,7 @@ namespace JGR.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((long)_value).ToString();
+			return ((long)Value).ToString();
 		}
 	}
 
@@ -206,7 +200,7 @@ namespace JGR.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((double)_value).ToString("G6");
+			return ((double)Value).ToString("G6");
 		}
 	}
 
@@ -217,7 +211,7 @@ namespace JGR.IO.Parser
 		}
 
 		public override string ToString() {
-			return (string)_value;
+			return (string)Value;
 		}
 	}
 }

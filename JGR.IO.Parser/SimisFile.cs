@@ -6,32 +6,32 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using JGR.Grammar;
+using Jgr.Grammar;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class SimisFile
 	{
-		public string Filename { get; set; }
-		public SimisTree Tree;
-		public SimisStreamFormat StreamFormat;
-		public bool StreamCompressed;
-		public string SimisFormat;
-		protected SimisProvider SimisProvider;
+		public string FileName { get; set; }
+		public SimisStreamFormat StreamFormat { get; set; }
+		public bool StreamCompressed { get; set; }
+		public string SimisFormat { get; private set; }
+		public SimisTree Tree { get; private set; }
+		SimisProvider SimisProvider;
 
-		public SimisFile(string filename, SimisProvider provider) {
-			Filename = filename;
+		public SimisFile(string fileName, SimisProvider provider) {
+			FileName = fileName;
 			Tree = new SimisTree();
 			SimisProvider = provider;
 		}
 
 		public void ReadFile() {
 			try {
-				using (var fileStream = File.OpenRead(Filename)) {
+				using (var fileStream = File.OpenRead(FileName)) {
 					ReadStream(fileStream);
 				}
 			} catch (ReaderException e) {
-				throw new FileException(Filename, e);
+				throw new FileException(FileName, e);
 			}
 		}
 
@@ -45,8 +45,8 @@ namespace JGR.IO.Parser
 				var token = reader.ReadToken();
 				//var key = (blockStack.Count > 0 ? blockStack.Peek().Key + "." : "");
 				var name = "";
-				if ((reader.BNFState != null) && (reader.BNFState.State != null) && (reader.BNFState.State.Op is NamedReferenceOperator)) {
-					name = ((NamedReferenceOperator)reader.BNFState.State.Op).Name;
+				if ((reader.BnfState != null) && (reader.BnfState.State != null) && (reader.BnfState.State.Op is NamedReferenceOperator)) {
+					name = ((NamedReferenceOperator)reader.BnfState.State.Op).Name;
 				}
 				//key += (token.Kind == SimisTokenKind.Block ? token.Type : name);
 
@@ -81,11 +81,11 @@ namespace JGR.IO.Parser
 
 		public void WriteFile() {
 			try {
-				using (var fileStream = File.Create(Filename)) {
+				using (var fileStream = File.Create(FileName)) {
 					WriteStream(fileStream);
 				}
 			} catch (Exception e) {
-				throw new FileException(Filename, e);
+				throw new FileException(FileName, e);
 			}
 		}
 
@@ -97,7 +97,7 @@ namespace JGR.IO.Parser
 			writer.WriteEnd();
 		}
 
-		private void WriteBlock(SimisWriter writer, SimisTreeNode block) {
+		void WriteBlock(SimisWriter writer, SimisTreeNode block) {
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, String = block.Name });
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
 			foreach (var child in block.Children) {

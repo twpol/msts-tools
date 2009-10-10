@@ -9,9 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
-using JGR;
-using JGR.IO.Parser;
-using JGR.IO;
+using Jgr;
+using Jgr.IO.Parser;
+using Jgr.IO;
 using System.Text;
 
 namespace SimisEditor
@@ -22,12 +22,10 @@ namespace SimisEditor
 			InitializeComponent();
 		}
 
-		protected SimisProvider SimisProvider;
-
-		protected List<string> Extensions;
-		protected List<string> Files;
-
-		protected Thread BackgroundThread = null;
+		SimisProvider SimisProvider;
+		List<string> Extensions;
+		List<string> Files;
+		Thread BackgroundThread = null;
 
 		public void SetupTest(string path, SimisProvider provider) {
 			TestPath.Text = path;
@@ -40,7 +38,7 @@ namespace SimisEditor
 			FindFilesToTest();
 		}
 
-		private void FindFilesToTest() {
+		void FindFilesToTest() {
 			var path = TestPath.Text;
 			TestFileStatus.Text = "Scanning for files...";
 			BackgroundThread = new Thread(() => {
@@ -54,7 +52,7 @@ namespace SimisEditor
 			BackgroundThread.Start();
 		}
 
-		private void BackgroundFindFilesToTestRecursive(string path) {
+		void BackgroundFindFilesToTestRecursive(string path) {
 			foreach (var file in Directory.GetFiles(path)) {
 				if (file.IndexOf(".") >= 0) {
 					var ext = file.Substring(file.LastIndexOf(".")).ToLower();
@@ -68,7 +66,7 @@ namespace SimisEditor
 			}
 		}
 
-		private void TestFiles() {
+		void TestFiles() {
 			TestRun.Enabled = false;
 			TestProgress.Minimum = 0;
 			TestProgress.Maximum = Files.Count;
@@ -92,7 +90,7 @@ namespace SimisEditor
 							newFile.ReadFile();
 						} catch (FileException ex) {
 							success = false;
-							messageLog.MessageAccept("Read", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
+							messageLog.MessageAccept("Read", BufferedMessageSource.LevelError, ex.ToString());
 						}
 					}
 
@@ -102,7 +100,7 @@ namespace SimisEditor
 							newFile.WriteStream(saveStream);
 						} catch (FileException ex) {
 							success = false;
-							messageLog.MessageAccept("Write", BufferedMessageSource.LEVEL_ERROR, ex.ToString());
+							messageLog.MessageAccept("Write", BufferedMessageSource.LevelError, ex.ToString());
 						}
 					}
 
@@ -120,7 +118,7 @@ namespace SimisEditor
 								success = false;
 								var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
 								var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
-								messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+								messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
 								break;
 							}
 						}
@@ -128,12 +126,12 @@ namespace SimisEditor
 							success = false;
 							var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
 							var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
-							messageLog.MessageAccept("Compare", BufferedMessageSource.LEVEL_ERROR, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+							messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
 						}
 					}
 					if (success) {
 						successCount++;
-						messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_INFORMATION, String.Format("{0}\n\nFile successfully read and written.", file));
+						messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("{0}\n\nFile successfully read and written.", file));
 					}
 
 					count++;
@@ -143,7 +141,7 @@ namespace SimisEditor
 					}));
 				}
 
-				messageLog.MessageAccept("Test", BufferedMessageSource.LEVEL_INFORMATION, "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%).");
+				messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%).");
 				
 				this.Invoke((MethodInvoker)(() => {
 					TestRun.Enabled = true;
@@ -159,11 +157,11 @@ namespace SimisEditor
 			BackgroundThread.Start();
 		}
 
-		private void TestRun_Click(object sender, EventArgs e) {
+		void TestRun_Click(object sender, EventArgs e) {
 			TestFiles();
 		}
 
-		private void Test_FormClosing(object sender, FormClosingEventArgs e) {
+		void Test_FormClosing(object sender, FormClosingEventArgs e) {
 			if (BackgroundThread != null) {
 				BackgroundThread.Abort();
 				BackgroundThread = null;

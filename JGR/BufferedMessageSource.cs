@@ -7,17 +7,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Collections.ObjectModel;
 
-namespace JGR
+namespace Jgr
 {
 	/// <summary>
 	/// A single message to be reported through <see cref="BufferedMessageSource"/>.
 	/// </summary>
 	public class MessageItem
 	{
-		public readonly string Source;
-		public readonly byte Level;
-		public readonly string Message;
+		public string Source { get; private set; }
+		public byte Level { get; private set; }
+		public string Message { get; private set; }
 
 		public MessageItem(string source, byte level, string message) {
 			Source = source;
@@ -27,46 +28,64 @@ namespace JGR
 	}
 
 	/// <summary>
-	/// A utility class for keepting track of how many messages have been read from a given <see cref="IMessageSink"/>.
-	/// </summary>
-	public class MessageSink
-	{
-		public readonly IMessageSink Sink;
-		public int Index;
-
-		public MessageSink(IMessageSink sink) {
-			Sink = sink;
-			Index = 0;
-		}
-	}
-
-	/// <summary>
 	/// A base class which can be used to get a simple, but useful, implementation of both <see cref="IMessageSource"/> and <see cref="IMessageSink"/>.
 	/// </summary>
 	public class BufferedMessageSource : IMessageSource, IMessageSink
 	{
-		public const byte LEVEL_DEBUG = 0;
-		public const byte LEVEL_INFORMATION = 4;
-		public const byte LEVEL_WARNING = 6;
-		public const byte LEVEL_ERROR = 8;
-		public const byte LEVEL_CRITIAL = 10;
+		public const byte LevelDebug = 0;
+		public const byte LevelInformation = 4;
+		public const byte LevelWarning = 6;
+		public const byte LevelError = 8;
+		public const byte LevelCritical = 10;
+		protected KeyedCollection<IMessageSink, MessageSink> Sinks { get; private set; }
+		Collection<MessageItem> Messages;
 
-		protected List<MessageSink> Sinks;
-		private List<MessageItem> Messages;
+		/// <summary>
+		/// A utility class for keepting track of how many messages have been read from a given <see cref="IMessageSink"/>.
+		/// </summary>
+		protected class MessageSink
+		{
+			public IMessageSink Sink { get; private set; }
+			public int Index { get; private set; }
+			Collection<MessageItem> Messages;
+
+			public MessageSink(IMessageSink sink, Collection<MessageItem> messages) {
+				Sink = sink;
+				Index = 0;
+				Messages = messages;
+			}
+
+			public bool HaveMore {
+				get {
+					return Index < Messages.Count;
+				}
+			}
+
+			public MessageItem GetNext() {
+				return Messages[Index++];
+			}
+		}
+
+		protected class SinkCollection : KeyedCollection<IMessageSink, MessageSink>
+		{
+			protected override IMessageSink GetKeyForItem(MessageSink item) {
+				return item.Sink;
+			}
+		}
 
 		public BufferedMessageSource() {
-			Sinks = new List<MessageSink>();
-			Messages = new List<MessageItem>();
+			Sinks = new SinkCollection();
+			Messages = new Collection<MessageItem>();
 		}
 
 		protected void MessageSend(byte level, string message) {
-			MessageAccept(this.GetMessageSourceName(), level, message);
+			MessageAccept(this.MessageSourceName, level, message);
 		}
 
-		private void FlushMessages() {
+		void FlushMessages() {
 			foreach (var sinkItem in Sinks) {
-				while (sinkItem.Index < Messages.Count) {
-					var msg = Messages[sinkItem.Index++];
+				while (sinkItem.HaveMore) {
+					var msg = sinkItem.GetNext();
 					sinkItem.Sink.MessageAccept(msg.Source, msg.Level, msg.Message);
 				}
 			}
@@ -74,20 +93,22 @@ namespace JGR
 
 		#region IMessageSource Members
 
-		public virtual string GetMessageSourceName() {
-			return this.GetType().ToString();
+		public virtual string MessageSourceName {
+			get {
+				return this.GetType().ToString();
+			}
 		}
 
 		public bool RegisterMessageSink(IMessageSink sink) {
-			if (Sinks.Any<MessageSink>(s => s.Sink == sink)) return true;
-			Sinks.Add(new MessageSink(sink));
+			if (Sinks.Contains(sink)) return true;
+			Sinks.Add(new MessageSink(sink, Messages));
 			FlushMessages();
 			return true;
 		}
 
 		public bool UnregisterMessageSink(IMessageSink sink) {
-			if (!Sinks.Any<MessageSink>(s => s.Sink == sink)) return false;
-			Sinks.RemoveAll(s => s.Sink == sink);
+			if (!Sinks.Contains(sink)) return false;
+			Sinks.Remove(sink);
 			return true;
 		}
 

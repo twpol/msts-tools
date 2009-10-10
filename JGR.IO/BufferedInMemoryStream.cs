@@ -6,7 +6,7 @@
 using System;
 using System.IO;
 
-namespace JGR.IO
+namespace Jgr.IO
 {
 	/// <summary>
 	/// A <see cref="Stream"/> which buffers both reads and writes in memory (courtesy of <see cref="MemoryStream"/>).
@@ -20,10 +20,10 @@ namespace JGR.IO
 	/// </summary>
 	public class BufferedInMemoryStream : Stream
 	{
-		private MemoryStream Memory;
-		private Stream Base;
-		private long WritePosition = 0;
-		private const int ChunkSize = 1024;
+		MemoryStream Memory;
+		Stream Base;
+		long WritePosition;
+		const int ChunkSize = 1024;
 
 		public BufferedInMemoryStream(Stream stream) {
 			Memory = new MemoryStream();
@@ -36,7 +36,7 @@ namespace JGR.IO
 			Base.Close();
 		}
 
-		private void ReadChunk(int chunk) {
+		void ReadChunk(int chunk) {
 			var buffer = new byte[chunk];
 			var bytes = Base.Read(buffer, 0, chunk);
 			var oldPosition = Memory.Position;

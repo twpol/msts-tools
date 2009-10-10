@@ -9,9 +9,9 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
-using JGR.Grammar;
+using Jgr.Grammar;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class UnknownSimisFormatException : DescriptiveException
 	{
@@ -26,11 +26,11 @@ namespace JGR.IO.Parser
 
 	public class SimisProvider
 	{
-		protected Thread BackgroundLoader;
-		protected Exception LoadError = null;
-		public readonly List<SimisFormat> Formats;
-		protected Dictionary<string, SimisFormat> FormatByRoot;
-		public Dictionary<uint, string> TokenNames;
+		public Dictionary<uint, string> TokenNames { get; private set; }
+		public List<SimisFormat> Formats { get; private set; }
+		Thread BackgroundLoader;
+		Exception LoadError;
+		Dictionary<string, SimisFormat> FormatByRoot;
 
 		public SimisProvider(string directory) {
 			Formats = new List<SimisFormat>();
@@ -46,17 +46,17 @@ namespace JGR.IO.Parser
 			if (LoadError != null) throw LoadError;
 		}
 
-		public BNF GetBNF(string simisFormat, string root) {
+		public Bnf GetBnf(string simisFormat, string root) {
 			var key = simisFormat + "|" + root;
 			if (FormatByRoot.ContainsKey(key)) {
-				return FormatByRoot[key].BNF;
+				return FormatByRoot[key].Bnf;
 			}
 			throw new UnknownSimisFormatException(simisFormat, root);
 		}
 
-		private void BackgroundLoad(string directory) {
+		void BackgroundLoad(string directory) {
 			foreach (var filename in Directory.GetFiles(directory, "*.bnf")) {
-				var BNF = new BNFFile(filename);
+				var BNF = new BnfFile(filename);
 				try {
 					BNF.ReadFile();
 				} catch (FileException e) {
@@ -68,8 +68,8 @@ namespace JGR.IO.Parser
 				}
 				var simisFormat = new SimisFormat(BNF);
 				Formats.Add(simisFormat);
-				foreach (var root in BNF.BNFFileRoots) {
-					FormatByRoot.Add(BNF.BNFFileType + BNF.BNFFileTypeVersion + "|" + root, simisFormat);
+				foreach (var root in BNF.BnfFileRoots) {
+					FormatByRoot.Add(BNF.BnfFileType + BNF.BnfFileTypeVersion + "|" + root, simisFormat);
 				}
 			}
 

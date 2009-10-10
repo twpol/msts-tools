@@ -9,11 +9,11 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class SimisTestableStream : Stream
 	{
-		protected Stream UncompressedStream;
+		Stream UncompressedStream;
 
 		public SimisTestableStream(Stream baseStream) {
 			UncompressedStream = new UnclosableStream(new MemoryStream());

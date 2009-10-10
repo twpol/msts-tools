@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace JGR.Grammar
+namespace Jgr.Grammar
 {
 	public enum OperatorType
 	{
@@ -22,9 +22,9 @@ namespace JGR.Grammar
 
 	public abstract class Operator : ICloneable
 	{
-		public readonly OperatorType Op;
+		public OperatorType Op { get; private set; }
 
-		public Operator(OperatorType op) {
+		protected Operator(OperatorType op) {
 			Op = op;
 		}
 
@@ -39,7 +39,7 @@ namespace JGR.Grammar
 
 	public class ReferenceOperator : Operator
 	{
-		public readonly string Reference;
+		public string Reference { get; private set; }
 
 		protected ReferenceOperator(OperatorType op, string reference)
 			: base(op)
@@ -62,7 +62,7 @@ namespace JGR.Grammar
 
 	public class NamedReferenceOperator : ReferenceOperator
 	{
-		public readonly string Name;
+		public string Name { get; private set; }
 
 		public NamedReferenceOperator(string name, string reference)
 			: base(OperatorType.Reference, reference)
@@ -81,7 +81,7 @@ namespace JGR.Grammar
 
 	public class StringOperator : Operator
 	{
-		public readonly string Value;
+		public string Value { get; private set; }
 
 		public StringOperator(string value)
 			: base(OperatorType.String) {
@@ -99,9 +99,9 @@ namespace JGR.Grammar
 
 	public abstract class UnaryOperator : Operator
 	{
-		public readonly Operator Right;
+		public Operator Right { get; private set; }
 
-		public UnaryOperator(OperatorType op, Operator right)
+		protected UnaryOperator(OperatorType op, Operator right)
 			: base(op)
 		{
 			Right = right;
@@ -144,10 +144,10 @@ namespace JGR.Grammar
 
 	public abstract class LogicalOperator : Operator
 	{
-		public readonly Operator Left;
-		public readonly Operator Right;
+		public Operator Left { get; private set; }
+		public Operator Right { get; private set; }
 
-		public LogicalOperator(OperatorType op, Operator left, Operator right)
+		protected LogicalOperator(OperatorType op, Operator left, Operator right)
 			: base(op)
 		{
 			Left = left;

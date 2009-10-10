@@ -8,7 +8,7 @@
     <ProjectGuid>{8A4E6830-F84F-4938-B261-F732B7C97C4F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>JGR</RootNamespace>
+    <RootNamespace>Jgr</RootNamespace>
     <AssemblyName>JGR</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

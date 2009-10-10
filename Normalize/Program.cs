@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using JGR.IO.Parser;
+using Jgr.IO.Parser;
 using System.IO;
-using JGR.IO;
+using Jgr.IO;
 
 namespace Normalize
 {
