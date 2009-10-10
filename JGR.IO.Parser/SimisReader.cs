@@ -71,8 +71,8 @@ namespace Jgr.IO.Parser
 
 			BlockEndOffsets = new Stack<uint>();
 			PendingTokens = new Queue<SimisToken>();
-			if (SimisFormat.Length == 0) {
-				BnfState = new BnfState(SimisProvider.GetBnf(simisFormat, ""));
+			if (SimisFormat.Length > 0) {
+				BnfState = new BnfState(SimisProvider.GetBnf(SimisFormat, ""));
 			}
 		}
 
