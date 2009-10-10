@@ -25,15 +25,15 @@
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent() {
-			System.Windows.Forms.TreeNode treeNode6 = new System.Windows.Forms.TreeNode("Node2");
-			System.Windows.Forms.TreeNode treeNode7 = new System.Windows.Forms.TreeNode("Node3");
-			System.Windows.Forms.TreeNode treeNode8 = new System.Windows.Forms.TreeNode("Node4");
-			System.Windows.Forms.TreeNode treeNode9 = new System.Windows.Forms.TreeNode("Node5");
-			System.Windows.Forms.TreeNode treeNode10 = new System.Windows.Forms.TreeNode("No file loaded", new System.Windows.Forms.TreeNode[] {
-            treeNode6,
-            treeNode7,
-            treeNode8,
-            treeNode9});
+			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("Node2");
+			System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("Node3");
+			System.Windows.Forms.TreeNode treeNode3 = new System.Windows.Forms.TreeNode("Node4");
+			System.Windows.Forms.TreeNode treeNode4 = new System.Windows.Forms.TreeNode("Node5");
+			System.Windows.Forms.TreeNode treeNode5 = new System.Windows.Forms.TreeNode("No file loaded", new System.Windows.Forms.TreeNode[] {
+            treeNode1,
+            treeNode2,
+            treeNode3,
+            treeNode4});
 			this.SimisTree = new System.Windows.Forms.TreeView();
 			this.menuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -62,6 +62,7 @@
 			this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
 			this.SimisProperties = new System.Windows.Forms.PropertyGrid();
 			this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -72,19 +73,19 @@
 			this.SimisTree.HideSelection = false;
 			this.SimisTree.Location = new System.Drawing.Point(0, 24);
 			this.SimisTree.Name = "SimisTree";
-			treeNode6.Name = "Node2";
-			treeNode6.Text = "Node2";
-			treeNode7.Name = "Node3";
-			treeNode7.Text = "Node3";
-			treeNode8.Name = "Node4";
-			treeNode8.Text = "Node4";
-			treeNode9.Name = "Node5";
-			treeNode9.Text = "Node5";
-			treeNode10.Name = "Node0";
-			treeNode10.NodeFont = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			treeNode10.Text = "No file loaded";
+			treeNode1.Name = "Node2";
+			treeNode1.Text = "Node2";
+			treeNode2.Name = "Node3";
+			treeNode2.Text = "Node3";
+			treeNode3.Name = "Node4";
+			treeNode3.Text = "Node4";
+			treeNode4.Name = "Node5";
+			treeNode4.Text = "Node5";
+			treeNode5.Name = "Node0";
+			treeNode5.NodeFont = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			treeNode5.Text = "No file loaded";
 			this.SimisTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode10});
+            treeNode5});
 			this.SimisTree.ShowNodeToolTips = true;
 			this.SimisTree.ShowRootLines = false;
 			this.SimisTree.Size = new System.Drawing.Size(484, 538);
@@ -236,6 +237,7 @@
             this.discussionsToolStripMenuItem,
             this.issueTrackerToolStripMenuItem,
             this.toolStripMenuItem4,
+            this.reloadSimisResourcesToolStripMenuItem,
             this.testToolStripMenuItem});
 			this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
 			this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
@@ -244,40 +246,40 @@
 			// homepageToolStripMenuItem
 			// 
 			this.homepageToolStripMenuItem.Name = "homepageToolStripMenuItem";
-			this.homepageToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
+			this.homepageToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.homepageToolStripMenuItem.Text = "&Homepage";
 			this.homepageToolStripMenuItem.Click += new System.EventHandler(this.homepageToolStripMenuItem_Click);
 			// 
 			// updatesToolStripMenuItem
 			// 
 			this.updatesToolStripMenuItem.Name = "updatesToolStripMenuItem";
-			this.updatesToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
+			this.updatesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.updatesToolStripMenuItem.Text = "&Updates";
 			this.updatesToolStripMenuItem.Click += new System.EventHandler(this.updatesToolStripMenuItem_Click);
 			// 
 			// discussionsToolStripMenuItem
 			// 
 			this.discussionsToolStripMenuItem.Name = "discussionsToolStripMenuItem";
-			this.discussionsToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
+			this.discussionsToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.discussionsToolStripMenuItem.Text = "&Discussions";
 			this.discussionsToolStripMenuItem.Click += new System.EventHandler(this.discussionsToolStripMenuItem_Click);
 			// 
 			// issueTrackerToolStripMenuItem
 			// 
 			this.issueTrackerToolStripMenuItem.Name = "issueTrackerToolStripMenuItem";
-			this.issueTrackerToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
+			this.issueTrackerToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.issueTrackerToolStripMenuItem.Text = "&Issue Tracker";
 			this.issueTrackerToolStripMenuItem.Click += new System.EventHandler(this.issueTrackerToolStripMenuItem_Click);
 			// 
 			// toolStripMenuItem4
 			// 
 			this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-			this.toolStripMenuItem4.Size = new System.Drawing.Size(159, 6);
+			this.toolStripMenuItem4.Size = new System.Drawing.Size(194, 6);
 			// 
 			// testToolStripMenuItem
 			// 
 			this.testToolStripMenuItem.Name = "testToolStripMenuItem";
-			this.testToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
+			this.testToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.testToolStripMenuItem.Text = "&Test Simis Files...";
 			this.testToolStripMenuItem.Click += new System.EventHandler(this.testToolStripMenuItem_Click);
 			// 
@@ -295,6 +297,13 @@
 			// folderBrowserDialog
 			// 
 			this.folderBrowserDialog.ShowNewFolderButton = false;
+			// 
+			// reloadSimisResourcesToolStripMenuItem
+			// 
+			this.reloadSimisResourcesToolStripMenuItem.Name = "reloadSimisResourcesToolStripMenuItem";
+			this.reloadSimisResourcesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+			this.reloadSimisResourcesToolStripMenuItem.Text = "Reload Simis Resources";
+			this.reloadSimisResourcesToolStripMenuItem.Click += new System.EventHandler(this.reloadSimisResourcesToolStripMenuItem_Click);
 			// 
 			// Editor
 			// 
@@ -348,6 +357,7 @@
 		private System.Windows.Forms.ToolStripMenuItem issueTrackerToolStripMenuItem;
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem4;
 		private System.Windows.Forms.ToolStripMenuItem discussionsToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem reloadSimisResourcesToolStripMenuItem;
 	}
 }
 
