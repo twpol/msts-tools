@@ -411,7 +411,7 @@ namespace SimisEditor
 			dNamespace.Imports.Add(new CodeNamespaceImport("System"));
 			dNamespace.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
 			dNamespace.Imports.Add(new CodeNamespaceImport("System.Drawing.Design"));
-			dNamespace.Imports.Add(new CodeNamespaceImport("JGR.IO.Parser"));
+			dNamespace.Imports.Add(new CodeNamespaceImport("Jgr.IO.Parser"));
 			dNamespace.Types.Add(dClass);
 
 			// Create compile unit, containing our dynamic namespace and classes.
@@ -542,6 +542,10 @@ namespace SimisEditor
 
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
+		}
+
+		void reloadSimisResourcesToolStripMenuItem_Click(object sender, EventArgs e) {
+			InitializeSimisProvider();
 		}
 
 		void testToolStripMenuItem_Click(object sender, EventArgs e) {
