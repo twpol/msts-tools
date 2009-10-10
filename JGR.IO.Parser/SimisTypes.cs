@@ -3,11 +3,11 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public enum SimisStreamFormat
 	{
-		Autodetect,
+		AutoDetect,
 		Binary,
 		Text
 	}
@@ -30,10 +30,10 @@ namespace JGR.IO.Parser
 			String = "";
 		}
 
-		public SimisTokenKind Kind;
-		public string Type;
-		public string String;
-		public long Integer;
-		public double Float;
+		public SimisTokenKind Kind { get; set; }
+		public string Type { get; set; }
+		public string String { get; set; }
+		public long Integer { get; set; }
+		public double Float { get; set; }
 	}
 }

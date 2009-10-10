@@ -9,58 +9,76 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using JGR;
+using Jgr;
 
-namespace JGR.Grammar
+namespace Jgr.Grammar
 {
-	public class BNF
+	public class Bnf
 	{
-		public readonly string Filename;
+		public string FileName { get; private set; }
 
-		public BNF(string filename) {
-			Filename = filename;
-			Definitions = new Dictionary<string, BNFDefinition>();
-			Productions = new Dictionary<string, BNFProduction>();
+		public Bnf(string fileName) {
+			FileName = fileName;
+			Definitions = new Dictionary<string, BnfDefinition>();
+			Productions = new Dictionary<string, BnfProduction>();
 		}
 
-		public Dictionary<string, BNFDefinition> Definitions { get; private set; }
-		public Dictionary<string, BNFProduction> Productions { get; private set; }
+		public Dictionary<string, BnfDefinition> Definitions { get; private set; }
+		public Dictionary<string, BnfProduction> Productions { get; private set; }
 
 		public override string ToString() {
-			return String.Join("\n", Definitions.Values.OrderBy<BNFDefinition, string>(d => d.ToString()).Select<BNFDefinition, string>(d => d.ToString()).Union<string>(Productions.Values.OrderBy<BNFProduction, string>(p => p.ToString()).Select<BNFProduction, string>(p => p.ToString())).ToArray<string>());
+			return String.Join("\n", Definitions.Values.OrderBy<BnfDefinition, string>(d => d.ToString()).Select<BnfDefinition, string>(d => d.ToString()).Union<string>(Productions.Values.OrderBy<BnfProduction, string>(p => p.ToString()).Select<BnfProduction, string>(p => p.ToString())).ToArray<string>());
 		}
 	}
 
-	public class BNFStateException : DescriptiveException
+	public class BnfStateException : DescriptiveException
 	{
-		private static string FormatMessage(BNFState state, string message) {
+		public BnfStateException()
+			: base("") {
+		}
+
+		public BnfStateException(string message)
+			: base(message) {
+		}
+
+		public BnfStateException(string message, Exception innerException)
+			: base(message, innerException) {
+		}
+
+		static string FormatMessage(BnfState state, string message) {
 			if (message.Length == 0) return state.ToString();
 			return message + "\r\n\r\n" + state;
 		}
 
-		public BNFStateException(BNFState state, string message)
-			: base(FormatMessage(state, message))
+		public BnfStateException(BnfState state, string message)
+			: this(FormatMessage(state, message))
 		{
 		}
 	}
 
-	public class BNFState : BufferedMessageSource
+	public class BnfState : BufferedMessageSource
 	{
-		public BNF BNF { get; protected set; }
-		private Stack<KeyValuePair<BNFProduction, FSMState>> Rules;
+		public Bnf Bnf { get; private set; }
+		Stack<KeyValuePair<BnfProduction, FsmState>> Rules;
+		bool _validCache;
+		bool _isEndBlockTime;
+		List<FsmState> _validReferences;
+		List<string> _validStates;
 
-		public BNFState(BNF BNF) {
-			this.BNF = BNF;
-			Rules = new Stack<KeyValuePair<BNFProduction, FSMState>>();
+		public BnfState(Bnf bnf) {
+			this.Bnf = bnf;
+			Rules = new Stack<KeyValuePair<BnfProduction, FsmState>>();
 			IsEnterBlockTime = false;
 			UpdateStates();
 		}
 
-		public override string GetMessageSourceName() {
-			return "BNF State";
+		public override string MessageSourceName {
+			get {
+				return "BNF State";
+			}
 		}
 
-		public FSMState State {
+		public FsmState State {
 			get {
 				if (Rules.Count == 0) {
 					return null;
@@ -69,14 +87,11 @@ namespace JGR.Grammar
 			}
 		}
 
-		private bool _validCache = false;
-
 		public bool IsEnterBlockTime {
 			get;
 			protected set;
 		}
 
-		private bool _isEndBlockTime = false;
 		public bool IsEndBlockTime {
 			get {
 				UpdateStates();
@@ -84,15 +99,13 @@ namespace JGR.Grammar
 			}
 		}
 
-		private List<FSMState> _validReferences = null;
-		private List<FSMState> ValidReferences {
+		List<FsmState> ValidReferences {
 			get {
 				UpdateStates();
 				return _validReferences;
 			}
 		}
 
-		private List<string> _validStates = null;
 		public List<string> ValidStates {
 			get {
 				UpdateStates();
@@ -100,28 +113,28 @@ namespace JGR.Grammar
 			}
 		}
 
-		private void UpdateStates() {
+		void UpdateStates() {
 			if (_validCache) return;
 
 			// Update valid references.
 			_isEndBlockTime = false;
-			_validReferences = new List<FSMState>();
+			_validReferences = new List<FsmState>();
 			if (Rules.Count > 0) {
 				if (Rules.Peek().Value == null) {
-					if (Rules.Peek().Key.ExpressionFSM != null) {
-						_validReferences.Add(Rules.Peek().Key.ExpressionFSM.Root);
+					if (Rules.Peek().Key.ExpressionFsm != null) {
+						_validReferences.Add(Rules.Peek().Key.ExpressionFsm.Root);
 					}
 				} else {
 					_validReferences.AddRange(Rules.Peek().Value.Next);
 				}
-				while (_validReferences.Any<FSMState>(s => !(s.Op is ReferenceOperator))) {
+				while (_validReferences.Any<FsmState>(s => !(s.Op is ReferenceOperator))) {
 					for (var i = 0; i < _validReferences.Count; i++) {
 						if (!(_validReferences[i].Op is ReferenceOperator)) {
 							var items = _validReferences[i].Next;
 							if (items.Count == 0) _isEndBlockTime = true;
 							_validReferences.InsertRange(i + 1, items);
 							_validReferences.RemoveAt(i);
-							i += items.Count<FSMState>(s => true) - 1;
+							i += items.Count<FsmState>(s => true) - 1;
 						}
 					}
 				}
@@ -134,9 +147,9 @@ namespace JGR.Grammar
 				_validStates.Add("<begin-block>");
 			} else {
 				if (Rules.Count == 0) {
-					_validStates.AddRange(BNF.Productions.Keys);
+					_validStates.AddRange(Bnf.Productions.Keys);
 				} else {
-					_validStates.AddRange(_validReferences.Select<FSMState, string>(s => ((ReferenceOperator)s.Op).Reference));
+					_validStates.AddRange(_validReferences.Select<FsmState, string>(s => ((ReferenceOperator)s.Op).Reference));
 				}
 				if (_isEndBlockTime) {
 					_validStates.Add("<end-block>");
@@ -147,22 +160,22 @@ namespace JGR.Grammar
 		}
 
 		public void MoveTo(string reference) {
-			MessageSend(LEVEL_DEBUG, "Moving BNF to state '" + reference + "'.");
-			if (IsEnterBlockTime) throw new BNFStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
+			MessageSend(LevelDebug, "Moving BNF to state '" + reference + "'.");
+			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
 			if (Rules.Count == 0) {
-				if (!BNF.Productions.ContainsKey(reference)) throw new BNFStateException(this, "BNF has no production for root reference '" + reference + "'.");
-				Rules.Push(new KeyValuePair<BNFProduction, FSMState>(BNF.Productions[reference], null));
+				if (!Bnf.Productions.ContainsKey(reference)) throw new BnfStateException(this, "BNF has no production for root reference '" + reference + "'.");
+				Rules.Push(new KeyValuePair<BnfProduction, FsmState>(Bnf.Productions[reference], null));
 				IsEnterBlockTime = true;
 			} else {
 				var targets = ValidReferences;
-				var target = targets.FirstOrDefault<FSMState>(s => ((ReferenceOperator)s.Op).Reference == reference);
-				if (target == null) throw new BNFStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
+				var target = targets.FirstOrDefault<FsmState>(s => ((ReferenceOperator)s.Op).Reference == reference);
+				if (target == null) throw new BnfStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
 
 				var rop = (ReferenceOperator)target.Op;
 				var old = Rules.Pop();
-				Rules.Push(new KeyValuePair<BNFProduction, FSMState>(old.Key, target));
-				if (BNF.Productions.ContainsKey(rop.Reference)) {
-					Rules.Push(new KeyValuePair<BNFProduction, FSMState>(BNF.Productions[rop.Reference], null));
+				Rules.Push(new KeyValuePair<BnfProduction, FsmState>(old.Key, target));
+				if (Bnf.Productions.ContainsKey(rop.Reference)) {
+					Rules.Push(new KeyValuePair<BnfProduction, FsmState>(Bnf.Productions[rop.Reference], null));
 					IsEnterBlockTime = true;
 				}
 			}
@@ -171,17 +184,17 @@ namespace JGR.Grammar
 		}
 
 		public void EnterBlock() {
-			MessageSend(LEVEL_DEBUG, "Moving BNF to state <begin-block>.");
-			if (!IsEnterBlockTime) throw new BNFStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
+			MessageSend(LevelDebug, "Moving BNF to state <begin-block>.");
+			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
 			IsEnterBlockTime = false;
 			_validCache = false;
 			//MessageSend(LEVEL_DEBUG, ToString());
 		}
 
 		public void LeaveBlock() {
-			MessageSend(LEVEL_DEBUG, "Moving BNF to state <end-block>.");
-			if (IsEnterBlockTime) throw new BNFStateException(this, "BNF expected begin-block; got end-block.");
-			if (!IsEndBlockTime) throw new BNFStateException(this, "BNF expected begin-block, reference or literal; got end-block.");
+			MessageSend(LevelDebug, "Moving BNF to state <end-block>.");
+			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got end-block.");
+			if (!IsEndBlockTime) throw new BnfStateException(this, "BNF expected begin-block, reference or literal; got end-block.");
 			Rules.Pop();
 			_validCache = false;
 			//MessageSend(LEVEL_DEBUG, ToString());
@@ -195,40 +208,40 @@ namespace JGR.Grammar
 
 		public override string ToString() {
 			return "Available states: " + String.Join(", ", ValidStates.Select<string, string>(s => s.StartsWith("<") ? s : "'" + s + "'").ToArray<string>()) + ".\n"
-				+ "Current rule: " + (Rules.Count == 0 ? "<none>." : "[" + Rules.Peek().Key.Symbol.Reference + "] " + Rules.Peek().Key.ExpressionFSM) + "\n"
-				+ "Current state: " + String.Join(" // ", Rules.Select<KeyValuePair<BNFProduction, FSMState>, string>(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray<string>());
+				+ "Current rule: " + (Rules.Count == 0 ? "<none>." : "[" + Rules.Peek().Key.Symbol.Reference + "] " + Rules.Peek().Key.ExpressionFsm) + "\n"
+				+ "Current state: " + String.Join(" // ", Rules.Select<KeyValuePair<BnfProduction, FsmState>, string>(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray<string>());
 		}
 	}
 
-	public class BNFRule
+	public class BnfRule
 	{
-		public readonly BNF BNF;
-		public readonly ReferenceOperator Symbol;
-		public readonly Operator Expression;
-		public readonly FSM ExpressionFSM;
+		public Bnf Bnf { get; private set; }
+		public ReferenceOperator Symbol { get; private set; }
+		public Operator Expression { get; private set; }
+		public Fsm ExpressionFsm { get; private set; }
 		
-		public BNFRule(BNF bnf, ReferenceOperator symbol, Operator expression) {
-			BNF = bnf;
+		public BnfRule(Bnf bnf, ReferenceOperator symbol, Operator expression) {
+			Bnf = bnf;
 			Symbol = symbol;
 			Expression = expression;
-			ExpressionFSM = null;
+			ExpressionFsm = null;
 			if (expression != null) {
-				ExpressionFSM = new FSM(ExpandReferences(expression));
+				ExpressionFsm = new Fsm(ExpandReferences(expression));
 			}
 		}
 
-		private Operator ExpandReferences(Operator op) {
+		Operator ExpandReferences(Operator op) {
 			if (op is NamedReferenceOperator) {
 				var nrop = (NamedReferenceOperator)op;
-				if (BNF.Definitions.ContainsKey(nrop.Reference)) {
-					return ExpandReferences(BNF.Definitions[nrop.Reference].Expression);
+				if (Bnf.Definitions.ContainsKey(nrop.Reference)) {
+					return ExpandReferences(Bnf.Definitions[nrop.Reference].Expression);
 				}
 				return new NamedReferenceOperator(nrop.Name, nrop.Reference);
 			}
 			if (op is ReferenceOperator) {
 				var rop = (ReferenceOperator)op;
-				if (BNF.Definitions.ContainsKey(rop.Reference)) {
-					return ExpandReferences(BNF.Definitions[rop.Reference].Expression);
+				if (Bnf.Definitions.ContainsKey(rop.Reference)) {
+					return ExpandReferences(Bnf.Definitions[rop.Reference].Expression);
 				}
 				return new ReferenceOperator(rop.Reference);
 			}
@@ -256,18 +269,18 @@ namespace JGR.Grammar
 		}
 	}
 
-	public class BNFDefinition : BNFRule
+	public class BnfDefinition : BnfRule
 	{
-		public BNFDefinition(BNF bnf, ReferenceOperator symbol, Operator expression) : base(bnf, symbol, expression) { }
+		public BnfDefinition(Bnf bnf, ReferenceOperator symbol, Operator expression) : base(bnf, symbol, expression) { }
 
 		public override string ToString() {
 			return Symbol.Reference + " = " + (Expression == null ? "" : Expression.ToString()) + " .";
 		}
 	}
 
-	public class BNFProduction : BNFRule
+	public class BnfProduction : BnfRule
 	{
-		public BNFProduction(BNF bnf, ReferenceOperator symbol, Operator expression) : base(bnf, symbol, expression) { }
+		public BnfProduction(Bnf bnf, ReferenceOperator symbol, Operator expression) : base(bnf, symbol, expression) { }
 
 		public override string ToString() {
 			return Symbol.Reference + " ==> " + (Expression == null ? "" : Expression.ToString()) + " .";

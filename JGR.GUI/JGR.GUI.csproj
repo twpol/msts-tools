@@ -8,7 +8,7 @@
     <ProjectGuid>{CE8C7450-8044-4158-8F93-CAD730CB2946}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>JGR.GUI</RootNamespace>
+    <RootNamespace>Jgr.Gui</RootNamespace>
     <AssemblyName>JGR.GUI</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

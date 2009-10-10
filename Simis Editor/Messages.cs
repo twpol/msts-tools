@@ -11,7 +11,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using JGR;
+using Jgr;
 
 namespace SimisEditor
 {
@@ -23,7 +23,7 @@ namespace SimisEditor
 			UpdateSelectedMessage();
 		}
 
-		private void UpdateColumnWidths() {
+		void UpdateColumnWidths() {
 			int width = ListOfMessages.ClientRectangle.Width;
 			for (int i = 0; i < ListOfMessages.Columns.Count; i++) {
 				if (i != 2) {
@@ -33,7 +33,7 @@ namespace SimisEditor
 			ListOfMessages.Columns[2].Width = (width > 50 ? width : 50);
 		}
 
-		private void UpdateSelectedMessage() {
+		void UpdateSelectedMessage() {
 			if (ListOfMessages.SelectedItems.Count > 0) {
 				MessageText.Lines = ((string)ListOfMessages.SelectedItems[0].SubItems[2].Text).Split('\n');
 			} else {
@@ -54,15 +54,15 @@ namespace SimisEditor
 
 		#endregion
 
-		private void Messages_Resize(object sender, EventArgs e) {
+		void Messages_Resize(object sender, EventArgs e) {
 			UpdateColumnWidths();
 		}
 
-		private void ListOfMessages_SelectedIndexChanged(object sender, EventArgs e) {
+		void ListOfMessages_SelectedIndexChanged(object sender, EventArgs e) {
 			UpdateSelectedMessage();
 		}
 
-		private void Messages_Shown(object sender, EventArgs e) {
+		void Messages_Shown(object sender, EventArgs e) {
 			UpdateColumnWidths();
 			ListOfMessages.FocusedItem = ListOfMessages.Items[ListOfMessages.Items.Count - 1];
 			ListOfMessages.FocusedItem.Selected = true;

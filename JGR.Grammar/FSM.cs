@@ -9,13 +9,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace JGR.Grammar
+namespace Jgr.Grammar
 {
-	public class FSM
+	public class Fsm
 	{
-		public FSMState Root { get; protected set; }
+		public FsmState Root { get; private set; }
 
-		public FSM(Operator expression) {
+		public Fsm(Operator expression) {
 			Root = RemoveRedundantSteps(MakeStateForOp(expression));
 			IndexUnlinks(Root);
 		}
@@ -24,14 +24,14 @@ namespace JGR.Grammar
 			return Root.ToString();
 		}
 
-		private FSMState MakeStateForOp(Operator op) {
-			var state = new FSMState(op);
+		FsmState MakeStateForOp(Operator op) {
+			var state = new FsmState(op);
 			if (op is ReferenceOperator) {
 			} else if (op is StringOperator) {
 			} else if (op is OptionalOperator) {
 				var oop = (OptionalOperator)op;
 				var right = MakeStateForOp(oop.Right);
-				var end = new FSMState(null);
+				var end = new FsmState(null);
 				LinkEndsTo(right, new FiniteStateMachineStateUnlink(state.Op, end));
 				state.Next.Add(right);
 				state.Next.Add(end);
@@ -39,49 +39,52 @@ namespace JGR.Grammar
 				var rop = (RepeatOperator)op;
 				var right = MakeStateForOp(rop.Right);
 				state.Next.Add(right);
-				LinkEndsTo(right, new FSMState[] { new FiniteStateMachineStateUnlink(state.Op, state), new FSMState(null) });
-			} else if (op is LogicalOrOperator) {
+				LinkEndsTo(right, new FsmState[] { new FiniteStateMachineStateUnlink(state.Op, state), new FsmState(null) });
+			} else if (op is LogicalOperator) {
 				var lop = (LogicalOperator)op;
 				var left = MakeStateForOp(lop.Left);
 				var right = MakeStateForOp(lop.Right);
-				state.Next.Add(left);
-				state.Next.Add(right);
-			} else if (op is LogicalAndOperator) {
-				var lop = (LogicalOperator)op;
-				var left = MakeStateForOp(lop.Left);
-				var right = MakeStateForOp(lop.Right);
-				state.Next.Add(left);
-				LinkEndsTo(left, right);
+				if (op is LogicalOrOperator) {
+					state.Next.Add(left);
+					state.Next.Add(right);
+				} else if (op is LogicalAndOperator) {
+					state.Next.Add(left);
+					LinkEndsTo(left, right);
+				} else {
+					Debug.Assert(false, "LogicalOperator is not Or or And.");
+				}
+			} else {
+				Debug.Assert(false, "Operator is not known.");
 			}
 			return state;
 		}
 
-		private void LinkEndsTo(FSMState state, FSMState end) {
-			LinkEndsTo(state, new FSMState[] { end });
+		void LinkEndsTo(FsmState state, FsmState end) {
+			LinkEndsTo(state, new FsmState[] { end });
 		}
 
-		private void LinkEndsTo(FSMState state, IEnumerable<FSMState> end) {
+		void LinkEndsTo(FsmState state, IEnumerable<FsmState> end) {
 			if (state.Next.Count == 0) {
 				state.Next.AddRange(end);
 			} else {
 				foreach (var next in state.Next) {
-					if (!(next is FiniteStateMachineStateUnlink) && !end.Contains<FSMState>(next)) {
+					if (!(next is FiniteStateMachineStateUnlink) && !end.Contains<FsmState>(next)) {
 						LinkEndsTo(next, end);
 					}
 				}
 			}
 		}
 
-		private void ReplaceLinksWith(FSMState state, FSMState old, FSMState end) {
-			ReplaceLinksWith(state, old, new FSMState[] { end });
+		void ReplaceLinksWith(FsmState state, FsmState old, FsmState end) {
+			ReplaceLinksWith(state, old, new FsmState[] { end });
 		}
 
-		private void ReplaceLinksWith(FSMState state, FSMState old, IEnumerable<FSMState> end) {
+		void ReplaceLinksWith(FsmState state, FsmState old, IEnumerable<FsmState> end) {
 			for (var i = 0; i < state.Next.Count; i++) {
 				if (state.Next[i] == old) {
 					state.Next.InsertRange(i + 1, end);
 					state.Next.RemoveAt(i);
-					i += end.Count<FSMState>(s => true) - 1;
+					i += end.Count<FsmState>(s => true) - 1;
 				}
 			}
 			if (!(state is FiniteStateMachineStateUnlink)) {
@@ -91,11 +94,11 @@ namespace JGR.Grammar
 			}
 		}
 
-		private FSMState RemoveRedundantSteps(FSMState root) {
+		FsmState RemoveRedundantSteps(FsmState root) {
 			return RemoveRedundantSteps(root, root);
 		}
 
-		private FSMState RemoveRedundantSteps(FSMState root, FSMState state) {
+		FsmState RemoveRedundantSteps(FsmState root, FsmState state) {
 			if ((state.Next.Count == 1) && ((state.Op is RepeatOperator) || (state.Op is LogicalOperator) || (state.Op == null))) {
 				//Debug.WriteLine("RemoveRedundantSteps: 1 next state, state = " + state.OpString() + ".");
 				//Debug.WriteLine("BEFORE: " + root);
@@ -104,10 +107,10 @@ namespace JGR.Grammar
 				//Debug.WriteLine("");
 				return RemoveRedundantSteps(root, state.Next[0]);
 			}
-			if ((state.Op is LogicalOperator) && state.Next.All<FSMState>(s => (s.Op.GetType() == state.Op.GetType()) || (s.Op is ReferenceOperator))) {
+			if ((state.Op is LogicalOperator) && state.Next.All<FsmState>(s => (s.Op.GetType() == state.Op.GetType()) || (s.Op is ReferenceOperator))) {
 				//Debug.WriteLine("RemoveRedundantSteps: nested operator(s) same as container, state = " + state.OpString() + ".");
 				//Debug.WriteLine("BEFORE: " + root);
-				while (state.Next.Any<FSMState>(s => s.Op.GetType() == state.Op.GetType())) {
+				while (state.Next.Any<FsmState>(s => s.Op.GetType() == state.Op.GetType())) {
 					var next = state.Next.ToArray();
 					state.Next.RemoveAll(n => true);
 					foreach (var n in next) {
@@ -136,12 +139,12 @@ namespace JGR.Grammar
 			return state;
 		}
 
-		private void IndexUnlinks(FSMState state) {
+		void IndexUnlinks(FsmState state) {
 			var index = 0;
 			IndexUnlinks(ref index, state);
 		}
 
-		private void IndexUnlinks(ref int index, FSMState state) {
+		void IndexUnlinks(ref int index, FsmState state) {
 			if (state is FiniteStateMachineStateUnlink) {
 				if (state.Next[0].Index == 0) {
 					state.Next[0].Index = ++index;
@@ -154,18 +157,18 @@ namespace JGR.Grammar
 		}
 	}
 
-	public class FSMState
+	public class FsmState
 	{
-		public readonly Operator Op;
-		public readonly List<FSMState> Next;
-		public int Index = 0;
+		public Operator Op { get; private set; }
+		public List<FsmState> Next { get; private set; }
+		public int Index { get; internal set; }
 
-		internal FSMState(Operator op) {
+		internal FsmState(Operator op) {
 			Op = op;
-			Next = new List<FSMState>();
+			Next = new List<FsmState>();
 		}
 
-		internal string OpString() {
+		string OpString() {
 			if (Op is ReferenceOperator) {
 				return (Index > 0 ? Index + ":" : "") + ((ReferenceOperator)Op).Reference;
 			}
@@ -177,15 +180,15 @@ namespace JGR.Grammar
 			if (Next.Count == 1) {
 				rv += "-> " + Next[0].ToString();
 			} else if (Next.Count > 1) {
-				rv += "-> {" + String.Join(", ", Next.Select<FSMState, string>(s => s.ToString()).ToArray<string>()) + "}";
+				rv += "-> {" + String.Join(", ", Next.Select<FsmState, string>(s => s.ToString()).ToArray<string>()) + "}";
 			}
 			return rv;
 		}
 	}
 
-	public class FiniteStateMachineStateUnlink : FSMState
+	public class FiniteStateMachineStateUnlink : FsmState
 	{
-		internal FiniteStateMachineStateUnlink(Operator op, FSMState state)
+		internal FiniteStateMachineStateUnlink(Operator op, FsmState state)
 			: base(op)
 		{
 			Next.Add(state);

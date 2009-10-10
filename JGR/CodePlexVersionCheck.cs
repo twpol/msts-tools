@@ -13,21 +13,21 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
-namespace JGR
+namespace Jgr
 {
 	/// <summary>
 	/// Checks for CodePlex project releases newer than a given <see cref="DateTime"/>.
 	/// </summary>
 	public class CodePlexVersionCheck
 	{
+		public event EventHandler CheckComplete;
+		public bool HasLatestVersion { get; private set; }
+		public string LatestVersionTitle { get; private set; }
+		public Uri LatestVersionUri { get; private set; }
+		public bool IsNewVersion { get; private set; }
 		Uri Feed;
 		string ReleaseName;
 		DateTime CurrentVersionReleaseDate;
-		public event EventHandler CheckComplete;
-		public bool HasLatestVersion { get; protected set; }
-		public string LatestVersionTitle { get; protected set; }
-		public Uri LatestVersionUri { get; protected set; }
-		public bool IsNewVersion { get; protected set; }
 
 		/// <summary>
 		/// Initializes the CodePlex check.
@@ -53,7 +53,7 @@ namespace JGR
 			thread.Start();
 		}
 
-		private void CheckThread() {
+		void CheckThread() {
 			FetchAndProcess();
 
 			if (null != CheckComplete) {
@@ -61,7 +61,7 @@ namespace JGR
 			}
 		}
 
-		private void FetchAndProcess() {
+		void FetchAndProcess() {
 			var request = WebRequest.Create(Feed);
 			HttpWebResponse response;
 			try {

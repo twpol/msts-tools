@@ -5,7 +5,7 @@
 
 using System;
 
-namespace JGR
+namespace Jgr
 {
 	/// <summary>
 	/// An exception which has occured during application processing of a specific file.
@@ -16,28 +16,28 @@ namespace JGR
 	/// </remarks>
 	public class FileException : DescriptiveException
 	{
-		public string Filename { get; protected set; }
+		public string FileName { get; private set; }
 
-		public FileException(string filename)
-			: this(filename, "") {
+		public FileException(string fileName)
+			: this(fileName, "") {
 		}
 
-		public FileException(string filename, Exception innerException)
-			: this(filename, "", innerException) {
+		public FileException(string fileName, Exception innerException)
+			: this(fileName, "", innerException) {
 		}
 
-		public FileException(string filename, string message)
+		public FileException(string fileName, string message)
 			: base(message) {
-			Filename = filename;
+			FileName = fileName;
 		}
 
-		public FileException(string filename, string message, Exception innerException)
+		public FileException(string fileName, string message, Exception innerException)
 			: base(message, innerException) {
-			Filename = filename;
+			FileName = fileName;
 		}
 
 		public override string ToString() {
-			return Filename + "\n\n" + base.ToString();
+			return FileName + "\n\n" + base.ToString();
 		}
 	}
 }

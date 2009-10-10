@@ -5,7 +5,7 @@
 
 using System.IO;
 
-namespace JGR.IO
+namespace Jgr.IO
 {
 	public class UnclosableStream : Stream
 	{

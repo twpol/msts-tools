@@ -8,18 +8,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class ReaderException : DescriptiveException
 	{
-		protected bool ExceptionBinary = true;
-		protected long ExceptionAddress = 0;
-		protected long ExceptionAddressPrefix = 0;
-		protected long ExceptionAddressSuffix = 0;
-		protected long ExceptionLength = 0;
-		protected long ExceptionLengthPrefix = 0;
-		protected long ExceptionLengthSuffix = 0;
-		protected char[] ExceptionData;
+		bool ExceptionBinary;
+		long ExceptionAddress;
+		long ExceptionAddressPrefix;
+		long ExceptionAddressSuffix;
+		long ExceptionLength;
+		long ExceptionLengthPrefix;
+		long ExceptionLengthSuffix;
+		char[] ExceptionData;
 
 		public ReaderException(BinaryReader reader, bool binary, int exceptionLength, string message)
 			: this(reader, binary, -exceptionLength, exceptionLength, message, null) {
@@ -29,7 +29,7 @@ namespace JGR.IO.Parser
 			: this(reader, binary, -exceptionLength, exceptionLength, message, innerException) {
 		}
 
-		protected ReaderException(BinaryReader reader, bool binary, int exceptionOffset, int exceptionLength, string message, Exception innerException)
+		ReaderException(BinaryReader reader, bool binary, int exceptionOffset, int exceptionLength, string message, Exception innerException)
 			: base(message, innerException) {
 			// Record the original address and exception address for later.
 			var originalPosition = reader.BaseStream.Position;
@@ -77,7 +77,7 @@ namespace JGR.IO.Parser
 			reader.BaseStream.Position = originalPosition;
 		}
 
-		private static string FormatExceptionData(char[] data, bool dataBinary, long dataBase, long offset, long length) {
+		static string FormatExceptionData(char[] data, bool dataBinary, long dataBase, long offset, long length) {
 			var formattedText = "";
 			if (dataBinary) {
 				var formattedHex = "";

@@ -10,63 +10,74 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using JGR.Grammar;
+using Jgr.Grammar;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class SimisReader //: BufferedMessageSource
 	{
-		protected UnclosableStream BaseStream { get; set; }
-		protected SimisProvider SimisProvider { get; set; }
-		protected BinaryReader BinaryReader { get; set; }
-		public SimisStreamFormat StreamFormat { get; protected set; }
-		public bool StreamCompressed { get; protected set; }
-		public string SimisFormat { get; protected set; }
-		public bool EndOfStream { get; protected set; }
-		protected bool DoneAutodetect { get; set; }
-		protected long StreamLength { get; set; }
+		public SimisStreamFormat StreamFormat { get; private set; }
+		public bool StreamCompressed { get; private set; }
+		public string SimisFormat { get; private set; }
+		public bool EndOfStream { get; private set; }
+		public BnfState BnfState { get; private set; }
+		UnclosableStream BaseStream;
+		SimisProvider SimisProvider;
+		BinaryReader BinaryReader;
+		bool DoneAutoDetect;
+		long StreamLength;
+		Stack<uint> BlockEndOffsets;
+		Queue<SimisToken> PendingTokens;
 
-		protected readonly char[] WhitespaceChars;
-		protected readonly char[] WhitespaceAndSpecialChars;
-		protected readonly char[] HexDigits;
-		protected readonly string[] DataTypes;
+		static readonly char[] WhitespaceChars = InitWhitespaceChars();
+		static readonly char[] WhitespaceAndSpecialChars = InitWhitespaceAndSpecialChars();
+		static readonly char[] HexDigits = InitHexDigits();
+		static readonly string[] DataTypes = InitDataTypes();
+		#region static init functions
+		static char[] InitWhitespaceChars() {
+			return new char[] { ' ', '\t', '\r', '\n' };
+		}
 
-		private Stack<uint> BlockEndOffsets;
-		private Queue<SimisToken> PendingTokens;
-		public BNFState BNFState;
+		static char[] InitWhitespaceAndSpecialChars() {
+			return new char[] { ' ', '\t', '\r', '\n', '(', ')', '"', ':' };
+		}
+
+		static char[] InitHexDigits() {
+			return new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' };
+		}
+
+		static string[] InitDataTypes() {
+			return new string[] { "string", "uint", "sint", "dword", "float", "buffer" };
+		}
+		#endregion
 
 		public SimisReader(Stream stream, SimisProvider provider)
-			: this(stream, provider, SimisStreamFormat.Autodetect, false, "") {
+			: this(stream, provider, SimisStreamFormat.AutoDetect, false, "") {
 		}
 
 		public SimisReader(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
+			StreamFormat = format;
+			StreamCompressed = compressed;
+			SimisFormat = simisFormat;
+			EndOfStream = false;
+
 			if (!stream.CanRead) throw new InvalidDataException("Stream must support reading.");
 			if (!stream.CanSeek) throw new InvalidDataException("Stream must support seeking.");
 			BaseStream = new UnclosableStream(stream);
 			SimisProvider = provider;
 			BinaryReader = new BinaryReader(BaseStream, new ByteEncoding());
-			StreamFormat = format;
-			StreamCompressed = compressed;
-			SimisFormat = simisFormat;
-			EndOfStream = false;
-			DoneAutodetect = format != SimisStreamFormat.Autodetect;
+			DoneAutoDetect = format != SimisStreamFormat.AutoDetect;
 			StreamLength = BaseStream.Length;
-
-			WhitespaceChars = new char[] { ' ', '\t', '\r', '\n' };
-			WhitespaceAndSpecialChars = new char[] { ' ', '\t', '\r', '\n', '(', ')', '"', ':' };
-			HexDigits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-			DataTypes = new string[] { "string", "uint", "sint", "dword", "float", "buffer" };
 
 			BlockEndOffsets = new Stack<uint>();
 			PendingTokens = new Queue<SimisToken>();
-			BNFState = null;
-			if (SimisFormat != "") {
-				BNFState = new BNFState(SimisProvider.GetBNF(simisFormat, ""));
+			if (SimisFormat.Length == 0) {
+				BnfState = new BnfState(SimisProvider.GetBnf(simisFormat, ""));
 			}
 		}
 
 		public SimisToken ReadToken() {
-			if (!DoneAutodetect) AutodetectStreamFormat();
+			if (!DoneAutoDetect) AutodetectStreamFormat();
 
 			// Any blocks that should have ended at or before this point, are now ended.
 			while ((BlockEndOffsets.Count > 0) && (BinaryReader.BaseStream.Position >= BlockEndOffsets.Peek())) {
@@ -81,9 +92,9 @@ namespace JGR.IO.Parser
 					EndOfStream = true;
 				}
 				try {
-					if (PendingTokens.Peek().Kind == SimisTokenKind.BlockBegin) BNFState.EnterBlock();
-					if (PendingTokens.Peek().Kind == SimisTokenKind.BlockEnd) BNFState.LeaveBlock();
-				} catch (BNFStateException e) {
+					if (PendingTokens.Peek().Kind == SimisTokenKind.BlockBegin) BnfState.EnterBlock();
+					if (PendingTokens.Peek().Kind == SimisTokenKind.BlockEnd) BnfState.LeaveBlock();
+				} catch (BnfStateException e) {
 					throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "", e);
 				}
 				return PendingTokens.Dequeue();
@@ -96,17 +107,17 @@ namespace JGR.IO.Parser
 				rv = ReadTokenAsText();
 				try {
 					if (rv.Kind == SimisTokenKind.BlockBegin) {
-						BNFState.EnterBlock();
+						BnfState.EnterBlock();
 					} else if (rv.Kind == SimisTokenKind.BlockEnd) {
-						BNFState.LeaveBlock();
+						BnfState.LeaveBlock();
 					} else if (rv.Kind != SimisTokenKind.None) {
 						if (rv.Type.Length > 0) {
-							BNFState.MoveTo(rv.Type);
+							BnfState.MoveTo(rv.Type);
 						}
 					} else {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "ReadTokenAsText returned invalid token type: " + rv.Kind);
 					}
-				} catch (BNFStateException e) {
+				} catch (BnfStateException e) {
 					throw new ReaderException(BinaryReader, false, PinReaderChanged(), "", e);
 				}
 
@@ -119,11 +130,11 @@ namespace JGR.IO.Parser
 				rv = ReadTokenAsBinary();
 				try {
 					if ((rv.Kind != SimisTokenKind.BlockBegin) && (rv.Kind != SimisTokenKind.BlockEnd)) {
-						BNFState.MoveTo(rv.Type);
+						BnfState.MoveTo(rv.Type);
 					} else {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "ReadTokenAsBinary returned invalid token type: " + rv.Type);
 					}
-				} catch (BNFStateException e) {
+				} catch (BnfStateException e) {
 					throw new ReaderException(BinaryReader, true, PinReaderChanged(), "", e);
 				}
 			}
@@ -136,7 +147,7 @@ namespace JGR.IO.Parser
 			return rv;
 		}
 
-		private SimisToken ReadTokenAsText() {
+		SimisToken ReadTokenAsText() {
 			SimisToken rv = new SimisToken();
 
 			if ('(' == BinaryReader.PeekChar()) {
@@ -158,15 +169,15 @@ namespace JGR.IO.Parser
 
 			string token = ReadTokenOrString();
 
-			if (BNFState == null) {
+			if (BnfState == null) {
 				try {
-					BNFState = new BNFState(SimisProvider.GetBNF(SimisFormat, token));
+					BnfState = new BnfState(SimisProvider.GetBnf(SimisFormat, token));
 				} catch (UnknownSimisFormatException e) {
 					throw new ReaderException(BinaryReader, false, PinReaderChanged(), "", e);
 				}
 			}
 
-			if (BNFState.IsEnterBlockTime) {
+			if (BnfState.IsEnterBlockTime) {
 				// We should only end up here when called recursively by the
 				// if (validStates.Contains(token)) code below.
 				rv.String = token;
@@ -185,7 +196,7 @@ namespace JGR.IO.Parser
 				return rv;
 			}
 
-			var validStates = BNFState.ValidStates;
+			var validStates = BnfState.ValidStates;
 			if (validStates.Contains(token)) {
 				// Token exactly matches a valid state transition, so let's use it.
 				rv.Type = token;
@@ -214,7 +225,7 @@ namespace JGR.IO.Parser
 				if ((token.Length == 8) && (token.ToCharArray().All<char>(c => HexDigits.Contains(c)))) return s == "dword";
 				return s != "dword";
 			}).ToArray<string>();
-			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BNFStateException(BNFState, ""));
+			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BnfStateException(BnfState, ""));
 
 			rv.Type = validDataTypeStates[0];
 			switch (rv.Type) {
@@ -272,7 +283,7 @@ namespace JGR.IO.Parser
 			return rv;
 		}
 
-		private string ReadTokenOrString() {
+		string ReadTokenOrString() {
 			string token = "";
 			if ('"' == BinaryReader.PeekChar()) {
 				do {
@@ -324,16 +335,16 @@ namespace JGR.IO.Parser
 			return token;
 		}
 
-		private SimisToken ReadTokenAsBinary() {
+		SimisToken ReadTokenAsBinary() {
 			SimisToken rv = new SimisToken();
 
-			var validStates = (BNFState == null ? new string[] { } : BNFState.ValidStates.Where<string>(s => !s.StartsWith("<")));
+			var validStates = (BnfState == null ? new string[] { } : BnfState.ValidStates.Where<string>(s => !s.StartsWith("<")));
 			//if (validStates.Length == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found no non-meta states available.", new BNFStateException(BNFState, ""));
 
 			// If we have any valid data types, we read that instead of a block start. They should all be the same data type, too.
 			var validDataTypes = validStates.Where<string>(s => DataTypes.Contains(s)).ToArray<string>();
 			if (validDataTypes.Length > 0) {
-				if (!validDataTypes.All<string>(s => s == validDataTypes[0])) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BNFStateException(BNFState, ""));
+				if (!validDataTypes.All<string>(s => s == validDataTypes[0])) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BnfStateException(BnfState, ""));
 
 				rv.Type = validDataTypes[0];
 				switch (rv.Type) {
@@ -355,7 +366,7 @@ namespace JGR.IO.Parser
 						break;
 					case "string":
 						var stringLength = BinaryReader.ReadUInt16();
-						if (stringLength > 10000) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found a string longer than 10,000 characters.", new BNFStateException(BNFState, ""));
+						if (stringLength > 10000) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found a string longer than 10,000 characters.", new BnfStateException(BnfState, ""));
 						for (var i = 0; i < stringLength; i++) {
 							rv.String += (char)BinaryReader.ReadUInt16();
 						}
@@ -367,36 +378,36 @@ namespace JGR.IO.Parser
 						rv.Kind = SimisTokenKind.String;
 						break;
 					default:
-						throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found unexpected data type '" + rv.Type + "'.", new BNFStateException(BNFState, ""));
+						throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found unexpected data type '" + rv.Type + "'.", new BnfStateException(BnfState, ""));
 				}
 			} else {
 				var tokenID = BinaryReader.ReadUInt16();
 				var tokenType = BinaryReader.ReadUInt16();
 				var token = ((uint)tokenType << 16) + tokenID;
-				if (!SimisProvider.TokenNames.ContainsKey(token)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}.", tokenID, tokenType), new BNFStateException(BNFState, ""));
-				if ((tokenType != 0x0000) && (tokenType != 0x0004)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}, name={2}.", tokenID, tokenType, SimisProvider.TokenNames[token]), new BNFStateException(BNFState, ""));
+				if (!SimisProvider.TokenNames.ContainsKey(token)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}.", tokenID, tokenType), new BnfStateException(BnfState, ""));
+				if ((tokenType != 0x0000) && (tokenType != 0x0004)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}, name={2}.", tokenID, tokenType, SimisProvider.TokenNames[token]), new BnfStateException(BnfState, ""));
 
 				rv.Type = SimisProvider.TokenNames[token];
 				rv.Kind = SimisTokenKind.Block;
 
-				if (BNFState == null) {
+				if (BnfState == null) {
 					try {
-						BNFState = new BNFState(SimisProvider.GetBNF(SimisFormat, rv.Type));
+						BnfState = new BnfState(SimisProvider.GetBnf(SimisFormat, rv.Type));
 					} catch(UnknownSimisFormatException e) {
 						throw new ReaderException(BinaryReader, true, PinReaderChanged(), "", e);
 					}
 				}
 
 				var contentsLength = BinaryReader.ReadUInt32();
-				if (contentsLength == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block with length of 0.", new BNFStateException(BNFState, ""));
-				if (BinaryReader.BaseStream.Position + contentsLength > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block longer than stream.", new BNFStateException(BNFState, ""));
+				if (contentsLength == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block with length of 0.", new BnfStateException(BnfState, ""));
+				if (BinaryReader.BaseStream.Position + contentsLength > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block longer than stream.", new BnfStateException(BnfState, ""));
 
 				BlockEndOffsets.Push((uint)BinaryReader.BaseStream.Position + contentsLength);
 				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8") }); // , String = String.Join(", ", BlockEndOffsets.Select<uint, string>(o => o.ToString("X8")).ToArray<string>())
 
 				var nameLength = BinaryReader.Read();
 				if (nameLength > 0) {
-					if (BinaryReader.BaseStream.Position + nameLength * 2 > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block with name longer than stream.", new BNFStateException(BNFState, ""));
+					if (BinaryReader.BaseStream.Position + nameLength * 2 > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block with name longer than stream.", new BnfStateException(BnfState, ""));
 					for (var i = 0; i < nameLength; i++) {
 						rv.String += (char)BinaryReader.ReadUInt16();
 					}
@@ -407,21 +418,21 @@ namespace JGR.IO.Parser
 		}
 
 		#region PinReader code
-		private long PinReaderPosition = 0;
-		private void PinReader() {
+		long PinReaderPosition;
+		void PinReader() {
 			PinReaderPosition = BinaryReader.BaseStream.Position;
 		}
 
-		private int PinReaderChanged() {
+		int PinReaderChanged() {
 			return (int)(BinaryReader.BaseStream.Position - PinReaderPosition);
 		}
 
-		private void PinReaderReset() {
+		void PinReaderReset() {
 			BinaryReader.BaseStream.Position = PinReaderPosition;
 		}
 		#endregion
 
-		private bool CompareCharArray(char[] a, char[] b) {
+		static bool CompareCharArray(char[] a, char[] b) {
 			if (a.Length != b.Length) return false;
 			for (var i = 0; i < a.Length; i++) {
 				if (a[i] != b[i]) return false;
@@ -429,7 +440,7 @@ namespace JGR.IO.Parser
 			return true;
 		}
 
-		private void AutodetectStreamFormat() {
+		void AutodetectStreamFormat() {
 			var start = BaseStream.Position;
 			var streamIsBinary = true;
 
@@ -524,7 +535,7 @@ namespace JGR.IO.Parser
 				}
 			}
 
-			DoneAutodetect = true;
+			DoneAutoDetect = true;
 		}
 	}
 }

@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 using System.Diagnostics;
 
-namespace JGR.GUI
+namespace Jgr.Gui
 {
 	public class ToolStripNativeRenderer : ToolStripRenderer
 	{

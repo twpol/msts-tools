@@ -4,24 +4,24 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using JGR.Grammar;
+using Jgr.Grammar;
 
-namespace JGR.IO.Parser
+namespace Jgr.IO.Parser
 {
 	public class SimisFormat
 	{
-		internal SimisFormat(BNFFile bnf) {
-			Name = bnf.BNFFileName;
-			Extension = bnf.BNFFileExtension;
-			Format = bnf.BNFFileType + bnf.BNFFileTypeVersion;
-			Roots = bnf.BNFFileRoots;
-			BNF = bnf.BNF;
+		public string Name { get; private set; }
+		public string Extension { get; private set; }
+		public string Format { get; private set; }
+		public List<string> Roots { get; private set; }
+		public Bnf Bnf { get; private set; }
+	
+		internal SimisFormat(BnfFile bnf) {
+			Name = bnf.BnfFileName;
+			Extension = bnf.BnfFileExtension;
+			Format = bnf.BnfFileType + bnf.BnfFileTypeVersion;
+			Roots = bnf.BnfFileRoots;
+			Bnf = bnf.Bnf;
 		}
-
-		public string Name { get; protected set; }
-		public string Extension { get; protected set; }
-		public string Format { get; protected set; }
-		public List<string> Roots { get; protected set; }
-		public BNF BNF { get; protected set; }
 	}
 }
