@@ -115,15 +115,15 @@ namespace Jgr.IO.Parser
 							}
 							if (!inString) {
 								binaryWriter.Write(bite);
+								binaryWriter.Write(' ');
 							}
-							binaryWriter.Write(' ');
-							inWhitespace = true;
+							inWhitespace = !inString;
 						}
 					} else {
 						if ((bite == '(') || (bite == ')') || (bite == '+')) {
 							if (!inWhitespace) binaryWriter.Write(' ');
 						}
-						var isWhitespace = (bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ' ');
+						var isWhitespace = (bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ':') || (bite == ' ');
 						if (!isWhitespace || !inWhitespace) binaryWriter.Write(isWhitespace ? ' ' : bite);
 						inWhitespace = isWhitespace;
 						if ((bite == '(') || (bite == ')') || (bite == '+')) {
