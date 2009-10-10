@@ -91,22 +91,48 @@ namespace Jgr.IO.Parser
 				binaryWriter.Write(signature.ToCharArray());
 			}
 
-			var inWhitespace = false;
+			var inWhitespace = true;
+			var inString = false;
 			while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length) {
 				var bite = binaryReader.ReadChar();
 				if (isText) {
-					if ((bite == '(') || (bite == ')')) {
-						if (!inWhitespace) binaryWriter.Write(' ');
+					if (inString || (bite == '"')) {
+						inString = inString ^ (bite == '"');
+						if (inString) {
+							binaryWriter.Write(bite);
+						} else {
+							while ((binaryReader.PeekChar() == '\t') || (binaryReader.PeekChar() == '\n') || (binaryReader.PeekChar() == '\r') || (binaryReader.PeekChar() == ' ')) {
+								binaryReader.ReadChar();
+							}
+							if (binaryReader.PeekChar() == '+') {
+								binaryReader.ReadChar();
+								while ((binaryReader.PeekChar() == '\t') || (binaryReader.PeekChar() == '\n') || (binaryReader.PeekChar() == '\r') || (binaryReader.PeekChar() == ' ')) {
+									binaryReader.ReadChar();
+								}
+								if (binaryReader.PeekChar() != '"') throw new InvalidDataException("Data is invalid.");
+								binaryReader.ReadChar();
+								inString = true;
+							}
+							if (!inString) {
+								binaryWriter.Write(bite);
+							}
+							binaryWriter.Write(' ');
+							inWhitespace = true;
+						}
+					} else {
+						if ((bite == '(') || (bite == ')') || (bite == '+')) {
+							if (!inWhitespace) binaryWriter.Write(' ');
+						}
+						var isWhitespace = (bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ' ');
+						if (!isWhitespace || !inWhitespace) binaryWriter.Write(isWhitespace ? ' ' : bite);
+						inWhitespace = isWhitespace;
+						if ((bite == '(') || (bite == ')') || (bite == '+')) {
+							binaryWriter.Write(' ');
+							inWhitespace = true;
+						}
 					}
-				}
-				var isWhitespace = (bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ' ');
-				if (!isWhitespace || !inWhitespace || !isText) binaryWriter.Write(isWhitespace && isText ? ' ' : bite);
-				inWhitespace = isWhitespace;
-				if (isText) {
-					if ((bite == '(') || (bite == ')')) {
-						binaryWriter.Write(' ');
-						inWhitespace = true;
-					}
+				} else {
+					binaryWriter.Write(bite);
 				}
 			}
 

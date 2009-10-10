@@ -110,7 +110,7 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						if (token.String.ToCharArray().All<char>(c => SafeTokenCharacters.Contains(c))) {
+						if ((token.String.Length > 0) && token.String.ToCharArray().All<char>(c => SafeTokenCharacters.Contains(c))) {
 							BinaryWriter.Write(token.String.ToCharArray());
 						} else {
 							var wrap = "\"+\r\n";
