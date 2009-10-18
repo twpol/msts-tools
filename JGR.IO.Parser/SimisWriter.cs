@@ -3,12 +3,14 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.IO.Compression;
+using Jgr.Grammar;
 
 namespace Jgr.IO.Parser
 {
@@ -25,6 +27,7 @@ namespace Jgr.IO.Parser
 		bool TextBlocked;
 		bool TextBlockEmpty;
 		Stack<long> BlockStarts;
+		BnfState BnfState;
 		static readonly string SafeTokenCharacters = "._!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		public SimisWriter(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
@@ -50,6 +53,10 @@ namespace Jgr.IO.Parser
 			if (StreamFormat == SimisStreamFormat.Text) {
 				switch (token.Kind) {
 					case SimisTokenKind.Block:
+						if (BnfState == null) {
+							BnfState = new BnfState(SimisProvider.GetBnf(SimisFormat, token.Type));
+						}
+						BnfState.MoveTo(token.Type);
 						if (!TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -61,12 +68,17 @@ namespace Jgr.IO.Parser
 						TextBlocked = true;
 						break;
 					case SimisTokenKind.BlockBegin:
+						BnfState.EnterBlock();
 						BinaryWriter.Write(" (".ToCharArray());
 						TextIndent++;
 						TextBlocked = false;
 						TextBlockEmpty = true;
 						break;
 					case SimisTokenKind.BlockEnd:
+						BnfState.LeaveBlock();
+						if (BnfState.IsEmpty) {
+							BnfState = null;
+						}
 						TextIndent--;
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
@@ -77,6 +89,8 @@ namespace Jgr.IO.Parser
 						TextBlocked = true;
 						break;
 					case SimisTokenKind.Integer:
+						var intDatatypes = BnfState.ValidStates.Where<string>(s => s == "uint" || s == "sint" || s == "dword");
+						BnfState.MoveTo(intDatatypes.First());
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -89,6 +103,7 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.Float:
+						BnfState.MoveTo("float");
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -105,6 +120,11 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.String:
+						// Special-case Skip(...) blocks which are not parsed.
+						if (!token.String.StartsWith("Skip", StringComparison.InvariantCultureIgnoreCase) && !token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase)) {
+							var stringDatatypes = BnfState.ValidStates.Where<string>(s => s == "string" || s == "buffer");
+							BnfState.MoveTo(stringDatatypes.First());
+						}
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {

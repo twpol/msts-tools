@@ -60,16 +60,11 @@ namespace Jgr.Grammar
 	{
 		public Bnf Bnf { get; private set; }
 		Stack<KeyValuePair<BnfProduction, FsmState>> Rules;
-		bool _validCache;
-		bool _isEndBlockTime;
-		List<FsmState> _validReferences;
-		List<string> _validStates;
 
 		public BnfState(Bnf bnf) {
 			this.Bnf = bnf;
 			Rules = new Stack<KeyValuePair<BnfProduction, FsmState>>();
 			IsEnterBlockTime = false;
-			UpdateStates();
 		}
 
 		public override string MessageSourceName {
@@ -87,76 +82,90 @@ namespace Jgr.Grammar
 			}
 		}
 
-		public bool IsEnterBlockTime {
-			get;
-			protected set;
-		}
+		public bool IsEnterBlockTime { get; private set;  }
 
 		public bool IsEndBlockTime {
 			get {
-				UpdateStates();
-				return _isEndBlockTime;
-			}
-		}
+				// No rules, can't be the end of a block.
+				if (Rules.Count == 0) return false;
 
-		List<FsmState> ValidReferences {
-			get {
-				UpdateStates();
-				return _validReferences;
-			}
-		}
-
-		public List<string> ValidStates {
-			get {
-				UpdateStates();
-				return _validStates;
-			}
-		}
-
-		void UpdateStates() {
-			if (_validCache) return;
-
-			// Update valid references.
-			_isEndBlockTime = false;
-			_validReferences = new List<FsmState>();
-			if (Rules.Count > 0) {
+				var nextStates = new List<FsmState>();
 				if (Rules.Peek().Value == null) {
 					if (Rules.Peek().Key.ExpressionFsm != null) {
-						_validReferences.Add(Rules.Peek().Key.ExpressionFsm.Root);
+						nextStates.Add(Rules.Peek().Key.ExpressionFsm.Root);
 					}
 				} else {
-					_validReferences.AddRange(Rules.Peek().Value.Next);
+					nextStates.AddRange(Rules.Peek().Value.Next);
 				}
-				while (_validReferences.Any<FsmState>(s => !(s.Op is ReferenceOperator))) {
-					for (var i = 0; i < _validReferences.Count; i++) {
-						if (!(_validReferences[i].Op is ReferenceOperator)) {
-							var items = _validReferences[i].Next;
-							if (items.Count == 0) _isEndBlockTime = true;
-							_validReferences.InsertRange(i + 1, items);
-							_validReferences.RemoveAt(i);
-							i += items.Count<FsmState>(s => true) - 1;
-						}
+
+				// 0 next states means we can end the block here.
+				if (nextStates.Count == 0) return true;
+
+				while (nextStates.Any<FsmState>(s => !s.IsReference)) {
+					// Any non-reference states with 0 next states means we can end the block here.
+					if (nextStates.Any<FsmState>(s => (s.Next.Count == 0) && !s.IsReference)) return true;
+					// Collapse any non-reference states into their next states.
+					for (var i = 0; i < nextStates.Count; i++) {
+						if (nextStates[i].IsReference) continue;
+						var items = nextStates[i].Next;
+						if (items.Count == 0) return true;
+						nextStates.InsertRange(i + 1, items);
+						nextStates.RemoveAt(i);
+						i += items.Count - 1;
 					}
 				}
-				if (_validReferences.Count == 0) _isEndBlockTime = true;
-			}
 
-			// Update valid states.
-			_validStates = new List<string>();
-			if (IsEnterBlockTime) {
-				_validStates.Add("<begin-block>");
-			} else {
+				// All reference states.
+				return false;
+			}
+		}
+
+		IEnumerable<FsmState> ValidReferences {
+			get {
+				var nextReferences = new List<FsmState>();
+				if (Rules.Count == 0) return nextReferences;
+
+				if (Rules.Peek().Value == null) {
+					if (Rules.Peek().Key.ExpressionFsm != null) {
+						nextReferences.Add(Rules.Peek().Key.ExpressionFsm.Root);
+					}
+				} else {
+					nextReferences.AddRange(Rules.Peek().Value.Next);
+				}
+
+				if (nextReferences.Count == 0) return nextReferences;
+
+				while (nextReferences.Any<FsmState>(s => !s.IsReference)) {
+					// Collapse any non-reference states into their next states.
+					for (var i = 0; i < nextReferences.Count; i++) {
+						if (nextReferences[i].IsReference) continue;
+						var items = nextReferences[i].Next;
+						nextReferences.InsertRange(i + 1, items);
+						nextReferences.RemoveAt(i);
+						i += items.Count - 1;
+					}
+				}
+
+				return nextReferences;
+			}
+		}
+
+		public IEnumerable<string> ValidStates {
+			get {
+				if (IsEnterBlockTime) {
+					return new string[] { "<begin-block>" };
+				}
+				var nextStates = new List<string>();
 				if (Rules.Count == 0) {
-					_validStates.AddRange(Bnf.Productions.Keys);
+					nextStates.AddRange(Bnf.Productions.Keys);
 				} else {
-					_validStates.AddRange(_validReferences.Select<FsmState, string>(s => ((ReferenceOperator)s.Op).Reference));
+					nextStates.AddRange(ValidReferences.Select<FsmState, string>(s => ((ReferenceOperator)s.Op).Reference));
 				}
-				if (_isEndBlockTime) {
-					_validStates.Add("<end-block>");
+				if (IsEndBlockTime) {
+					nextStates.Add("<end-block>");
 				}
+				return nextStates;
 			}
-
-			_validCache = true;
 		}
 
 		public void MoveTo(string reference) {
@@ -179,7 +188,6 @@ namespace Jgr.Grammar
 					IsEnterBlockTime = true;
 				}
 			}
-			_validCache = false;
 			//MessageSend(LEVEL_DEBUG, ToString());
 		}
 
@@ -187,7 +195,6 @@ namespace Jgr.Grammar
 			MessageSend(LevelDebug, "Moving BNF to state <begin-block>.");
 			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
 			IsEnterBlockTime = false;
-			_validCache = false;
 			//MessageSend(LEVEL_DEBUG, ToString());
 		}
 
@@ -196,7 +203,6 @@ namespace Jgr.Grammar
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got end-block.");
 			if (!IsEndBlockTime) throw new BnfStateException(this, "BNF expected begin-block, reference or literal; got end-block.");
 			Rules.Pop();
-			_validCache = false;
 			//MessageSend(LEVEL_DEBUG, ToString());
 		}
 

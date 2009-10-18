@@ -77,6 +77,7 @@ namespace SimisEditor
 				var messageLog = new BufferedMessageSource();
 				var count = 0;
 				var successCount = 0;
+				var timeStart = DateTime.Now;
 
 				foreach (var file in Files) {
 					var success = true;
@@ -136,13 +137,17 @@ namespace SimisEditor
 
 					count++;
 					this.Invoke((MethodInvoker)(() => {
-						TestFileStatus.Text = "Testing " + Files.Count + " files... " + successCount + " of " + count + " passed (" + ((double)100 * successCount / count).ToString("F0") + "%)";
+						var timeTaken = DateTime.Now - timeStart;
+						TestFileStatus.Text = String.Format("Testing {0} files... {1} of {2} passed ({3:F0}%). About {4:F0} minutes remaining.", Files.Count, successCount, count, ((double)100 * successCount / count), (Files.Count - count) * timeTaken.TotalMinutes / count);
 						TestProgress.Value = count;
 					}));
 				}
 
-				messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%).");
-				
+				{
+					var timeTaken = DateTime.Now - timeStart;
+					messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("Tested {0} files; {1} passed ({2:F0}%). Took {3:F0} minutes.", Files.Count, successCount, ((double)100 * successCount / Files.Count), timeTaken.TotalMinutes));
+				}
+
 				this.Invoke((MethodInvoker)(() => {
 					TestRun.Enabled = true;
 					TestFileStatus.Text = "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%)";
