@@ -79,16 +79,11 @@ namespace Jgr.IO.Parser
 		public SimisToken ReadToken() {
 			if (!DoneAutoDetect) AutodetectStreamFormat();
 
-			// Any blocks that should have ended at or before this point, are now ended.
-			while ((BlockEndOffsets.Count > 0) && (BinaryReader.BaseStream.Position >= BlockEndOffsets.Peek())) {
-				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockEnd }); //, String = String.Join(", ", BlockEndOffsets.Select<uint, string>(o => o.ToString("X8")).ToArray<string>()) });
-				BlockEndOffsets.Pop();
-			}
-
 			// Any pending tokens go first.
 			if (PendingTokens.Count > 0) {
 				// If we've run out of stream and have no pending tokens, we're done.
 				if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 1)) {
+					if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
 					EndOfStream = true;
 				}
 				try {
@@ -132,15 +127,22 @@ namespace Jgr.IO.Parser
 					if ((rv.Kind != SimisTokenKind.BlockBegin) && (rv.Kind != SimisTokenKind.BlockEnd)) {
 						BnfState.MoveTo(rv.Type);
 					} else {
-						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "ReadTokenAsBinary returned invalid token type: " + rv.Type);
+						throw new ReaderException(BinaryReader, true, PinReaderChanged(), "ReadTokenAsBinary returned invalid token type: " + rv.Type);
 					}
 				} catch (BnfStateException e) {
 					throw new ReaderException(BinaryReader, true, PinReaderChanged(), "", e);
 				}
 			}
 
+			// Any blocks that should have ended at or before this point, are now ended.
+			while ((BlockEndOffsets.Count > 0) && (BinaryReader.BaseStream.Position >= BlockEndOffsets.Peek())) {
+				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockEnd }); //, String = String.Join(", ", BlockEndOffsets.Select<uint, string>(o => o.ToString("X8")).ToArray<string>()) });
+				BlockEndOffsets.Pop();
+			}
+
 			// If we've run out of stream and have no pending tokens, we're done.
 			if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 0)) {
+				if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
 				EndOfStream = true;
 			}
 

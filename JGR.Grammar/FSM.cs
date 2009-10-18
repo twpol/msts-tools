@@ -16,6 +16,7 @@ namespace Jgr.Grammar
 		public FsmState Root { get; private set; }
 
 		public Fsm(Operator expression) {
+			Debug.WriteLine("ORIGINAL: " + expression);
 			Root = RemoveRedundantSteps(MakeStateForOp(expression));
 			IndexUnlinks(Root);
 		}
@@ -32,14 +33,14 @@ namespace Jgr.Grammar
 				var oop = (OptionalOperator)op;
 				var right = MakeStateForOp(oop.Right);
 				var end = new FsmState(null);
-				LinkEndsTo(right, new FiniteStateMachineStateUnlink(state.Op, end));
+				LinkEndsTo(right, new FsmStateUnlink(end));
 				state.Next.Add(right);
 				state.Next.Add(end);
 			} else if (op is RepeatOperator) {
 				var rop = (RepeatOperator)op;
 				var right = MakeStateForOp(rop.Right);
 				state.Next.Add(right);
-				LinkEndsTo(right, new FsmState[] { new FiniteStateMachineStateUnlink(state.Op, state), new FsmState(null) });
+				LinkEndsTo(right, new FsmState[] { new FsmStateUnlink(state), new FsmState(null) });
 			} else if (op is LogicalOperator) {
 				var lop = (LogicalOperator)op;
 				var left = MakeStateForOp(lop.Left);
@@ -64,13 +65,13 @@ namespace Jgr.Grammar
 		}
 
 		void LinkEndsTo(FsmState state, IEnumerable<FsmState> end) {
+			if (state is FsmStateUnlink) return;
 			if (state.Next.Count == 0) {
 				state.Next.AddRange(end);
 			} else {
 				foreach (var next in state.Next) {
-					if (!(next is FiniteStateMachineStateUnlink) && !end.Contains<FsmState>(next)) {
-						LinkEndsTo(next, end);
-					}
+					if (end.Contains<FsmState>(next)) continue;
+					LinkEndsTo(next, end);
 				}
 			}
 		}
@@ -87,7 +88,7 @@ namespace Jgr.Grammar
 					i += end.Count<FsmState>(s => true) - 1;
 				}
 			}
-			if (!(state is FiniteStateMachineStateUnlink)) {
+			if (state.HasNext) {
 				foreach (var next in state.Next) {
 					ReplaceLinksWith(next, old, end);
 				}
@@ -95,46 +96,38 @@ namespace Jgr.Grammar
 		}
 
 		FsmState RemoveRedundantSteps(FsmState root) {
-			return RemoveRedundantSteps(root, root);
+			IndexUnlinks(root); // FIXME
+			Debug.WriteLine("INITIAL:  " + root);
+			var rv = RemoveRedundantSteps(ref root, root);
+			IndexUnlinks(root); // FIXME
+			Debug.WriteLine("FINAL:    " + root);
+			Debug.WriteLine("");
+			return rv;
 		}
 
-		FsmState RemoveRedundantSteps(FsmState root, FsmState state) {
-			if ((state.Next.Count == 1) && ((state.Op is RepeatOperator) || (state.Op is LogicalOperator) || (state.Op == null))) {
-				//Debug.WriteLine("RemoveRedundantSteps: 1 next state, state = " + state.OpString() + ".");
-				//Debug.WriteLine("BEFORE: " + root);
-				ReplaceLinksWith(root, state, state.Next[0]);
-				//Debug.WriteLine("AFTER:  " + root);
-				//Debug.WriteLine("");
-				return RemoveRedundantSteps(root, state.Next[0]);
-			}
-			if ((state.Op is LogicalOperator) && state.Next.All<FsmState>(s => (s.Op.GetType() == state.Op.GetType()) || (s.Op is ReferenceOperator))) {
-				//Debug.WriteLine("RemoveRedundantSteps: nested operator(s) same as container, state = " + state.OpString() + ".");
-				//Debug.WriteLine("BEFORE: " + root);
-				while (state.Next.Any<FsmState>(s => s.Op.GetType() == state.Op.GetType())) {
-					var next = state.Next.ToArray();
-					state.Next.RemoveAll(n => true);
-					foreach (var n in next) {
-						if (n.Op.GetType() == state.Op.GetType()) {
-							state.Next.AddRange(n.Next);
-						} else {
-							state.Next.Add(n);
-						}
-					}
+		FsmState RemoveRedundantSteps(ref FsmState root, FsmState state) {
+			// Structure with exactly 1 next state can be removed.
+			if (state.IsStructure && (state.Next.Count == 1)) {
+				Debug.WriteLine("  Removing unnecessary " + state.OpString() + ".");
+				if (root == state) {
+					root = state.Next[0];
 				}
-				//Debug.WriteLine("AFTER:  " + root);
-				//Debug.WriteLine("");
+				ReplaceLinksWith(root, state, state.Next[0]);
+				IndexUnlinks(root); // FIXME
+				Debug.WriteLine("  New:    " + root);
+				return RemoveRedundantSteps(ref root, state.Next[0]);
 			}
-			if ((state.Next.Count == 1) && !(state.Next[0] is FiniteStateMachineStateUnlink) && !(state.Next[0].Op is ReferenceOperator) && (state.Next[0].Next.Count > 0)) {
-				//Debug.WriteLine("RemoveRedundantSteps: 1 next state, at least 1 further state, state = " + state.OpString() + ", state.Next[0] = " +  state.Next[0].OpString() + ".");
-				//Debug.WriteLine("BEFORE: " + root);
-				ReplaceLinksWith(root, state.Next[0], state.Next[0].Next);
-				//Debug.WriteLine("AFTER:  " + root);
-				//Debug.WriteLine("");
+			if (state.IsReference && (state.Next.Count == 1) && state.Next[0].IsStructure && (state.Next[0].Next.Count > 0)) {
+			    Debug.WriteLine("  Removing unnecessary " +  state.Next[0].OpString() + ".");
+			    ReplaceLinksWith(root, state.Next[0], state.Next[0].Next);
+				IndexUnlinks(root); // FIXME
+				Debug.WriteLine("  New:    " + root);
+				return RemoveRedundantSteps(ref root, state);
 			}
-			for (var i = 0; i < state.Next.Count; i++) {
-			    if (!(state.Next[i] is FiniteStateMachineStateUnlink)) {
-			        state.Next[i] = RemoveRedundantSteps(root, state.Next[i]);
-			    }
+			if (state.HasNext) {
+				for (var i = 0; i < state.Next.Count; i++) {
+					state.Next[i] = RemoveRedundantSteps(ref root, state.Next[i]);
+				}
 			}
 			return state;
 		}
@@ -145,10 +138,8 @@ namespace Jgr.Grammar
 		}
 
 		void IndexUnlinks(ref int index, FsmState state) {
-			if (state is FiniteStateMachineStateUnlink) {
-				if (state.Next[0].Index == 0) {
-					state.Next[0].Index = ++index;
-				}
+			if (state is FsmStateUnlink) {
+				state.Next[0].Index = ++index;
 			} else {
 				foreach (var next in state.Next) {
 					IndexUnlinks(ref index, next);
@@ -161,41 +152,63 @@ namespace Jgr.Grammar
 	{
 		public Operator Op { get; private set; }
 		public List<FsmState> Next { get; private set; }
+		public bool IsReference { get; protected set; }
+		public bool IsStructure { get; protected set; }
 		public int Index { get; internal set; }
 
 		internal FsmState(Operator op) {
 			Op = op;
 			Next = new List<FsmState>();
+			IsReference = Op is ReferenceOperator;
+			IsStructure = !IsReference;
 		}
 
-		string OpString() {
-			if (Op is ReferenceOperator) {
+		internal virtual string OpString() {
+			if (IsReference) {
 				return (Index > 0 ? Index + ":" : "") + ((ReferenceOperator)Op).Reference;
 			}
 			return (Index > 0 ? Index + ":"  : "") + "(" + (Op != null ? Op.Op.ToString().ToLower() : "null") + ")";
 		}
 
+		public virtual bool HasNext {
+			get {
+				return Next.Count > 0;
+			}
+		}
+
 		public override string ToString() {
 			var rv = OpString();
 			if (Next.Count == 1) {
-				rv += "-> " + Next[0].ToString();
+				rv += " -> " + Next[0].ToString();
 			} else if (Next.Count > 1) {
-				rv += "-> {" + String.Join(", ", Next.Select<FsmState, string>(s => s.ToString()).ToArray<string>()) + "}";
+				rv += " -> {" + String.Join(", ", Next.Select<FsmState, string>(s => s.ToString()).ToArray<string>()) + "}";
 			}
 			return rv;
 		}
 	}
 
-	public class FiniteStateMachineStateUnlink : FsmState
+	public class FsmStateUnlink : FsmState
 	{
-		internal FiniteStateMachineStateUnlink(Operator op, FsmState state)
-			: base(op)
+		internal FsmStateUnlink(FsmState state)
+			: base(null)
 		{
 			Next.Add(state);
+			IsReference = false;
+			IsStructure = false;
+		}
+
+		internal override string OpString() {
+			return (Index > 0 ? Index + ":" : "") + (Next.Count == 0 ? "^???" : "^" + Next[0].Index);
+		}
+
+		public override bool HasNext {
+			get {
+				return false;
+			}
 		}
 
 		public override string ToString() {
-			return (Next.Count == 0 ? "^???" : "^" + Next[0].Index);
+			return OpString();
 		}
 	}
 }
