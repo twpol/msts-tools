@@ -81,16 +81,16 @@ namespace Jgr.IO.Parser
 
 			// Any pending tokens go first.
 			if (PendingTokens.Count > 0) {
-				// If we've run out of stream and have no pending tokens, we're done.
-				if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 1)) {
-					if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
-					EndOfStream = true;
-				}
 				try {
 					if (PendingTokens.Peek().Kind == SimisTokenKind.BlockBegin) BnfState.EnterBlock();
 					if (PendingTokens.Peek().Kind == SimisTokenKind.BlockEnd) BnfState.LeaveBlock();
 				} catch (BnfStateException e) {
 					throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "", e);
+				}
+				// If we've run out of stream and have no pending tokens, we're done.
+				if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 1)) {
+					if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
+					EndOfStream = true;
 				}
 				return PendingTokens.Dequeue();
 			}
