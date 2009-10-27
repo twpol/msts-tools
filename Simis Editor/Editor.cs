@@ -135,7 +135,9 @@ namespace SimisEditor
 			try {
 				newFile.ReadFile();
 			} catch (FileException ex) {
-				MessageBox.Show(ex.ToString(), "Open File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+					MessageBox.Show(ex.ToString(), "Open File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
 				return;
 			}
 
@@ -331,7 +333,7 @@ namespace SimisEditor
 			return BlockToNameString(block);
 		}
 
-		static object CreateEditObjectFor(SimisTreeNode block) {
+		object CreateEditObjectFor(SimisTreeNode block) {
 			if (block.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) return null;
 
 			var dClassName = "block_" + block.Type.Replace(".", "_");
@@ -440,6 +442,7 @@ namespace SimisEditor
 
 				var messages = new string[compileResults.Output.Count];
 				compileResults.Output.CopyTo(messages, 0);
+
 				MessageBox.Show("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
 					+ String.Join("\n", messages), "Create Property Editor Data - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return null;
@@ -549,11 +552,13 @@ namespace SimisEditor
 		}
 
 		void testToolStripMenuItem_Click(object sender, EventArgs e) {
-			folderBrowserDialog.Description = "Select a folder to test files from.";
-			if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK) {
-				using (var test = new Test()) {
-					test.SetupTest(folderBrowserDialog.SelectedPath, SimisProvider);
-					test.ShowDialog(this);
+			using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+				folderBrowserDialog.Description = "Select a folder to test files from.";
+				if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK) {
+					using (var test = new Test()) {
+						test.SetupTest(folderBrowserDialog.SelectedPath, SimisProvider);
+						test.ShowDialog(this);
+					}
 				}
 			}
 		}
