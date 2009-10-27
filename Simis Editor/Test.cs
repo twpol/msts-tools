@@ -130,6 +130,8 @@ namespace SimisEditor
 							messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
 						}
 					}
+
+					// It all worked!
 					if (success) {
 						successCount++;
 						messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("{0}\n\nFile successfully read and written.", file));
