@@ -13,65 +13,91 @@ using Jgr;
 using Jgr.IO.Parser;
 using Jgr.IO;
 using System.Text;
+using Jgr.Gui;
+using SimisEditor.Properties;
 
 namespace SimisEditor
 {
 	public partial class Test : Form
 	{
-		public Test() {
-			InitializeComponent();
-		}
-
 		SimisProvider SimisProvider;
 		List<string> Extensions;
 		List<string> Files;
 		Thread BackgroundThread = null;
+		Messages Messages = null;
 
-		public void SetupTest(string path, SimisProvider provider) {
-			TestPath.Text = path;
-
+		public Test(SimisProvider provider) {
+			InitializeComponent();
 			SimisProvider = provider;
-
 			Extensions = new List<string>(SimisProvider.Formats.Select<SimisFormat, string>(f => "." + f.Extension.ToLower()));
 			Files = new List<string>();
+			TestFormats.Items.Add("All Train Simulator files (" + String.Join(";", SimisProvider.Formats.Select<SimisFormat, string>(f => "*." + f.Extension).ToArray()) + ")");
+			TestFormats.Items.AddRange(SimisProvider.Formats.Select<SimisFormat, string>(f => f.Name + " files (*." + f.Extension.ToLower() + ")").ToArray());
+			TestTests.Items.AddRange(new string[] { "Read", "Read and Write" });
 
-			FindFilesToTest();
+			try {
+				TestFormats.SelectedIndex = Settings.Default.TestFormat.Length == 0 ? 0 : Extensions.IndexOf(Settings.Default.TestFormat) + 1;
+				TestTests.SelectedIndex = Settings.Default.TestTests;
+				TestPath.Text = Settings.Default.TestPath;
+			} catch (ArgumentOutOfRangeException) {
+			}
+			ScanForFiles();
 		}
 
-		void FindFilesToTest() {
+		void ScanForFiles() {
 			var path = TestPath.Text;
+			if (path.StartsWith("<")) return;
+
+			TestResults.Enabled = false;
 			TestFileStatus.Text = "Scanning for files...";
+			Messages = null;
+
+			Settings.Default.TestPath = TestPath.Text;
+			Settings.Default.TestFormat = TestFormats.SelectedIndex == 0 ? "" : Extensions[TestFormats.SelectedIndex - 1];
+			Settings.Default.TestTests = TestTests.SelectedIndex;
+			Settings.Default.Save();
+
+			Files = new List<string>();
+			var allowedExtensions = TestFormats.SelectedIndex == 0 ? Extensions.ToArray() : new string[] { Extensions[TestFormats.SelectedIndex - 1] };
+
+			if (BackgroundThread != null) {
+				BackgroundThread.Abort();
+			}
+
 			BackgroundThread = new Thread(() => {
-				BackgroundFindFilesToTestRecursive(path);
+				BackgroundScanForFilesRecursive(path, allowedExtensions);
 				this.Invoke((MethodInvoker)(() => {
-					TestFileStatus.Text = "Found " + Files.Count + " files to test.";
-					TestRun.Enabled = true;
+					//TestFileStatus.Text = "Found " + Files.Count + " files to test.";
+					TestFiles();
 				}));
-				BackgroundThread = null;
 			});
 			BackgroundThread.Start();
 		}
 
-		void BackgroundFindFilesToTestRecursive(string path) {
-			foreach (var file in Directory.GetFiles(path)) {
-				if (file.IndexOf(".") >= 0) {
-					var ext = file.Substring(file.LastIndexOf(".")).ToLower();
-					if (Extensions.Contains(ext)) {
-						Files.Add(file);
+		void BackgroundScanForFilesRecursive(string path, IEnumerable<string> allowedExtensions) {
+			try {
+				foreach (var file in Directory.GetFiles(path)) {
+					if (file.IndexOf(".") >= 0) {
+						var ext = file.Substring(file.LastIndexOf(".")).ToLower();
+						if (allowedExtensions.Contains(ext)) {
+							Files.Add(file);
+						}
 					}
 				}
-			}
-			foreach (var directory in Directory.GetDirectories(path)) {
-				BackgroundFindFilesToTestRecursive(directory);
+				foreach (var directory in Directory.GetDirectories(path)) {
+					BackgroundScanForFilesRecursive(directory, allowedExtensions);
+				}
+			} catch (DirectoryNotFoundException) {
 			}
 		}
 
 		void TestFiles() {
-			TestRun.Enabled = false;
 			TestProgress.Minimum = 0;
 			TestProgress.Maximum = Files.Count;
 			TestProgress.Value = 0;
 			TestFileStatus.Text = "Testing " + Files.Count + " files...";
+
+			var doWriteTest = TestTests.SelectedIndex == 1;
 
 			BackgroundThread = new Thread(() => {
 				var messageLog = new BufferedMessageSource();
@@ -96,7 +122,7 @@ namespace SimisEditor
 					}
 
 					// Second, write the file out into memory.
-					if (success) {
+					if (success && doWriteTest) {
 						try {
 							newFile.WriteStream(saveStream);
 						} catch (FileException ex) {
@@ -106,7 +132,7 @@ namespace SimisEditor
 					}
 
 					// Third, verify that the output is the same as the input.
-					if (success) {
+					if (success && doWriteTest) {
 						readStream.Seek(0, SeekOrigin.Begin);
 						saveStream.Seek(0, SeekOrigin.Begin);
 						var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
@@ -151,21 +177,15 @@ namespace SimisEditor
 				}
 
 				this.Invoke((MethodInvoker)(() => {
-					TestRun.Enabled = true;
+					TestResults.Enabled = true;
 					TestFileStatus.Text = "Tested " + Files.Count + " files; " + successCount + " passed (" + ((double)100 * successCount / Files.Count).ToString("F0") + "%)";
-					using (var messages = new Messages()) {
-						messageLog.RegisterMessageSink(messages);
-						messages.ShowDialog(this);
-						messageLog.UnregisterMessageSink(messages);
-					}
+
+					Messages = new Messages();
+					messageLog.RegisterMessageSink(Messages);
 				}));
 				BackgroundThread = null;
 			});
 			BackgroundThread.Start();
-		}
-
-		void TestRun_Click(object sender, EventArgs e) {
-			TestFiles();
 		}
 
 		void Test_FormClosing(object sender, FormClosingEventArgs e) {
@@ -173,6 +193,28 @@ namespace SimisEditor
 				BackgroundThread.Abort();
 				BackgroundThread = null;
 			}
+		}
+
+		private void TestPathBrowse_Click(object sender, EventArgs e) {
+			using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+				TestPathBrowseDialog.Description = "Select a folder to test files from.";
+				if (TestPathBrowseDialog.ShowDialog(this) == DialogResult.OK) {
+					TestPath.Text = TestPathBrowseDialog.SelectedPath;
+					ScanForFiles();
+				}
+			}
+		}
+
+		private void TestFormats_SelectedIndexChanged(object sender, EventArgs e) {
+			ScanForFiles();
+		}
+
+		private void TestTests_SelectedIndexChanged(object sender, EventArgs e) {
+			ScanForFiles();
+		}
+
+		private void TestResults_Click(object sender, EventArgs e) {
+			Messages.ShowDialog(this);
 		}
 	}
 }

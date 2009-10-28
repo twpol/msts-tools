@@ -82,19 +82,23 @@ namespace SimisEditor
 			thread.Start();
 		}
 
-		void WaitForSimisProvider() {
+		bool WaitForSimisProvider() {
 			try {
 				SimisProvider.Join();
 			} catch (FileException ex) {
 				this.Invoke((MethodInvoker)(() => {
-					MessageBox.Show(ex.ToString(), "Load Resources - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+						MessageBox.Show(ex.ToString(), "Load Resources - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
 				}));
+				return false;
 			}
-
-			this.Invoke((MethodInvoker)(() => UpdateFromSimisProvider()));
+			return true;
 		}
 
-		void UpdateFromSimisProvider() {
+		bool UpdateFromSimisProvider() {
+			if (!WaitForSimisProvider()) return false;
+
 			var generalName = "Train Simulator files";
 
 			var simisFormats = new List<List<string>>();
@@ -108,6 +112,8 @@ namespace SimisEditor
 
 			var streamFormats = new string[] { "Text", "Binary", "Compressed Binary" };
 			saveFileDialog.Filter = String.Join("|", streamFormats.Select<string, string>(s => s + " " + generalName + "|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
+
+			return true;
 		}
 
 		void InitializeFromCommandLine() {
@@ -122,6 +128,7 @@ namespace SimisEditor
 		}
 
 		void NewFile() {
+			//WaitForSimisProvider();
 			Modified = false;
 			Filename = "";
 			File = new SimisFile("", SimisProvider);
@@ -131,6 +138,7 @@ namespace SimisEditor
 		}
 
 		void OpenFile(string filename) {
+			if (!WaitForSimisProvider()) return;
 			var newFile = new SimisFile(filename, SimisProvider);
 			try {
 				newFile.ReadFile();
@@ -165,10 +173,12 @@ namespace SimisEditor
 			try {
 				File.WriteFile();
 			} catch (FileException ex) {
-				if (ex.InnerException is UnauthorizedAccessException) {
-					MessageBox.Show(ex.InnerException.Message, "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-				} else {
-					MessageBox.Show(ex.ToString(), "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+					if (ex.InnerException is UnauthorizedAccessException) {
+						MessageBox.Show(ex.InnerException.Message, "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					} else {
+						MessageBox.Show(ex.ToString(), "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
 				}
 				return;
 			}
@@ -179,12 +189,14 @@ namespace SimisEditor
 
 		bool SaveFileIfModified() {
 			if (Modified) {
-				switch (MessageBox.Show("Do you want to save changes to '" + FilenameTitle + "'?", Application.ProductName, MessageBoxButtons.YesNoCancel)) {
-					case DialogResult.Yes:
-						SaveFile();
-						break;
-					case DialogResult.Cancel:
-						return false;
+				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+					switch (MessageBox.Show("Do you want to save changes to '" + FilenameTitle + "'?", Application.ProductName, MessageBoxButtons.YesNoCancel)) {
+						case DialogResult.Yes:
+							SaveFile();
+							break;
+						case DialogResult.Cancel:
+							return false;
+					}
 				}
 			}
 			UpdateTitle();
@@ -443,8 +455,10 @@ namespace SimisEditor
 				var messages = new string[compileResults.Output.Count];
 				compileResults.Output.CopyTo(messages, 0);
 
-				MessageBox.Show("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
-					+ String.Join("\n", messages), "Create Property Editor Data - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
+					MessageBox.Show("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
+						+ String.Join("\n", messages), "Create Property Editor Data - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
 				return null;
 			}
 
@@ -489,6 +503,7 @@ namespace SimisEditor
 			if (!SaveFileIfModified()) {
 				return;
 			}
+			if (!UpdateFromSimisProvider()) return;
 			if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
 				OpenFile(openFileDialog.FileName);
 			}
@@ -500,6 +515,7 @@ namespace SimisEditor
 
 		void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
 			// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
+			if (!UpdateFromSimisProvider()) return;
 			saveFileDialog.FilterIndex = File.StreamCompressed ? 3 : File.StreamFormat == SimisStreamFormat.Text ? 1 : 2;
 			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
 				Filename = saveFileDialog.FileName;
@@ -552,14 +568,9 @@ namespace SimisEditor
 		}
 
 		void testToolStripMenuItem_Click(object sender, EventArgs e) {
-			using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-				folderBrowserDialog.Description = "Select a folder to test files from.";
-				if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK) {
-					using (var test = new Test()) {
-						test.SetupTest(folderBrowserDialog.SelectedPath, SimisProvider);
-						test.ShowDialog(this);
-					}
-				}
+			if (!WaitForSimisProvider()) return;
+			using (var test = new Test(SimisProvider)) {
+				test.ShowDialog(this);
 			}
 		}
 
@@ -588,6 +599,7 @@ namespace SimisEditor
 			if (files.Length != 1) {
 				return;
 			}
+			if (!WaitForSimisProvider()) return;
 			if (!SimisProvider.Formats.Any<SimisFormat>((f) => files[0].EndsWith("." + f.Extension))) {
 				return;
 			}
