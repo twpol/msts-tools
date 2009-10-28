@@ -26,5 +26,14 @@
     <Setting Name="UpdateCheckLastTime" Type="System.DateTime" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="TestPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Program Files\Microsoft Games\Train Simulator</Value>
+    </Setting>
+    <Setting Name="TestFormat" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="TestTests" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -57,12 +57,11 @@
 			this.discussionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.issueTrackerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
+			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
 			this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
 			this.SimisProperties = new System.Windows.Forms.PropertyGrid();
-			this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
-			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -276,6 +275,13 @@
 			this.toolStripMenuItem4.Name = "toolStripMenuItem4";
 			this.toolStripMenuItem4.Size = new System.Drawing.Size(194, 6);
 			// 
+			// reloadSimisResourcesToolStripMenuItem
+			// 
+			this.reloadSimisResourcesToolStripMenuItem.Name = "reloadSimisResourcesToolStripMenuItem";
+			this.reloadSimisResourcesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+			this.reloadSimisResourcesToolStripMenuItem.Text = "Reload Simis Resources";
+			this.reloadSimisResourcesToolStripMenuItem.Click += new System.EventHandler(this.reloadSimisResourcesToolStripMenuItem_Click);
+			// 
 			// testToolStripMenuItem
 			// 
 			this.testToolStripMenuItem.Name = "testToolStripMenuItem";
@@ -293,17 +299,6 @@
 			this.SimisProperties.TabIndex = 2;
 			this.SimisProperties.ToolbarVisible = false;
 			this.SimisProperties.PropertyValueChanged += new System.Windows.Forms.PropertyValueChangedEventHandler(this.SimisProperties_PropertyValueChanged);
-			// 
-			// folderBrowserDialog
-			// 
-			this.folderBrowserDialog.ShowNewFolderButton = false;
-			// 
-			// reloadSimisResourcesToolStripMenuItem
-			// 
-			this.reloadSimisResourcesToolStripMenuItem.Name = "reloadSimisResourcesToolStripMenuItem";
-			this.reloadSimisResourcesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
-			this.reloadSimisResourcesToolStripMenuItem.Text = "Reload Simis Resources";
-			this.reloadSimisResourcesToolStripMenuItem.Click += new System.EventHandler(this.reloadSimisResourcesToolStripMenuItem_Click);
 			// 
 			// Editor
 			// 
@@ -351,7 +346,6 @@
 		private System.Windows.Forms.PropertyGrid SimisProperties;
 		private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
-		private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
 		private System.Windows.Forms.ToolStripMenuItem homepageToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem updatesToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem issueTrackerToolStripMenuItem;

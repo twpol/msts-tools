@@ -31,6 +31,8 @@ namespace Jgr.IO.Parser
 
 		static readonly char[] WhitespaceChars = InitWhitespaceChars();
 		static readonly char[] WhitespaceAndSpecialChars = InitWhitespaceAndSpecialChars();
+		static readonly char[] DecDigits = InitDecDigits();
+		static readonly char[] DecFloatDigits = InitDecFloatDigits();
 		static readonly char[] HexDigits = InitHexDigits();
 		static readonly string[] DataTypes = InitDataTypes();
 		#region static init functions
@@ -42,12 +44,20 @@ namespace Jgr.IO.Parser
 			return new char[] { ' ', '\t', '\r', '\n', '(', ')', '"', ':' };
 		}
 
+		static char[] InitDecDigits() {
+			return new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+		}
+
+		static char[] InitDecFloatDigits() {
+			return InitDecDigits().Union<char>(new char[] { '.', 'e', 'E', '+', '-' }).ToArray();
+		}
+
 		static char[] InitHexDigits() {
-			return new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' };
+			return InitDecDigits().Union<char>(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' }).ToArray();
 		}
 
 		static string[] InitDataTypes() {
-			return new string[] { "string", "uint", "sint", "dword", "float", "buffer" };
+			return new string[] { "uint", "sint", "dword", "float", "string", "buffer" };
 		}
 		#endregion
 
@@ -222,10 +232,24 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			var validDataTypeStates = validStates.Where<string>(s => DataTypes.Contains(s)).Where<string>(s => {
-				if (token.Contains(".")) return (s == "float") || (s == "string");
-				if ((token.Length == 8) && (token.ToCharArray().All<char>(c => HexDigits.Contains(c)))) return s == "dword";
-				return s != "dword";
+			var validDataTypeStates = validStates.Where<string>(s => {
+				switch (s) {
+					case "uint":
+						return token.ToCharArray().All<char>(c => DecDigits.Contains(c));
+					case "sint":
+						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All<char>(c => DecDigits.Contains(c));
+						return token.ToCharArray().All<char>(c => DecDigits.Contains(c));
+					case "dword":
+						return (token.Length == 8) && (token.ToCharArray().All<char>(c => HexDigits.Contains(c)));
+					case "float":
+						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All<char>(c => DecFloatDigits.Contains(c));
+						return token.ToCharArray().All<char>(c => DecFloatDigits.Contains(c));
+					case "string":
+						return true;
+					case "buffer":
+					default:
+						return false;
+				}
 			}).ToArray<string>();
 			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BnfStateException(BnfState, ""));
 
@@ -256,9 +280,9 @@ namespace Jgr.IO.Parser
 					break;
 				case "dword":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
 					try {
 						rv.Integer = UInt32.Parse(token, NumberStyles.HexNumber);
-						if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {

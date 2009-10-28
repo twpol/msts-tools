@@ -96,7 +96,11 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						BinaryWriter.Write(token.Integer.ToString().ToCharArray());
+						if (intDatatypes.First() == "dword") {
+							BinaryWriter.Write(token.Integer.ToString("X8").ToCharArray());
+						} else {
+							BinaryWriter.Write(token.Integer.ToString().ToCharArray());
+						}
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
