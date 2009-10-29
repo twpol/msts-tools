@@ -8,8 +8,8 @@
     <ProjectGuid>{E2F042A3-83CC-401E-AA66-582809C0DFE9}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Normalize</RootNamespace>
-    <AssemblyName>Normalize</AssemblyName>
+    <RootNamespace>SimisFile</RootNamespace>
+    <AssemblyName>SimisFile</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
