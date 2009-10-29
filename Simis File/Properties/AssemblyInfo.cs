@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Normalize utility")]
+[assembly: AssemblyTitle("Simis File utility")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("JGR")]
-[assembly: AssemblyProduct("Normalize utility")]
+[assembly: AssemblyProduct("Simis File utility")]
 [assembly: AssemblyCopyright("Copyright © JGR 2009")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
