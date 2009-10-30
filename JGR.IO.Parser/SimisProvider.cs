@@ -72,6 +72,7 @@ namespace Jgr.IO.Parser
 					FormatByRoot.Add(BNF.BnfFileType + BNF.BnfFileTypeVersion + "|" + root, simisFormat);
 				}
 			}
+			Formats.Sort((a, b) => StringComparer.InvariantCultureIgnoreCase.Compare(a.Name, b.Name));
 
 			foreach (var filename in Directory.GetFiles(directory, "*.tok")) {
 				var ffReader = new StreamReader(System.IO.File.OpenRead(filename), Encoding.ASCII);
