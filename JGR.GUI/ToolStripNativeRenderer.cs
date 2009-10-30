@@ -1,7 +1,11 @@
-﻿using System.Drawing;
+﻿//------------------------------------------------------------------------------
+// Simis Editor, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using System.Drawing;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
-using System.Diagnostics;
 
 namespace Jgr.Gui
 {
