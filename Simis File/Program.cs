@@ -30,9 +30,9 @@ namespace Normalize
 				ShowFormats();
 			} else if (flags.Any<string>(s => "test".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
 				var verbose = flags.Any<string>(s => "verbose".StartsWith(s, StringComparison.InvariantCultureIgnoreCase));
-				RunTest(items, verbose);
+				RunTest(ExpandFilesAndDirectories(items), verbose);
 			} else if (flags.Any<string>(s => "normalize".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
-				RunNormalize(items);
+				RunNormalize(ExpandFilesAndDirectories(items));
 			} else {
 				ShowHelp();
 			}
@@ -69,6 +69,29 @@ namespace Normalize
 			Console.WriteLine("            scanned recursively.");
 		}
 
+		static IEnumerable<string> ExpandFilesAndDirectories(IEnumerable<string> items) {
+			foreach (var item in items) {
+				if (File.Exists(item)) {
+					yield return item;
+				} else if (Directory.Exists(item)) {
+					foreach (var filepath in Directory.GetFiles(item, "*", SearchOption.AllDirectories)) {
+						yield return filepath;
+					}
+				} else if (item.Contains("?") || item.Contains("*")) {
+					var rootpath = Path.GetDirectoryName(item);
+					var filename = Path.GetFileName(item);
+					foreach (var path in Directory.GetDirectories(rootpath, "*", SearchOption.AllDirectories)) {
+						foreach (var filepath in Directory.GetFileSystemEntries(path, filename)) {
+							yield return filepath;
+						}
+					}
+				} else {
+					yield return item;
+				}
+			}
+			yield break;
+		}
+
 		static void ShowFormats() {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
@@ -87,14 +110,17 @@ namespace Normalize
 			}
 		}
 
-		static void RunTest(IEnumerable<string> items, bool verbose) {
+		static void RunTest(IEnumerable<string> files, bool verbose) {
+			foreach (var file in files) {
+				Console.WriteLine(file);
+			}
 		}
 
 		static void RunNormalize(IEnumerable<string> files) {
 			foreach (var inputFile in files) {
 				try {
 					var inputStream = new SimisTestableStream(File.OpenRead(inputFile));
-					var outputFile = inputFile.Substring(inputFile.LastIndexOf("\\") + 1);
+					var outputFile = Path.GetFileName(inputFile);
 					if (inputFile == outputFile) {
 						outputFile += ".normalized";
 					}
