@@ -39,25 +39,6 @@ namespace Normalize
 			if (flags.Contains("pause")) {
 				Thread.Sleep(10000);
 			}
-			return;
-
-			foreach (var arg in args) {
-				try {
-					var uc = new SimisTestableStream(File.OpenRead(arg));
-					var newFile = arg.Substring(arg.LastIndexOf("\\") + 1);
-					if (arg == newFile) newFile += ".uncompressed";
-					using (var of = File.OpenWrite(newFile)) {
-						using (var ofw = new BinaryWriter(of, new ByteEncoding())) {
-							while (uc.Position < uc.Length) {
-								ofw.Write((byte)uc.ReadByte());
-							}
-						}
-					}
-				} catch (Exception e) {
-					Console.WriteLine(arg);
-					Console.WriteLine(e.ToString());
-				}
-			}
 		}
 
 		static void ShowHelp() {
@@ -109,7 +90,27 @@ namespace Normalize
 		static void RunTest(IEnumerable<string> items, bool verbose) {
 		}
 
-		static void RunNormalize(IEnumerable<string> items) {
+		static void RunNormalize(IEnumerable<string> files) {
+			foreach (var inputFile in files) {
+				try {
+					var inputStream = new SimisTestableStream(File.OpenRead(inputFile));
+					var outputFile = inputFile.Substring(inputFile.LastIndexOf("\\") + 1);
+					if (inputFile == outputFile) {
+						outputFile += ".normalized";
+					}
+					using (var outputStream = File.OpenWrite(outputFile)) {
+						using (var outputStreamWriter = new BinaryWriter(outputStream, new ByteEncoding())) {
+							while (inputStream.Position < inputStream.Length) {
+								outputStreamWriter.Write((byte)inputStream.ReadByte());
+							}
+						}
+					}
+					Console.WriteLine(inputFile + " --> " + outputFile);
+				} catch (Exception ex) {
+					Console.WriteLine(inputFile + " error:");
+					Console.WriteLine(ex.ToString());
+				}
+			}
 		}
 	}
 }
