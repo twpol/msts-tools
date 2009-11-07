@@ -567,13 +567,6 @@ namespace SimisEditor
 			InitializeSimisProvider();
 		}
 
-		void testToolStripMenuItem_Click(object sender, EventArgs e) {
-			if (!WaitForSimisProvider()) return;
-			using (var test = new Test(SimisProvider)) {
-				test.ShowDialog(this);
-			}
-		}
-
 		void homepageToolStripMenuItem_Click(object sender, EventArgs e) {
 			Process.Start(Settings.Default.AboutHomepageUrl);
 		}

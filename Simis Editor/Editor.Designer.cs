@@ -58,7 +58,6 @@
 			this.issueTrackerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
 			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
 			this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
 			this.SimisProperties = new System.Windows.Forms.PropertyGrid();
@@ -236,8 +235,7 @@
             this.discussionsToolStripMenuItem,
             this.issueTrackerToolStripMenuItem,
             this.toolStripMenuItem4,
-            this.reloadSimisResourcesToolStripMenuItem,
-            this.testToolStripMenuItem});
+            this.reloadSimisResourcesToolStripMenuItem});
 			this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
 			this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
 			this.helpToolStripMenuItem.Text = "&Help";
@@ -281,13 +279,6 @@
 			this.reloadSimisResourcesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.reloadSimisResourcesToolStripMenuItem.Text = "Reload Simis Resources";
 			this.reloadSimisResourcesToolStripMenuItem.Click += new System.EventHandler(this.reloadSimisResourcesToolStripMenuItem_Click);
-			// 
-			// testToolStripMenuItem
-			// 
-			this.testToolStripMenuItem.Name = "testToolStripMenuItem";
-			this.testToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
-			this.testToolStripMenuItem.Text = "&Test Simis Files...";
-			this.testToolStripMenuItem.Click += new System.EventHandler(this.testToolStripMenuItem_Click);
 			// 
 			// SimisProperties
 			// 
@@ -345,7 +336,6 @@
 		private System.Windows.Forms.SaveFileDialog saveFileDialog;
 		private System.Windows.Forms.PropertyGrid SimisProperties;
 		private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem homepageToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem updatesToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem issueTrackerToolStripMenuItem;

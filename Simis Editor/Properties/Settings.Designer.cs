@@ -96,41 +96,5 @@ namespace SimisEditor.Properties {
                 this["UpdateCheckLastTime"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Program Files\\Microsoft Games\\Train Simulator")]
-        public string TestPath {
-            get {
-                return ((string)(this["TestPath"]));
-            }
-            set {
-                this["TestPath"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string TestFormat {
-            get {
-                return ((string)(this["TestFormat"]));
-            }
-            set {
-                this["TestFormat"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public int TestTests {
-            get {
-                return ((int)(this["TestTests"]));
-            }
-            set {
-                this["TestTests"] = value;
-            }
-        }
     }
 }

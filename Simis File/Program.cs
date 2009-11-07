@@ -166,7 +166,9 @@ namespace Normalize
 						formatCount.ReadSuccess++;
 					} catch (FileException ex) {
 						success = false;
-						messageLog.MessageAccept("Read", BufferedMessageSource.LevelError, ex.ToString());
+						if (verbose) {
+							Console.WriteLine("Read: " + ex + "\n");
+						}
 					}
 				}
 
@@ -177,7 +179,9 @@ namespace Normalize
 						// WriteSuccess is delayed until after the comparison. We won't claim write support without comparison support.
 					} catch (FileException ex) {
 						success = false;
-						messageLog.MessageAccept("Write", BufferedMessageSource.LevelError, ex.ToString());
+						if (verbose) {
+							Console.WriteLine("Write: " + ex + "\n");
+						}
 					}
 				}
 
@@ -195,7 +199,9 @@ namespace Normalize
 							success = false;
 							var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
 							var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
-							messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+							if (verbose) {
+								Console.WriteLine("Compare: " + String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+							}
 							break;
 						}
 					}
@@ -203,7 +209,9 @@ namespace Normalize
 						success = false;
 						var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
 						var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
-						messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+						if (verbose) {
+							Console.WriteLine("Compare: " + String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+						}
 					}
 				}
 
@@ -219,10 +227,10 @@ namespace Normalize
 			supportedCount.SortKey = "ZZZ";
 			formatCounts[""] = supportedCount;
 
-			{
-				var timeTaken = DateTime.Now - timeStart;
-				messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("Tested {0} files; {1} passed ({2:F0}%). Took {3:F0} minutes.", supportedCount.Total, supportedCount.WriteSuccess, ((double)100 * supportedCount.WriteSuccess / supportedCount.Total), timeTaken.TotalMinutes));
-			}
+			//{
+			//    var timeTaken = DateTime.Now - timeStart;
+			//    messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("Tested {0} files; {1} passed ({2:F0}%). Took {3:F0} minutes.", supportedCount.Total, supportedCount.WriteSuccess, ((double)100 * supportedCount.WriteSuccess / supportedCount.Total), timeTaken.TotalMinutes));
+			//}
 
 			var outFormat = "{0,-40:S} {1,1:S}{2,-7:D} {3,1:S}{4,-7:D} {5,1:S}{6,-7:D}";
 			Console.WriteLine(String.Format(outFormat, "Format Name", "", "Total", "", "Read", "", "Write"));
