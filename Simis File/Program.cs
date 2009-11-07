@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using Jgr;
@@ -15,6 +16,14 @@ using Jgr.IO.Parser;
 
 namespace Normalize
 {
+	class TestFormatCount {
+		public string SortKey;
+		public string FormatName;
+		public int Total;
+		public int ReadSuccess;
+		public int WriteSuccess;
+	}
+
 	class Program
 	{
 		static void Main(string[] args) {
@@ -111,9 +120,124 @@ namespace Normalize
 		}
 
 		static void RunTest(IEnumerable<string> files, bool verbose) {
-			foreach (var file in files) {
-				Console.WriteLine(file);
+			var resourcesDirectory = Application.ExecutablePath;
+			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
+			var provider = new SimisProvider(resourcesDirectory);
+			try {
+				provider.Join();
+			} catch (FileException ex) {
+				Console.WriteLine(ex.ToString());
+				return;
 			}
+
+			var totalCount = new TestFormatCount();
+			var supportedCount = new TestFormatCount();
+			var formatCounts = new Dictionary<string, TestFormatCount>();
+			var messageLog = new BufferedMessageSource();
+			var timeStart = DateTime.Now;
+
+			foreach (var file in files) {
+				totalCount.Total++;
+
+				var extension = Path.GetExtension(file).ToUpperInvariant();
+				if (!formatCounts.ContainsKey(extension)) {
+					if (provider.GetForPath(file) == null) {
+						continue;
+					}
+					formatCounts[extension] = new TestFormatCount() { FormatName = provider.GetForPath(file).Name };
+					formatCounts[extension].SortKey = formatCounts[extension].FormatName;
+				}
+				var formatCount = formatCounts[extension];
+
+				supportedCount.Total++;
+				formatCount.Total++;
+
+				var success = true;
+				var newFile = new SimisFile(file, provider);
+				Stream readStream = File.OpenRead(file);
+				Stream saveStream = new MemoryStream();
+
+				// First, read the file in.
+				if (success) {
+					try {
+						newFile.ReadFile();
+						totalCount.ReadSuccess++;
+						supportedCount.ReadSuccess++;
+						formatCount.ReadSuccess++;
+					} catch (FileException ex) {
+						success = false;
+						messageLog.MessageAccept("Read", BufferedMessageSource.LevelError, ex.ToString());
+					}
+				}
+
+				// Second, write the file out into memory.
+				if (success) {
+					try {
+						newFile.WriteStream(saveStream);
+						// WriteSuccess is delayed until after the comparison. We won't claim write support without comparison support.
+					} catch (FileException ex) {
+						success = false;
+						messageLog.MessageAccept("Write", BufferedMessageSource.LevelError, ex.ToString());
+					}
+				}
+
+				// Third, verify that the output is the same as the input.
+				if (success) {
+					readStream.Seek(0, SeekOrigin.Begin);
+					saveStream.Seek(0, SeekOrigin.Begin);
+					var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+					var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+					while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
+						var oldPos = readReader.BaseStream.Position;
+						var fileChar = readReader.ReadChar();
+						var saveChar = saveReader.ReadChar();
+						if (fileChar != saveChar) {
+							success = false;
+							var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+							var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+							messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+							break;
+						}
+					}
+					if (success && (readReader.BaseStream.Length != saveReader.BaseStream.Length)) {
+						success = false;
+						var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+						var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+						messageLog.MessageAccept("Compare", BufferedMessageSource.LevelError, String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+					}
+				}
+
+				// It all worked!
+				if (success) {
+					totalCount.WriteSuccess++;
+					supportedCount.WriteSuccess++;
+					formatCount.WriteSuccess++;
+				}
+			}
+
+			supportedCount.FormatName = "(Total supported files of " + totalCount.Total + ")";
+			supportedCount.SortKey = "ZZZ";
+			formatCounts[""] = supportedCount;
+
+			{
+				var timeTaken = DateTime.Now - timeStart;
+				messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("Tested {0} files; {1} passed ({2:F0}%). Took {3:F0} minutes.", supportedCount.Total, supportedCount.WriteSuccess, ((double)100 * supportedCount.WriteSuccess / supportedCount.Total), timeTaken.TotalMinutes));
+			}
+
+			var outFormat = "{0,-40:S} {1,1:S}{2,-7:D} {3,1:S}{4,-7:D} {5,1:S}{6,-7:D}";
+			Console.WriteLine(String.Format(outFormat, "Format Name", "", "Total", "", "Read", "", "Write"));
+			Console.WriteLine(String.Empty.PadLeft(69, '='));
+			foreach (var formatCount in formatCounts.OrderBy<KeyValuePair<string, TestFormatCount>, string>(kvp => kvp.Value.SortKey).Select<KeyValuePair<string, TestFormatCount>, TestFormatCount>(kvp => kvp.Value)) {
+				Console.WriteLine(String.Format(outFormat,
+						formatCount.FormatName,
+						"", formatCount.Total,
+						formatCount.Total == formatCount.ReadSuccess ? "*" : "", formatCount.ReadSuccess,
+						formatCount.Total == formatCount.WriteSuccess ? "*" : formatCount.ReadSuccess == formatCount.WriteSuccess ? "+" : "", formatCount.WriteSuccess));
+			}
+
+			//Console.WriteLine("Tested " + totalCount.Total + " files; " + totalCount.CompareSuccess + " passed (" + ((double)100 * totalCount.CompareSuccess / totalCount.Total).ToString("F0") + "%).");
+			//Messages = new Messages();
+			//messageLog.RegisterMessageSink(Messages);
 		}
 
 		static void RunNormalize(IEnumerable<string> files) {
