@@ -10,6 +10,9 @@ using System.Text;
 
 namespace Jgr
 {
+	/// <summary>
+	/// Provides a means to get messages from a source. The receiver must have an object implementing <see cref="IMessageSink"/>.
+	/// </summary>
 	public interface IMessageSource
 	{
 		string MessageSourceName { get; }
