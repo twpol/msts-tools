@@ -10,6 +10,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using Jgr.Grammar;
+using System.Linq;
 
 namespace Jgr.IO.Parser
 {
@@ -44,6 +45,10 @@ namespace Jgr.IO.Parser
 		public void Join() {
 			BackgroundLoader.Join();
 			if (LoadError != null) throw LoadError;
+		}
+
+		public SimisFormat GetForPath(string fileName) {
+			return Formats.FirstOrDefault<SimisFormat>(f => Path.GetExtension(fileName).Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase));
 		}
 
 		public Bnf GetBnf(string simisFormat, string root) {
