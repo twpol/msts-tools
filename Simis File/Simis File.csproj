@@ -72,7 +72,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>RMDIR /S /Q "$(TargetDir)\Resources"
-XCOPY /S /I /Y "$(SolutionDir)\Resources" "$(TargetDir)\Resources"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
