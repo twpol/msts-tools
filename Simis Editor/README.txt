@@ -1,5 +1,5 @@
-Simis Editor
-************
+Simis Editor v0.2
+*****************
 
 Website: http://jgrmsts.codeplex.com/
 License: Microsoft Public License.
@@ -7,29 +7,39 @@ License: Microsoft Public License.
 Getting Started
 ===============
 
-1. Install Microsoft .NET Framework 3.5 SP1.
-2. Extract all Simis Editor files to a location of your choice.
-3. Run "Simis Editor.exe".
+1. Make sure you have the Microsoft .NET 3.5 SP1 Framework installed.
+2. Extract all files to an empty location of your choice.
+3. Run "SimisEditor.exe".
 
-What Simis Editor Current Supports
-==================================
+What Works
+==========
 
-* Opening most supported Microsoft Train Simulator game files.
+* File > Open... - opening supported file types:
    * Activity (.act)
+   * Activity Save (.asv)    [New] [Uses :buffer type]
+   * Environment (.env)      [New]
+   * Hazard (.haz)           [New]
+   * IOM (.iom)              [New]
+   * Material Palette (.pal) [New]
    * Path (.pat)
    * Service (.srv)
-   * Shape (.s)
+   * Shape (.s)              [Updated]
+   * Shape Detail (.sd)      [New]
    * Sound Management (.sms)
-   * Terrain (.t)
+   * Terrain (.t)            [Updated] [Uses :buffer type]
    * Traffic Pattern (.trf)
-   * World (.w)
+   * World (.w)              [Updated]
    * World Sound (.ws)
-* Displaying file contents as a tree, with blocks and values (some values have names, most don't).
-* Editing of the values by selecting the block or value and using the property grid on the right.
-* Saving files in three different formats: Unicode text, binary, and compressed binary.
+   * Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
+* File > Save, File > Save As... - saving files in Unicode text, binary or compressed binary. [New]
+* Help > Reload Simis Resources - reloads all files from the "Resources" subdirectory (useful for testing). [New]
+* All blocks and values in a file can be seen in the main tree view. 
+* Values can be edited by selecting the block or value in the tree and using the Property Grid on the right. [New]
+* Indirect file opening - dropping a supported file on "Simis Editor.exe" or the application window will open it. [New]
 
-What Simis Editor Doesn't Support (Yet)
-=======================================
+
+What Doesn't Work (Yet)
+=======================
 
 * Creating new files.
 * Opening other similar game files. More will be supported in future releases.
@@ -39,15 +49,21 @@ What Simis Editor Doesn't Support (Yet)
 Version History
 ===============
 
---- 0.2 --- XXXXXXXXX 2009 ---
+--- 0.2 --- 8th November 2009 ---
 * Writing support for all three formats (Unicode text, binary, and compressed binary).
 * Enabled File>Save and File>Save As.
-* BNFs for Terrain (.t) and Word (.w) updated to avoid :buffer type (which can't be saved).
+* BNFs for Activity Save (.asv), Environment (.env), Hazard (.haz), IOM (.iom), Material Palette (.pal) and Shape Detail (.sd) added.
+* BNF for Terrain (.t) updated to use less of :buffer type.
+* BNF for World (.w) updated to not use :buffer type.
 * Reader now supports Unicode text files containing "hh:mm:ss" (parsed as 3 :uint values).
-* Help>Test Simis Files now tests writing in addition to reading.
+* Help>Test Simis Files replaced with "SimisFile.exe".
 * GUI update to get native theming on Windows Vista and 7.
 * Update checking now only checks once per day.
 * Drag-drop a file onto the editor now opens the file.
+* "SimisFile.exe" added with functions:
+   * Testing for reading and writing files.
+   * Normalization of files.
 
 --- 0.1 --- 15th June 2009 ---
 * Reading support for Activity (.act), Path (.pat), Service (.srv), Shape (.s), Sound Management (.sms), Terrain (.t), Traffic Pattern (.trf), World (.w), World Sound (.ws) files.
+* Terrain (.t) and World (.w) use :buffer type.
