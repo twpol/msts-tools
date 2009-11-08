@@ -19,6 +19,8 @@ namespace Jgr.Gui {
 		public int Top;
 		public int Right;
 		public int Bottom;
+		public int Width { get { return Right - Left; } }
+		public int Height { get { return Bottom - Top; } }
 	}
 
 	public class AutoCenterWindows : IDisposable {
@@ -80,11 +82,16 @@ namespace Jgr.Gui {
 		}
 
 		IntPtr WindowHookProc(int lMsg, IntPtr wParam, IntPtr lParam) {
-            if (lMsg == HCBT_ACTIVATE) {
+			if (lMsg == HCBT_ACTIVATE) {
 				var dialog = new RECT();
 				GetWindowRect(new HandleRef(null, wParam), ref dialog);
 				var x = (Owner.Left + (Owner.Right - Owner.Left) / 2) - ((dialog.Right - dialog.Left) / 2);
 				var y = (Owner.Top + (Owner.Bottom - Owner.Top) / 2) - ((dialog.Bottom - dialog.Top) / 2);
+				var screen = Screen.FromHandle(wParam);
+				if (x + dialog.Width > screen.WorkingArea.Right) x = screen.WorkingArea.Right - dialog.Width;
+				if (y + dialog.Height > screen.WorkingArea.Bottom) y = screen.WorkingArea.Bottom - dialog.Height;
+				if (x < screen.WorkingArea.Left) x = screen.WorkingArea.Left;
+				if (y < screen.WorkingArea.Top) y = screen.WorkingArea.Top;
 				SetWindowPos(new HandleRef(null, wParam), new HandleRef(null, IntPtr.Zero), x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 				if (Mode == AutoCenterWindowsMode.FirstWindowOnly) {
 					UnsetHook();
