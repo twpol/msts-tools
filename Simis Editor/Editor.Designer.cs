@@ -135,6 +135,7 @@
 			// 
 			// saveToolStripMenuItem
 			// 
+			this.saveToolStripMenuItem.Enabled = false;
 			this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
 			this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
 			this.saveToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
@@ -143,6 +144,7 @@
 			// 
 			// saveAsToolStripMenuItem
 			// 
+			this.saveAsToolStripMenuItem.Enabled = false;
 			this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
 			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
 			this.saveAsToolStripMenuItem.Text = "Save &As...";
