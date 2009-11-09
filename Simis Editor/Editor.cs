@@ -135,6 +135,7 @@ namespace SimisEditor
 			SelectNode(null);
 			ResyncSimisNodes();
 			UpdateTitle();
+			UpdateMenu();
 		}
 
 		void OpenFile(string filename) {
@@ -159,11 +160,13 @@ namespace SimisEditor
 				SimisTree.TopNode = SimisTree.Nodes[0];
 			}
 			UpdateTitle();
+			UpdateMenu();
 		}
 
 		void FileModified() {
 			Modified = true;
 			UpdateTitle();
+			UpdateMenu();
 		}
 
 		void SaveFile() {
@@ -185,6 +188,7 @@ namespace SimisEditor
 
 			Modified = false;
 			UpdateTitle();
+			UpdateMenu();
 		}
 
 		bool SaveFileIfModified() {
@@ -200,11 +204,17 @@ namespace SimisEditor
 				}
 			}
 			UpdateTitle();
+			UpdateMenu();
 			return true;
 		}
 
 		void UpdateTitle() {
 			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
+		}
+
+		void UpdateMenu() {
+			saveToolStripMenuItem.Enabled = Filename.Length > 0;
+			saveAsToolStripMenuItem.Enabled = Filename.Length > 0;
 		}
 
 		void ResyncSimisNodes() {
