@@ -39,6 +39,19 @@ namespace Jgr.IO.Parser
 			return (Type == stn.Type) && (Name == stn.Name);
 		}
 
+		public SimisTreeNode this[string type] {
+			get {
+				for (var i = 0; i < Count; i++) {
+					if (this[i] is SimisTreeNodeValue) {
+						if (this[i].Name == type) return this[i];
+					} else {
+						if (this[i].Type == type) return this[i];
+					}
+				}
+				throw new ArgumentException("No children of the given type (or name for values) were found.", "type");
+			}
+		}
+
 		internal bool HasChild(SimisTreeNode child) {
 			return FindChildIndex(child) >= 0;
 		}
@@ -118,6 +131,21 @@ namespace Jgr.IO.Parser
 			}
 			return new SimisTreeNode(Type, Name, newChildren);
 		}
+
+		public static implicit operator long(SimisTreeNode value) {
+			if (!(value is SimisTreeNodeValueInteger)) throw new InvalidOperationException("Cannot convert type 'Jgr.IO.Parser.SimisTreeNode' to 'long'.");
+			return (long)(value as SimisTreeNodeValueInteger).Value;
+		}
+
+		public static implicit operator double(SimisTreeNode value) {
+			if (!(value is SimisTreeNodeValueFloat)) throw new InvalidOperationException("Cannot convert type 'Jgr.IO.Parser.SimisTreeNode' to 'double'.");
+			return (double)(value as SimisTreeNodeValueFloat).Value;
+		}
+
+		public static implicit operator string(SimisTreeNode value) {
+			if (!(value is SimisTreeNodeValueString)) throw new InvalidOperationException("Cannot convert type 'Jgr.IO.Parser.SimisTreeNode' to 'string'.");
+			return (string)(value as SimisTreeNodeValueString).Value;
+		}
 	}
 
 	public abstract class SimisTreeNodeValue : SimisTreeNode
@@ -127,6 +155,10 @@ namespace Jgr.IO.Parser
 		protected SimisTreeNodeValue(string type, string name, object value)
 			: base(type, name) {
 			Value = value;
+		}
+
+		public override string ToString() {
+			return Value.ToString();
 		}
 	}
 
