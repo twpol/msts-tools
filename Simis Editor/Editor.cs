@@ -218,11 +218,11 @@ namespace SimisEditor
 		}
 
 		void ResyncSimisNodes() {
-			Debug.WriteLine(File.Tree.Root.ToString());
-			ResyncSimisNodes(SimisTree.Nodes, File.Tree.Root.Children);
+			Debug.WriteLine(File.Tree.ToString());
+			ResyncSimisNodes(SimisTree.Nodes, File.Tree);
 		}
 
-		void ResyncSimisNodes(TreeNodeCollection viewTreeNodes, SimisTreeNode[] simisTreeNodes) {
+		void ResyncSimisNodes(TreeNodeCollection viewTreeNodes, IList<SimisTreeNode> simisTreeNodes) {
 			var viewTreeNodeIndex = 0;
 			var simisTreeNodeIndex = 0;
 
@@ -230,7 +230,7 @@ namespace SimisEditor
 				simisTreeNodes = new SimisTreeNode[] { };
 			}
 
-			while ((viewTreeNodeIndex < viewTreeNodes.Count) && (simisTreeNodeIndex < simisTreeNodes.Length)) {
+			while ((viewTreeNodeIndex < viewTreeNodes.Count) && (simisTreeNodeIndex < simisTreeNodes.Count)) {
 				if (viewTreeNodes[viewTreeNodeIndex].Tag == simisTreeNodes[simisTreeNodeIndex]) {
 					// This view node is the same simis node, so it is unchanged.
 					viewTreeNodeIndex++;
@@ -242,21 +242,21 @@ namespace SimisEditor
 					viewTreeNodes[viewTreeNodeIndex].Text = GetNodeText(simisTreeNodes[simisTreeNodeIndex]);
 					viewTreeNodes[viewTreeNodeIndex].Tag = simisTreeNodes[simisTreeNodeIndex];
 					Debug.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Updated]");
-					ResyncSimisNodes(viewTreeNodes[viewTreeNodeIndex].Nodes, simisTreeNodes[simisTreeNodeIndex].Children);
+					ResyncSimisNodes(viewTreeNodes[viewTreeNodeIndex].Nodes, simisTreeNodes[simisTreeNodeIndex]);
 					viewTreeNodeIndex++;
 					simisTreeNodeIndex++;
 					continue;
 				}
 
 				// View node may have been deleted or had a node inserted before in simis tree.
-				for (var i = simisTreeNodeIndex + 1; i < simisTreeNodes.Length; i++) {
+				for (var i = simisTreeNodeIndex + 1; i < simisTreeNodes.Count; i++) {
 					if (viewTreeNodes[viewTreeNodeIndex].Tag == simisTreeNodes[i]) {
 						// View node has had at least one node inserted before it in the simis tree.
 						for (var j = simisTreeNodeIndex; j < i; j++) {
 							var viewNode = viewTreeNodes.Insert(viewTreeNodeIndex++, GetNodeText(simisTreeNodes[j]));
 							viewNode.Tag = simisTreeNodes[j];
 							Debug.WriteLine(viewNode.FullPath + " [VN:Insert]");
-							ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[j].Children);
+							ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[j]);
 						}
 						simisTreeNodeIndex = i;
 						continue;
@@ -271,11 +271,11 @@ namespace SimisEditor
 				viewTreeNodes.RemoveAt(viewTreeNodeIndex);
 			}
 
-			while (simisTreeNodeIndex < simisTreeNodes.Length) {
+			while (simisTreeNodeIndex < simisTreeNodes.Count) {
 				var viewNode = viewTreeNodes.Add(GetNodeText(simisTreeNodes[simisTreeNodeIndex]));
 				viewNode.Tag = simisTreeNodes[simisTreeNodeIndex];
 				Debug.WriteLine(viewNode.FullPath + " [VN:Add]");
-				ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[simisTreeNodeIndex].Children);
+				ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[simisTreeNodeIndex]);
 				simisTreeNodeIndex++;
 			}
 		}
@@ -283,8 +283,8 @@ namespace SimisEditor
 		void ResyncSimisNodes(TreeNode viewTreeNode, SimisTreeNode simisTreeNode) {
 			viewTreeNode.Text = GetNodeText(simisTreeNode);
 			viewTreeNode.Nodes.Clear();
-			if (simisTreeNode.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
-				ResyncSimisNodes(viewTreeNode.Nodes, simisTreeNode.Children);
+			if (simisTreeNode.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
+				ResyncSimisNodes(viewTreeNode.Nodes, simisTreeNode);
 			}
 		}
 
@@ -329,19 +329,19 @@ namespace SimisEditor
 
 		string GetNodeText(SimisTreeNode block) {
 			// Non-trivial node, don't bother trying.
-			if (block.Children.Count<SimisTreeNode>(b => !(b is SimisTreeNodeValue)) > 0) {
+			if (block.Count<SimisTreeNode>(b => !(b is SimisTreeNodeValue)) > 0) {
 				return BlockToNameString(block);
 			}
 
 			// Just a single value child, easy.
-			if (block.Children.Length == 1) {
-				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisTreeNodeValue)block.Children[0]);
+			if (block.Count == 1) {
+				return BlockToNameOnlyString(block) + "=" + BlockToValueString((SimisTreeNodeValue)block[0]);
 			}
 
 			// Multiple value children, quite easy.
-			if (block.Children.Length > 1) {
+			if (block.Count > 1) {
 				var values = new List<string>();
-				foreach (var child in block.Children) {
+				foreach (var child in block) {
 					values.Add(BlockToNameOnlyString(child) + "=" + BlockToValueString((SimisTreeNodeValue)child));
 				}
 				return BlockToNameString(block) + " (" + String.Join(" ", values.ToArray()) + ")";
@@ -356,7 +356,7 @@ namespace SimisEditor
 		}
 
 		object CreateEditObjectFor(SimisTreeNode block) {
-			if (block.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) return null;
+			if (block.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) return null;
 
 			var dClassName = "block_" + block.Type.Replace(".", "_");
 
@@ -373,13 +373,13 @@ namespace SimisEditor
 			var dPropertyValues = new Dictionary<string, object>();
 			Action<SimisTreeNode> AddPropertyFor = (node) => {
 				var dPropertyName = node.Name.Length > 0 ? node.Name : node.Type;
-				if (block.Children.Count<SimisTreeNode>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
+				if (block.Count<SimisTreeNode>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
 					var index = 1;
 					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "_" + index))) index++;
 					dPropertyName += "_" + index;
 					dBlockNames.Add(dPropertyName);
 				}
-				if (block.Children.Length == 1) {
+				if (block.Count == 1) {
 					dPropertyName = block.Type;
 				}
 
@@ -416,7 +416,7 @@ namespace SimisEditor
 			if (block is SimisTreeNodeValue) {
 				AddPropertyFor(block);
 			} else {
-				foreach (var child in block.Children) {
+				foreach (var child in block) {
 					AddPropertyFor(child);
 				}
 			}
@@ -550,23 +550,23 @@ namespace SimisEditor
 			if (SelectedNode == null) return;
 
 			var node = SelectedNode;
-			var block = (SimisTreeNode)node.Tag;
+			if (node.Tag is SimisTreeNodeValue) node = node.Parent;
 			var blockPath = new Stack<SimisTreeNode>();
 			while (node != null) {
 				blockPath.Push((SimisTreeNode)node.Tag);
 				node = node.Parent;
 			}
-			blockPath.Push(File.Tree.Root);
 
 			var child = (SimisTreeNodeValue)SimisProperties.SelectedObject.GetType().GetProperty(e.ChangedItem.Label + "_SimisTreeNodeValue").GetValue(SimisProperties.SelectedObject, null);
 			var value = e.ChangedItem.Value;
 
+			var blockPathList = new List<SimisTreeNode>(blockPath);
 			if (child is SimisTreeNodeValueInteger) {
-				File.Tree.ReplaceChild(blockPath, new SimisTreeNodeValueInteger(child.Type, child.Name, (long)value), child);
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueInteger(child.Type, child.Name, (long)value), child));
 			} else if (child is SimisTreeNodeValueFloat) {
-				File.Tree.ReplaceChild(blockPath, new SimisTreeNodeValueFloat(child.Type, child.Name, (double)value), child);
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (double)value), child));
 			} else if (child is SimisTreeNodeValueString) {
-				File.Tree.ReplaceChild(blockPath, new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child);
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
 			}
 
 			ResyncSimisNodes();
