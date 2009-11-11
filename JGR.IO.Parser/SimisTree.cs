@@ -132,19 +132,8 @@ namespace Jgr.IO.Parser
 			return new SimisTreeNode(Type, Name, newChildren);
 		}
 
-		public static implicit operator long(SimisTreeNode value) {
-			if (!(value is SimisTreeNodeValueInteger)) throw new InvalidOperationException("Cannot convert type 'Jgr.IO.Parser.SimisTreeNode' to 'long'.");
-			return (long)(value as SimisTreeNodeValueInteger).Value;
-		}
-
-		public static implicit operator double(SimisTreeNode value) {
-			if (!(value is SimisTreeNodeValueFloat)) throw new InvalidOperationException("Cannot convert type 'Jgr.IO.Parser.SimisTreeNode' to 'double'.");
-			return (double)(value as SimisTreeNodeValueFloat).Value;
-		}
-
-		public static implicit operator string(SimisTreeNode value) {
-			if (!(value is SimisTreeNodeValueString)) throw new InvalidOperationException("Cannot convert type 'Jgr.IO.Parser.SimisTreeNode' to 'string'.");
-			return (string)(value as SimisTreeNodeValueString).Value;
+		public virtual T ToValue<T>() {
+			throw new NotImplementedException();
 		}
 	}
 
@@ -159,6 +148,11 @@ namespace Jgr.IO.Parser
 
 		public override string ToString() {
 			return Value.ToString();
+		}
+
+		public override T ToValue<T>() {
+			if (Value is T) return (T)Value;
+			throw new InvalidCastException("This SimisTreeNodeValue is not a " + typeof(T));
 		}
 	}
 
