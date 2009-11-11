@@ -151,8 +151,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override T ToValue<T>() {
-			if (Value is T) return (T)Value;
-			throw new InvalidCastException("This SimisTreeNodeValue is not a " + typeof(T));
+			return (T)Value;
 		}
 	}
 
