@@ -22,30 +22,35 @@
     <FrameworkVersion>3.5</FrameworkVersion>
     <HelpFileFormat>Website</HelpFileFormat>
     <HelpTitle>JGR MSTS Editors and Tools</HelpTitle>
-    <PresentationStyle>vs2005</PresentationStyle>
+    <PresentationStyle>Prototype</PresentationStyle>
     <NamingMethod>MemberName</NamingMethod>
     <ComponentConfigurations>
       <ComponentConfig id="Cached Framework Comments Index Data" enabled="True" xmlns="">
         <component id="Cached Framework Comments Index Data" type="SandcastleBuilder.Components.CachedCopyFromIndexComponent" assembly="{@SHFBFolder}SandcastleBuilder.Components.dll">
-<index name="comments" value="/doc/members/member" key="@name" cache="100">
+          <index name="comments" value="/doc/members/member" key="@name" cache="100">
 {@CachedFrameworkCommentList}
 {@CommentFileList}
             </index>
-<copy name="comments" source="*" target="/document/comments" />
-</component>
+          <copy name="comments" source="*" target="/document/comments" />
+        </component>
       </ComponentConfig>
-<ComponentConfig id="Cached MSDN URL References" enabled="True" xmlns=""><component id="Cached MSDN URL References" type="SandcastleBuilder.Components.CachedResolveReferenceLinksComponent" assembly="{@SHFBFolder}SandcastleBuilder.Components.dll" locale="{@Locale}" linkTarget="{@SdkLinkTarget}">
-<cache filename="{@LocalDataFolder}Cache\MsdnUrl.cache" />
-<targets base="{@SandcastlePath}Data\Reflection" recurse="true" files="*.xml" type="{@SDKLinks}" />
-<targets files="reflection.xml" type="{@ProjectLinks}" />
-</component></ComponentConfig>
-<ComponentConfig id="Cached Reflection Index Data" enabled="True" xmlns=""><component id="Cached Reflection Index Data" type="SandcastleBuilder.Components.CachedCopyFromIndexComponent" assembly="{@SHFBFolder}SandcastleBuilder.Components.dll">
-<index name="reflection" value="/reflection/apis/api" key="@id" cache="10">
-  <cache base="{@SandcastlePath}Data\Reflection" recurse="true" files="*.xml" cacheFile="{@LocalDataFolder}Cache\Reflection.cache" />
-  <data files="reflection.xml" />
-</index>
-<copy name="reflection" source="*" target="/document/reference" />
-</component></ComponentConfig></ComponentConfigurations>
+      <ComponentConfig id="Cached MSDN URL References" enabled="True" xmlns="">
+        <component id="Cached MSDN URL References" type="SandcastleBuilder.Components.CachedResolveReferenceLinksComponent" assembly="{@SHFBFolder}SandcastleBuilder.Components.dll" locale="{@Locale}" linkTarget="{@SdkLinkTarget}">
+          <cache filename="{@LocalDataFolder}Cache\MsdnUrl.cache" />
+          <targets base="{@SandcastlePath}Data\Reflection" recurse="true" files="*.xml" type="{@SDKLinks}" />
+          <targets files="reflection.xml" type="{@ProjectLinks}" />
+        </component>
+      </ComponentConfig>
+      <ComponentConfig id="Cached Reflection Index Data" enabled="True" xmlns="">
+        <component id="Cached Reflection Index Data" type="SandcastleBuilder.Components.CachedCopyFromIndexComponent" assembly="{@SHFBFolder}SandcastleBuilder.Components.dll">
+          <index name="reflection" value="/reflection/apis/api" key="@id" cache="10">
+            <cache base="{@SandcastlePath}Data\Reflection" recurse="true" files="*.xml" cacheFile="{@LocalDataFolder}Cache\Reflection.cache" />
+            <data files="reflection.xml" />
+          </index>
+          <copy name="reflection" source="*" target="/document/reference" />
+        </component>
+      </ComponentConfig>
+    </ComponentConfigurations>
     <ApiFilter>
       <Filter entryType="Namespace" fullName="SimisEditor" isExposed="False" xmlns="" />
     </ApiFilter>
