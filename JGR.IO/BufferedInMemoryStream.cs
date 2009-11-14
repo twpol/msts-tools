@@ -9,15 +9,21 @@ using System.IO;
 namespace Jgr.IO
 {
 	/// <summary>
-	/// A <see cref="Stream"/> which buffers both reads and writes in memory (courtesy of <see cref="MemoryStream"/>).
-	/// <para>When reading, the length may be variable as it represents the amount buffered if the underlying stream does not report a length itself.
-	/// Otherwise, it should act normally; each read will only read from the underlying stream if necessary, all data is buffered sequentially, and seeking
-	/// will work within the already buffered length.</para>
-	/// <para>When writing, <see cref="Flush"/> is a no-op and <see cref="SetLength"/> is not implemented; otherwise, it should act normally; each write and
-	/// seek operate on the internal buffer. To actually flush the write out, you must call <see cref="RealFlush"/>; you can continue using the stream after
-	/// this, but bear in mind that <see cref="RealFlush"/> only ever writes out any given byte once: if you seek back and change it after a
-	/// <see cref="RealFlush"/>, the new values will never be written out.</para>
+	/// A <see cref="Stream"/> which buffers both reads and writes in memory (as a <see cref="MemoryStream"/>).
 	/// </summary>
+	/// <remarks>
+	/// <para>Treat this stream like any other; <see cref="Read"/>, <see cref="Write"/>, <see cref="Seek"/> all work normally (or close enough) in most
+	/// cases. There are some specific exceptions, which shouldn't be a problem normally, outlined below.</para>
+	/// <para>When reading, if the underlying stream does not report a length itself, the value reported by <see cref="Length"/> represents the amount
+	/// buffered. The <see cref="BufferedInMemoryStream"/> attempts to keep the <see cref="Length"/> beyond the current seek location at all times.</para>
+	/// <para>when reading, <see cref="Seek"/> will operate normally but only within the data already buffered; attempts to seek beyond this will raise
+	/// an exception. There is no way to force a certain amount of data to be buffered.</para>
+	/// <para>When writing, <see cref="Flush"/> is a no-op and <see cref="SetLength"/> is not implemented. None of the <see cref="Stream"/> methods and
+	/// properties will cause data to be written to the underlying stream.</para>
+	/// <para>When writing, to cause all buffered data to be written to the underlying stream, call <see cref="RealFlush"/>. This non-standard behavior
+	/// is due to unfortunate existing code which calls <see cref="Flush"/> after writing to a <see cref="Stream"/>, which would otherwise cause us a
+	/// problem with write-once underlying streams (which we're specifically trying to support here).</para>
+	/// </remarks>
 	public class BufferedInMemoryStream : Stream
 	{
 		MemoryStream Memory;

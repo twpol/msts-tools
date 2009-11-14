@@ -23,6 +23,9 @@ namespace Jgr.Gui {
 		public int Height { get { return Bottom - Top; } }
 	}
 
+	/// <summary>
+	/// Automatically centers all new windows shown by the current thread over a given owner <see cref="Form"/>.
+	/// </summary>
 	public class AutoCenterWindows : IDisposable {
 		delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 		
@@ -56,6 +59,12 @@ namespace Jgr.Gui {
 		IntPtr Hook;
 		bool Hooked;
 
+		/// <summary>
+		///  Initializes a new instance of the <see cref="AutoCenterWindows"/> class with a given <see cref="Form"/> and <see cref="AutoCenterWindowsMode"/>.
+		/// </summary>
+		/// <param name="owner">The <see cref="Form"/> over which all new windows should be centered.</param>
+		/// <param name="mode">The <see cref="AutoCenterWindowsMode"/> to operate in; either <see cref="AutoCenterWindowsMode.AllWindows"/> or
+		/// <see cref="AutoCenterWindowsMode.FirstWindowOnly"/>.</param>
         public AutoCenterWindows(Form owner, AutoCenterWindowsMode mode) {
 			Owner = owner;
 			Mode = mode;
@@ -102,6 +111,9 @@ namespace Jgr.Gui {
 
 		#region IDisposable Members
 
+		/// <summary>
+		/// Releases all resources used by the <see cref="AutoCenterWindows"/>.
+		/// </summary>
 		public void Dispose() {
 			UnsetHook();
 		}

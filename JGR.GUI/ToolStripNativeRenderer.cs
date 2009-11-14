@@ -9,6 +9,9 @@ using System.Windows.Forms.VisualStyles;
 
 namespace Jgr.Gui
 {
+	/// <summary>
+	/// A <see cref="ToolStripRenderer"/> which attempts to draw menus and toolbars with Windows Vista and later native themes.
+	/// </summary>
 	public class ToolStripNativeRenderer : ToolStripRenderer
 	{
 		protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e) {
