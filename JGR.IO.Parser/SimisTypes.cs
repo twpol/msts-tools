@@ -34,6 +34,6 @@ namespace Jgr.IO.Parser
 		public string Type { get; set; }
 		public string String { get; set; }
 		public long Integer { get; set; }
-		public double Float { get; set; }
+		public float Float { get; set; }
 	}
 }
