@@ -24,6 +24,8 @@ namespace SimisEditor
 {
 	public partial class Editor : Form
 	{
+		static TraceSwitch TraceSwitch = new TraceSwitch("editor", "Trace Editor");
+
 		bool Modified = true;
 		string Filename = "";
 		string FilenameTitle {
@@ -218,7 +220,7 @@ namespace SimisEditor
 		}
 
 		void ResyncSimisNodes() {
-			Debug.WriteLine(File.Tree.ToString());
+			if (TraceSwitch.TraceVerbose) Trace.WriteLine(File.Tree.ToString());
 			ResyncSimisNodes(SimisTree.Nodes, File.Tree);
 		}
 
@@ -241,7 +243,7 @@ namespace SimisEditor
 				if (simisTreeNodes[simisTreeNodeIndex].EqualsByValue(viewTreeNodes[viewTreeNodeIndex].Tag)) {
 					viewTreeNodes[viewTreeNodeIndex].Text = GetNodeText(simisTreeNodes[simisTreeNodeIndex]);
 					viewTreeNodes[viewTreeNodeIndex].Tag = simisTreeNodes[simisTreeNodeIndex];
-					Debug.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Updated]");
+					if (TraceSwitch.TraceVerbose) Trace.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Updated]");
 					ResyncSimisNodes(viewTreeNodes[viewTreeNodeIndex].Nodes, simisTreeNodes[simisTreeNodeIndex]);
 					viewTreeNodeIndex++;
 					simisTreeNodeIndex++;
@@ -255,7 +257,7 @@ namespace SimisEditor
 						for (var j = simisTreeNodeIndex; j < i; j++) {
 							var viewNode = viewTreeNodes.Insert(viewTreeNodeIndex++, GetNodeText(simisTreeNodes[j]));
 							viewNode.Tag = simisTreeNodes[j];
-							Debug.WriteLine(viewNode.FullPath + " [VN:Insert]");
+							if (TraceSwitch.TraceVerbose) Trace.WriteLine(viewNode.FullPath + " [VN:Insert]");
 							ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[j]);
 						}
 						simisTreeNodeIndex = i;
@@ -263,7 +265,7 @@ namespace SimisEditor
 					}
 				}
 				// This view node wasn't found, remove it.
-				Debug.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Remove]");
+				if (TraceSwitch.TraceVerbose) Trace.WriteLine(viewTreeNodes[viewTreeNodeIndex].FullPath + " [VN:Remove]");
 				viewTreeNodes.RemoveAt(viewTreeNodeIndex);
 			}
 
@@ -274,7 +276,7 @@ namespace SimisEditor
 			while (simisTreeNodeIndex < simisTreeNodes.Count) {
 				var viewNode = viewTreeNodes.Add(GetNodeText(simisTreeNodes[simisTreeNodeIndex]));
 				viewNode.Tag = simisTreeNodes[simisTreeNodeIndex];
-				Debug.WriteLine(viewNode.FullPath + " [VN:Add]");
+				if (TraceSwitch.TraceVerbose) Trace.WriteLine(viewNode.FullPath + " [VN:Add]");
 				ResyncSimisNodes(viewNode.Nodes, simisTreeNodes[simisTreeNodeIndex]);
 				simisTreeNodeIndex++;
 			}
