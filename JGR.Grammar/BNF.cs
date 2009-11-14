@@ -15,7 +15,7 @@ namespace Jgr.Grammar
 {
 	public class Bnf
 	{
-		public static TraceSwitch TraceSwitch = new TraceSwitch("bnf", "Trace Bnf and BnfState");
+		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.bnf", "Trace Bnf and BnfState");
 
 		public string FileName { get; private set; }
 

@@ -13,7 +13,7 @@ namespace Jgr.Grammar
 {
 	public class Fsm
 	{
-		public static TraceSwitch TraceSwitch = new TraceSwitch("fsm", "Trace Fsm and FsmState");
+		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.fsm", "Trace Fsm and FsmState");
 
 		public FsmState Root { get; private set; }
 
