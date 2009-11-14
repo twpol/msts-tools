@@ -12,12 +12,14 @@ using System.Text;
 namespace Jgr.IO
 {
 	/// <summary>
-	/// A <see cref="TextReader"/> which buffers all the data in memory (as a string).
+	/// A <see cref="TextReader"/> which buffers all the data in memory (as a <see cref="String"/>).
+	/// </summary>
+	/// <remarks>
 	/// <para>This class should behave in all ways like a normal <see cref="TextReader"/>, but with speed improvements in cases where the same data is read
 	/// multiple times (e.g. calling <see cref="Peek"/> a lot without advancing the stream).</para>
 	/// <para>An additional advantage is that reads to the underlying reader are done in large chunks (currently 1K), which can improve read speed for file
 	/// accesses.</para>
-	/// </summary>
+	/// </remarks>
 	public class BufferedInMemoryTextReader : TextReader
 	{
 		string Memory;
