@@ -13,10 +13,12 @@ namespace Jgr.Grammar
 {
 	public class Fsm
 	{
+		public static TraceSwitch TraceSwitch = new TraceSwitch("fsm", "Trace Fsm and FsmState");
+
 		public FsmState Root { get; private set; }
 
 		public Fsm(Operator expression) {
-			Debug.WriteLine("ORIGINAL: " + expression);
+			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("ORIGINAL: " + expression);
 			Root = RemoveRedundantSteps(MakeStateForOp(expression));
 			IndexUnlinks(Root);
 		}
@@ -97,31 +99,31 @@ namespace Jgr.Grammar
 
 		FsmState RemoveRedundantSteps(FsmState root) {
 			IndexUnlinks(root); // FIXME
-			Debug.WriteLine("INITIAL:  " + root);
+			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("INITIAL:  " + root);
 			var rv = RemoveRedundantSteps(ref root, root);
 			IndexUnlinks(root); // FIXME
-			Debug.WriteLine("FINAL:    " + root);
-			Debug.WriteLine("");
+			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("FINAL:    " + root);
+			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("");
 			return rv;
 		}
 
 		FsmState RemoveRedundantSteps(ref FsmState root, FsmState state) {
 			// Structure with exactly 1 next state can be removed.
 			if (state.IsStructure && (state.Next.Count == 1)) {
-				Debug.WriteLine("  Removing unnecessary " + state.OpString() + ".");
+				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  Removing unnecessary " + state.OpString() + ".");
 				if (root == state) {
 					root = state.Next[0];
 				}
 				ReplaceLinksWith(root, state, state.Next[0]);
 				IndexUnlinks(root); // FIXME
-				Debug.WriteLine("  New:    " + root);
+				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  New:    " + root);
 				return RemoveRedundantSteps(ref root, state.Next[0]);
 			}
 			if (state.IsReference && (state.Next.Count == 1) && state.Next[0].IsStructure && (state.Next[0].Next.Count > 0)) {
-			    Debug.WriteLine("  Removing unnecessary " +  state.Next[0].OpString() + ".");
+				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  Removing unnecessary " + state.Next[0].OpString() + ".");
 			    ReplaceLinksWith(root, state.Next[0], state.Next[0].Next);
 				IndexUnlinks(root); // FIXME
-				Debug.WriteLine("  New:    " + root);
+				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  New:    " + root);
 				return RemoveRedundantSteps(ref root, state);
 			}
 			if (state.HasNext) {

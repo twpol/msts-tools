@@ -5,7 +5,7 @@
 
 using System;
 using System.Collections.Generic;
-//using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +15,8 @@ namespace Jgr.Grammar
 {
 	public class Bnf
 	{
+		public static TraceSwitch TraceSwitch = new TraceSwitch("bnf", "Trace Bnf and BnfState");
+
 		public string FileName { get; private set; }
 
 		public Bnf(string fileName) {
@@ -169,7 +171,7 @@ namespace Jgr.Grammar
 		}
 
 		public void MoveTo(string reference) {
-			MessageSend(LevelDebug, "Moving BNF to state '" + reference + "'.");
+			if (Bnf.TraceSwitch.TraceInfo) Trace.TraceInformation("Moving BNF to state '" + reference + "'.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
 			if (Rules.Count == 0) {
 				if (!Bnf.Productions.ContainsKey(reference)) throw new BnfStateException(this, "BNF has no production for root reference '" + reference + "'.");
@@ -188,22 +190,22 @@ namespace Jgr.Grammar
 					IsEnterBlockTime = true;
 				}
 			}
-			//MessageSend(LEVEL_DEBUG, ToString());
+			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString());
 		}
 
 		public void EnterBlock() {
-			MessageSend(LevelDebug, "Moving BNF to state <begin-block>.");
+			if (Bnf.TraceSwitch.TraceInfo) Trace.TraceInformation("Moving BNF to state <begin-block>.");
 			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
 			IsEnterBlockTime = false;
-			//MessageSend(LEVEL_DEBUG, ToString());
+			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString());
 		}
 
 		public void LeaveBlock() {
-			MessageSend(LevelDebug, "Moving BNF to state <end-block>.");
+			if (Bnf.TraceSwitch.TraceInfo) Trace.TraceInformation("Moving BNF to state <end-block>.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got end-block.");
 			if (!IsEndBlockTime) throw new BnfStateException(this, "BNF expected begin-block, reference or literal; got end-block.");
 			Rules.Pop();
-			//MessageSend(LEVEL_DEBUG, ToString());
+			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString());
 		}
 
 		public bool IsEmpty {
