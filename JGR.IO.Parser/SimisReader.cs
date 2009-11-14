@@ -293,7 +293,7 @@ namespace Jgr.IO.Parser
 				case "float":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.Float = Double.Parse(token);
+						rv.Float = float.Parse(token);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {

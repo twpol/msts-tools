@@ -103,7 +103,7 @@ namespace Jgr.IO.Parser
 				if (child is SimisTreeNodeValueInteger) {
 					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Integer, Integer = (long)((SimisTreeNodeValueInteger)child).Value });
 				} else if (child is SimisTreeNodeValueFloat) {
-					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (double)((SimisTreeNodeValueFloat)child).Value });
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (float)((SimisTreeNodeValueFloat)child).Value });
 				} else if (child is SimisTreeNodeValueString) {
 					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.String, String = (string)((SimisTreeNodeValueString)child).Value });
 				} else {

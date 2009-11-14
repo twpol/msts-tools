@@ -564,7 +564,7 @@ namespace SimisEditor
 			if (child is SimisTreeNodeValueInteger) {
 				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueInteger(child.Type, child.Name, (long)value), child));
 			} else if (child is SimisTreeNodeValueFloat) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (double)value), child));
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (float)value), child));
 			} else if (child is SimisTreeNodeValueString) {
 				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
 			}

@@ -41,29 +41,15 @@ namespace Jgr.IO.Parser
 
 		public SimisTreeNode this[string type] {
 			get {
-				for (var i = 0; i < Count; i++) {
-					if (this[i] is SimisTreeNodeValue) {
-						if (this[i].Name == type) return this[i];
+				foreach (var child in this) {
+					if (child is SimisTreeNodeValue) {
+						if (child.Name == type) return child;
 					} else {
-						if (this[i].Type == type) return this[i];
+						if (child.Type == type) return child;
 					}
 				}
 				throw new ArgumentException("No children of the given type (or name for values) were found.", "type");
 			}
-		}
-
-		internal bool HasChild(SimisTreeNode child) {
-			return FindChildIndex(child) >= 0;
-		}
-
-		int FindChildIndex(SimisTreeNode child) {
-			if (child == null) {
-				return -1;
-			}
-			for (var i = 0; i < Count; i++) {
-				if (this[i] == child) return i;
-			}
-			return -1;
 		}
 
 		public SimisTreeNode Apply(IList<SimisTreeNode> path, Func<SimisTreeNode, SimisTreeNode> action) {
@@ -74,7 +60,7 @@ namespace Jgr.IO.Parser
 			if (pathStart >= path.Count()) {
 				return action(this);
 			}
-			var childIndex = FindChildIndex(path[pathStart]);
+			var childIndex = IndexOf(path[pathStart]);
 			if (childIndex == -1) throw new InvalidDataException("Cannot find child node specified by path[" + pathStart + "].");
 			var newChild = this[childIndex].Apply(path, pathStart + 1, action);
 			path[pathStart] = newChild;
@@ -90,45 +76,38 @@ namespace Jgr.IO.Parser
 		}
 
 		public SimisTreeNode InsertChild(SimisTreeNode child, SimisTreeNode before) {
-			var index = FindChildIndex(before);
+			var index = IndexOf(before);
 			if (index == -1) throw new InvalidDataException("Cannot InsertChild before node which is not a child of this node.");
 			return InsertChild(child, index);
 		}
 
 		SimisTreeNode InsertChild(SimisTreeNode child, int index) {
-			var newChildren = new SimisTreeNode[Count + 1];
-			for (var i = 0; i < Count; i++) {
-				newChildren[i + (i >= index ? 1 : 0)] = this[i];
-			}
-			newChildren[index] = child;
+			var newChildren = new List<SimisTreeNode>(this);
+			newChildren.Insert(index, child);
 			return new SimisTreeNode(Type, Name, newChildren);
 		}
 
 		public SimisTreeNode ReplaceChild(SimisTreeNode child, SimisTreeNode oldChild) {
-			var index = FindChildIndex(oldChild);
+			var index = IndexOf(oldChild);
 			if (index == -1) throw new InvalidDataException("Cannot ReplaceChild a node which is not a child of this node.");
 			return ReplaceChild(child, index);
 		}
 
 		SimisTreeNode ReplaceChild(SimisTreeNode child, int index) {
-			var newChildren = new SimisTreeNode[Count];
-			for (var i = 0; i < Count; i++) {
-				newChildren[i] = (i == index ? child : this[i]);
-			}
+			var newChildren = new List<SimisTreeNode>(this);
+			newChildren[index] = child;
 			return new SimisTreeNode(Type, Name, newChildren);
 		}
 
 		public SimisTreeNode RemoveChild(SimisTreeNode child) {
-			var index = FindChildIndex(child);
+			var index = IndexOf(child);
 			if (index == -1) throw new InvalidDataException("Cannot RemoveChild a node which is not a child of this node.");
 			return RemoveChild(index);
 		}
 
 		SimisTreeNode RemoveChild(int index) {
-			var newChildren = new SimisTreeNode[Count - 1];
-			for (var i = 0; i < Count; i++) {
-				if (i != index) newChildren[i - (i >= index ? 1 : 0)] = this[i];
-			}
+			var newChildren = new List<SimisTreeNode>(this);
+			newChildren.RemoveAt(index);
 			return new SimisTreeNode(Type, Name, newChildren);
 		}
 
@@ -168,12 +147,12 @@ namespace Jgr.IO.Parser
 
 	public class SimisTreeNodeValueFloat : SimisTreeNodeValue
 	{
-		public SimisTreeNodeValueFloat(string type, string name, double value)
+		public SimisTreeNodeValueFloat(string type, string name, float value)
 			: base(type, name, value) {
 		}
 
 		public override string ToString() {
-			return ((double)Value).ToString("G6");
+			return ((float)Value).ToString("G6");
 		}
 	}
 
