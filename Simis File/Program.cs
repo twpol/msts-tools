@@ -154,13 +154,17 @@ namespace Normalize
 
 				var success = true;
 				var newFile = new SimisFile(file, provider);
-				Stream readStream = File.OpenRead(file);
+				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
 				Stream saveStream = new MemoryStream();
 
 				// First, read the file in.
 				if (success) {
 					try {
-						newFile.ReadFile();
+						try {
+							newFile.ReadStream(readStream);
+						} catch (Exception e) {
+							throw new FileException(file, e);
+						}
 						totalCount.ReadSuccess++;
 						supportedCount.ReadSuccess++;
 						formatCount.ReadSuccess++;
@@ -175,7 +179,11 @@ namespace Normalize
 				// Second, write the file out into memory.
 				if (success) {
 					try {
-						newFile.WriteStream(saveStream);
+						try {
+							newFile.WriteStream(saveStream);
+						} catch (Exception e) {
+							throw new FileException(file, e);
+						}
 						// WriteSuccess is delayed until after the comparison. We won't claim write support without comparison support.
 					} catch (FileException ex) {
 						success = false;
