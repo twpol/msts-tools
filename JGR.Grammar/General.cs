@@ -4,14 +4,9 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace Jgr.Grammar
-{
-	public enum OperatorType
-	{
+namespace Jgr.Grammar {
+	public enum OperatorType {
 		Reference,
 		String,
 		Optional,
@@ -20,8 +15,7 @@ namespace Jgr.Grammar
 		LogicalAnd
 	}
 
-	public abstract class Operator : ICloneable
-	{
+	public abstract class Operator : ICloneable {
 		public OperatorType Op { get; private set; }
 
 		protected Operator(OperatorType op) {
@@ -37,13 +31,11 @@ namespace Jgr.Grammar
 		#endregion
 	}
 
-	public class ReferenceOperator : Operator
-	{
+	public class ReferenceOperator : Operator {
 		public string Reference { get; private set; }
 
 		protected ReferenceOperator(OperatorType op, string reference)
-			: base(op)
-		{
+			: base(op) {
 			Reference = reference;
 		}
 
@@ -60,13 +52,11 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class NamedReferenceOperator : ReferenceOperator
-	{
+	public class NamedReferenceOperator : ReferenceOperator {
 		public string Name { get; private set; }
 
 		public NamedReferenceOperator(string name, string reference)
-			: base(OperatorType.Reference, reference)
-		{
+			: base(OperatorType.Reference, reference) {
 			Name = name;
 		}
 
@@ -79,8 +69,7 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class StringOperator : Operator
-	{
+	public class StringOperator : Operator {
 		public string Value { get; private set; }
 
 		public StringOperator(string value)
@@ -97,13 +86,11 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public abstract class UnaryOperator : Operator
-	{
+	public abstract class UnaryOperator : Operator {
 		public Operator Right { get; private set; }
 
 		protected UnaryOperator(OperatorType op, Operator right)
-			: base(op)
-		{
+			: base(op) {
 			Right = right;
 		}
 
@@ -112,8 +99,7 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class OptionalOperator : UnaryOperator
-	{
+	public class OptionalOperator : UnaryOperator {
 		public OptionalOperator(Operator right)
 			: base(OperatorType.Optional, right) {
 		}
@@ -127,8 +113,7 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class RepeatOperator : UnaryOperator
-	{
+	public class RepeatOperator : UnaryOperator {
 		public RepeatOperator(Operator right)
 			: base(OperatorType.Repeat, right) {
 		}
@@ -142,14 +127,12 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public abstract class LogicalOperator : Operator
-	{
+	public abstract class LogicalOperator : Operator {
 		public Operator Left { get; private set; }
 		public Operator Right { get; private set; }
 
 		protected LogicalOperator(OperatorType op, Operator left, Operator right)
-			: base(op)
-		{
+			: base(op) {
 			Left = left;
 			Right = right;
 		}
@@ -159,8 +142,7 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class LogicalAndOperator : LogicalOperator
-	{
+	public class LogicalAndOperator : LogicalOperator {
 		public LogicalAndOperator(Operator left, Operator right)
 			: base(OperatorType.LogicalAnd, left, right) {
 		}
@@ -174,8 +156,7 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class LogicalOrOperator : LogicalOperator
-	{
+	public class LogicalOrOperator : LogicalOperator {
 		public LogicalOrOperator(Operator left, Operator right)
 			: base(OperatorType.LogicalOr, left, right) {
 		}

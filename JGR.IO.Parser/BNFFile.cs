@@ -92,7 +92,7 @@ namespace Jgr.IO.Parser
 							if (rule is BnfDefinition) {
 								if (rule.Symbol.Reference == "FILE") {
 									Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan = null;
-									Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan2 = (op, finder) => {
+									scan = (op, finder) => {
 										if (op is UnaryOperator) {
 											return scan(((UnaryOperator)op).Right, finder);
 										}
@@ -101,7 +101,6 @@ namespace Jgr.IO.Parser
 										}
 										return finder(op);
 									};
-									scan = scan2;
 
 									BnfFileRoots = new List<string>(
 										scan(rule.Expression, op => {

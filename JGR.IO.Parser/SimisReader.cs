@@ -364,13 +364,13 @@ namespace Jgr.IO.Parser
 		SimisToken ReadTokenAsBinary() {
 			SimisToken rv = new SimisToken();
 
-			var validStates = (BnfState == null ? new string[] { } : BnfState.ValidStates.Where<string>(s => !s.StartsWith("<")));
+			var validStates = (BnfState == null ? new string[] { } : BnfState.ValidStates);
 			//if (validStates.Length == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found no non-meta states available.", new BNFStateException(BNFState, ""));
 
 			// If we have any valid data types, we read that instead of a block start. They should all be the same data type, too.
-			var validDataTypes = validStates.Where<string>(s => DataTypes.Contains(s)).ToArray<string>();
+			var validDataTypes = validStates.Where(s => DataTypes.Contains(s)).ToArray();
 			if (validDataTypes.Length > 0) {
-				if (!validDataTypes.All<string>(s => s == validDataTypes[0])) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BnfStateException(BnfState, ""));
+				if (!validDataTypes.All(s => s == validDataTypes[0])) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BnfStateException(BnfState, ""));
 
 				rv.Type = validDataTypes[0];
 				switch (rv.Type) {
