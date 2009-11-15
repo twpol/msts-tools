@@ -39,7 +39,7 @@ namespace Jgr.IO.Parser
 			baseStream.Position = start;
 
 			{
-				var signature = String.Join("", binaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", binaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray());
 				if ((signature != "SIMISA@F") && (signature != "SIMISA@@")) {
 					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 				}
@@ -52,7 +52,7 @@ namespace Jgr.IO.Parser
 				var uncompressedSize = binaryReader.ReadUInt32();
 				var streamLength = binaryReader.BaseStream.Position + uncompressedSize;
 				{
-					var signature = String.Join("", binaryReader.ReadChars(4).Select<char, string>(c => c.ToString()).ToArray<string>());
+					var signature = String.Join("", binaryReader.ReadChars(4).Select<char, string>(c => c.ToString()).ToArray());
 					if (signature != "@@@@") {
 						throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 					}
@@ -71,7 +71,7 @@ namespace Jgr.IO.Parser
 				binaryReader.Close();
 				binaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(baseStream, CompressionMode.Decompress)), new ByteEncoding());
 			} else {
-				var signature = String.Join("", binaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", binaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray());
 				if (signature != "@@@@@@@@") {
 					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 				}
@@ -80,7 +80,7 @@ namespace Jgr.IO.Parser
 
 			var isText = false;
 			{
-				var signature = String.Join("", binaryReader.ReadChars(16).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", binaryReader.ReadChars(16).Select<char, string>(c => c.ToString()).ToArray());
 				if (signature.Substring(0, 5) != "JINX0") {
 					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 				}
@@ -94,8 +94,8 @@ namespace Jgr.IO.Parser
 			var inWhitespace = true;
 			var inString = false;
 			while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length) {
-				var bite = binaryReader.ReadChar();
 				if (isText) {
+					var bite = binaryReader.ReadChar();
 					if (inString || (bite == '"')) {
 						inString = inString ^ (bite == '"');
 						if (inString) {
@@ -132,7 +132,7 @@ namespace Jgr.IO.Parser
 						}
 					}
 				} else {
-					binaryWriter.Write(bite);
+					binaryWriter.Write(binaryReader.ReadChars(1024));
 				}
 			}
 

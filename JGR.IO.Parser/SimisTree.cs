@@ -15,22 +15,19 @@ namespace Jgr.IO.Parser
 	{
 		public string Type { get; private set; }
 		public string Name { get; private set; }
-		int Counter;
-		static int GlobalCounter;
 
 		public SimisTreeNode(string type, string name)
-			: this(type, name, new List<SimisTreeNode>()) {
+			: this(type, name, new SimisTreeNode[0]) {
 		}
 
 		SimisTreeNode(string type, string name, IList<SimisTreeNode> children)
 			: base(children) {
 			Type = type;
 			Name = name;
-			Counter = ++GlobalCounter;
 		}
 
 		public override string ToString() {
-			return "<" + Type + (Name.Length > 0 ? " \"" + Name + "\"" : "") + " #" + Counter + ">" + String.Join(", ", this.Select<SimisTreeNode, string>(n => n.ToString()).ToArray()) + "</" + Type + ">";
+			return "<" + Type + (Name.Length > 0 ? " \"" + Name + "\"" : "") + ">" + String.Join(", ", this.Select<SimisTreeNode, string>(n => n.ToString()).ToArray()) + "</" + Type + ">";
 		}
 
 		public bool EqualsByValue(object obj) {
