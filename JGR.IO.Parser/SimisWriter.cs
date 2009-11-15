@@ -89,7 +89,7 @@ namespace Jgr.IO.Parser
 						TextBlocked = true;
 						break;
 					case SimisTokenKind.Integer:
-						var intDatatypes = BnfState.ValidStates.Where<string>(s => s == "uint" || s == "sint" || s == "dword");
+						var intDatatypes = BnfState.ValidStates.Where(s => s == "uint" || s == "sint" || s == "dword");
 						BnfState.MoveTo(intDatatypes.First());
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
@@ -126,7 +126,7 @@ namespace Jgr.IO.Parser
 					case SimisTokenKind.String:
 						// Special-case Skip(...) blocks which are not parsed.
 						if (!token.String.StartsWith("Skip", StringComparison.InvariantCultureIgnoreCase) && !token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase)) {
-							var stringDatatypes = BnfState.ValidStates.Where<string>(s => s == "string" || s == "buffer");
+							var stringDatatypes = BnfState.ValidStates.Where(s => s == "string" || s == "buffer");
 							BnfState.MoveTo(stringDatatypes.First());
 						}
 						if (TextBlocked) {
@@ -134,7 +134,7 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						if ((token.String.Length > 0) && token.String.ToCharArray().All<char>(c => SafeTokenCharacters.Contains(c))) {
+						if ((token.String.Length > 0) && token.String.ToCharArray().All(c => SafeTokenCharacters.Contains(c))) {
 							BinaryWriter.Write(token.String.ToCharArray());
 						} else {
 							var wrap = "\"+\r\n";
@@ -154,7 +154,7 @@ namespace Jgr.IO.Parser
 			} else {
 				switch (token.Kind) {
 					case SimisTokenKind.Block:
-						var id = SimisProvider.TokenNames.FirstOrDefault<KeyValuePair<uint, string>>(kvp => kvp.Value == token.Type).Key;
+						var id = SimisProvider.TokenIds[token.Type];
 						BinaryWriter.Write((uint)id);
 						BinaryWriter.Write((uint)0x7F8F7F8F); // Length, set to sentinel value for now.
 						BlockStarts.Push(BinaryWriter.BaseStream.Position);

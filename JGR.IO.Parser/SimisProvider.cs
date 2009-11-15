@@ -28,15 +28,17 @@ namespace Jgr.IO.Parser
 	public class SimisProvider
 	{
 		public Dictionary<uint, string> TokenNames { get; private set; }
+		public Dictionary<string, uint> TokenIds { get; private set; }
 		public List<SimisFormat> Formats { get; private set; }
 		Thread BackgroundLoader;
 		Exception LoadError;
 		Dictionary<string, SimisFormat> FormatByRoot;
 
 		public SimisProvider(string directory) {
+			TokenNames = new Dictionary<uint, string>();
+			TokenIds = new Dictionary<string, uint>();
 			Formats = new List<SimisFormat>();
 			FormatByRoot = new Dictionary<string, SimisFormat>();
-			TokenNames = new Dictionary<uint, string>();
 
 			BackgroundLoader = new Thread(() => BackgroundLoad(directory));
 			BackgroundLoader.Start();
@@ -91,6 +93,7 @@ namespace Jgr.IO.Parser
 					} else if (ffLine.StartsWith("SIDDEF(")) {
 						var name = ffLine.Substring(ffLine.IndexOf('"') + 1, ffLine.LastIndexOf('"') - ffLine.IndexOf('"') - 1);
 						TokenNames.Add(((uint)tokenType << 16) + ++tokenIndex, name);
+						TokenIds.Add(name, ((uint)tokenType << 16) + tokenIndex);
 					}
 					if (ffReader.EndOfStream) break;
 				}
