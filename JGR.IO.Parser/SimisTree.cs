@@ -52,6 +52,13 @@ namespace Jgr.IO.Parser
 			}
 		}
 
+		int LastIndexOf(SimisTreeNode node) {
+			for (var i = Count - 1; i >= 0; i--) {
+				if (this[i] == node) return i;
+			}
+			return -1;
+		}
+
 		public SimisTreeNode Apply(IList<SimisTreeNode> path, Func<SimisTreeNode, SimisTreeNode> action) {
 			return Apply(path, 0, action);
 		}
@@ -60,7 +67,7 @@ namespace Jgr.IO.Parser
 			if (pathStart >= path.Count()) {
 				return action(this);
 			}
-			var childIndex = IndexOf(path[pathStart]);
+			var childIndex = LastIndexOf(path[pathStart]);
 			if (childIndex == -1) throw new InvalidDataException("Cannot find child node specified by path[" + pathStart + "].");
 			var newChild = this[childIndex].Apply(path, pathStart + 1, action);
 			path[pathStart] = newChild;
@@ -76,7 +83,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public SimisTreeNode InsertChild(SimisTreeNode child, SimisTreeNode before) {
-			var index = IndexOf(before);
+			var index = LastIndexOf(before);
 			if (index == -1) throw new InvalidDataException("Cannot InsertChild before node which is not a child of this node.");
 			return InsertChild(child, index);
 		}
@@ -88,7 +95,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public SimisTreeNode ReplaceChild(SimisTreeNode child, SimisTreeNode oldChild) {
-			var index = IndexOf(oldChild);
+			var index = LastIndexOf(oldChild);
 			if (index == -1) throw new InvalidDataException("Cannot ReplaceChild a node which is not a child of this node.");
 			return ReplaceChild(child, index);
 		}
@@ -100,7 +107,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public SimisTreeNode RemoveChild(SimisTreeNode child) {
-			var index = IndexOf(child);
+			var index = LastIndexOf(child);
 			if (index == -1) throw new InvalidDataException("Cannot RemoveChild a node which is not a child of this node.");
 			return RemoveChild(index);
 		}

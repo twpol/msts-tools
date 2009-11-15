@@ -7,19 +7,22 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 
-namespace Jgr.Grammar
-{
-	public class Fsm
-	{
+namespace Jgr.Grammar {
+	public class Fsm {
 		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.fsm", "Trace Fsm and FsmState");
 
 		public FsmState Root { get; private set; }
 
 		public Fsm(Operator expression) {
-			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("ORIGINAL: " + expression);
-			Root = RemoveRedundantSteps(MakeStateForOp(expression));
+			if (Fsm.TraceSwitch.TraceVerbose) {
+				Trace.WriteLine("BNF: " + expression);
+			}
+			Root = new FsmStateStart(CreateState(expression));
+			IndexUnlinks(Root);
+			if (Fsm.TraceSwitch.TraceVerbose) {
+				Trace.WriteLine("FSM: " + Root);
+			}
 			IndexUnlinks(Root);
 		}
 
@@ -27,111 +30,52 @@ namespace Jgr.Grammar
 			return Root.ToString();
 		}
 
-		FsmState MakeStateForOp(Operator op) {
-			var state = new FsmState(op);
-			if (op is ReferenceOperator) {
-			} else if (op is StringOperator) {
-			} else if (op is OptionalOperator) {
-				var oop = (OptionalOperator)op;
-				var right = MakeStateForOp(oop.Right);
-				var end = new FsmState(null);
-				LinkEndsTo(right, new FsmStateUnlink(end));
-				state.Next.Add(right);
-				state.Next.Add(end);
-			} else if (op is RepeatOperator) {
-				var rop = (RepeatOperator)op;
-				var right = MakeStateForOp(rop.Right);
-				state.Next.Add(right);
-				LinkEndsTo(right, new FsmState[] { new FsmStateUnlink(state), new FsmState(null) });
-			} else if (op is LogicalOperator) {
-				var lop = (LogicalOperator)op;
-				var left = MakeStateForOp(lop.Left);
-				var right = MakeStateForOp(lop.Right);
-				if (op is LogicalOrOperator) {
-					state.Next.Add(left);
-					state.Next.Add(right);
-				} else if (op is LogicalAndOperator) {
-					state.Next.Add(left);
-					LinkEndsTo(left, right);
-				} else {
-					Debug.Assert(false, "LogicalOperator is not Or or And.");
-				}
+		List<FsmState> CreateState(Operator op) {
+			var states = new List<FsmState>();
+			if (op == null) {
+				states.Add(new FsmStateFinish());
+				return states;
+			}
+			var oop = op as OptionalOperator;
+			var rop = op as RepeatOperator;
+			var loop = op as LogicalOrOperator;
+			var laop = op as LogicalAndOperator;
+			if (oop != null) {
+				states.AddRange(CreateState(oop.Right));
+				states.Add(new FsmStateFinish());
+			} else if (rop != null) {
+				states.AddRange(CreateState(rop.Right));
+				LinkFinishes(states, () => {
+					var l = new List<FsmState>(states.Select<FsmState, FsmState>(s => new FsmStateUnlink(s)));
+					l.Add(new FsmStateFinish());
+					return l;
+				});
+			} else if (loop != null) {
+				states.AddRange(CreateState(loop.Left));
+				states.AddRange(CreateState(loop.Right));
+			} else if (laop != null) {
+				states.AddRange(CreateState(laop.Left));
+				LinkFinishes(states, () => CreateState(laop.Right));
+				// TODO: This can duplicate some branches of the FSM. We should CreateState for one branch and link the rest.
 			} else {
-				Debug.Assert(false, "Operator is not known.");
+				var state = new FsmState(op);
+				states.Add(state);
+				state.Next.Add(new FsmStateFinish());
 			}
-			return state;
+			return states;
 		}
 
-		void LinkEndsTo(FsmState state, FsmState end) {
-			LinkEndsTo(state, new FsmState[] { end });
-		}
-
-		void LinkEndsTo(FsmState state, IEnumerable<FsmState> end) {
-			if (state is FsmStateUnlink) return;
-			if (state.Next.Count == 0) {
-				state.Next.AddRange(end);
-			} else {
-				foreach (var next in state.Next) {
-					if (end.Contains<FsmState>(next)) continue;
-					LinkEndsTo(next, end);
+		void LinkFinishes(List<FsmState> states, Func<List<FsmState>> makeNewStates) {
+			for (var i = 0; i < states.Count; i++) {
+				if (states[i] is FsmStateFinish) {
+					var newStates = makeNewStates();
+					states.RemoveAt(i);
+					states.InsertRange(i, newStates);
+					i += newStates.Count - 1;
+				} else if (states[i].HasNext) {
+					LinkFinishes(states[i].Next, makeNewStates);
 				}
 			}
-		}
-
-		void ReplaceLinksWith(FsmState state, FsmState old, FsmState end) {
-			ReplaceLinksWith(state, old, new FsmState[] { end });
-		}
-
-		void ReplaceLinksWith(FsmState state, FsmState old, IEnumerable<FsmState> end) {
-			for (var i = 0; i < state.Next.Count; i++) {
-				if (state.Next[i] == old) {
-					state.Next.InsertRange(i + 1, end);
-					state.Next.RemoveAt(i);
-					i += end.Count<FsmState>(s => true) - 1;
-				}
-			}
-			if (state.HasNext) {
-				foreach (var next in state.Next) {
-					ReplaceLinksWith(next, old, end);
-				}
-			}
-		}
-
-		FsmState RemoveRedundantSteps(FsmState root) {
-			IndexUnlinks(root); // FIXME
-			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("INITIAL:  " + root);
-			var rv = RemoveRedundantSteps(ref root, root);
-			IndexUnlinks(root); // FIXME
-			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("FINAL:    " + root);
-			if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("");
-			return rv;
-		}
-
-		FsmState RemoveRedundantSteps(ref FsmState root, FsmState state) {
-			// Structure with exactly 1 next state can be removed.
-			if (state.IsStructure && (state.Next.Count == 1)) {
-				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  Removing unnecessary " + state.OpString() + ".");
-				if (root == state) {
-					root = state.Next[0];
-				}
-				ReplaceLinksWith(root, state, state.Next[0]);
-				IndexUnlinks(root); // FIXME
-				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  New:    " + root);
-				return RemoveRedundantSteps(ref root, state.Next[0]);
-			}
-			if (state.IsReference && (state.Next.Count == 1) && state.Next[0].IsStructure && (state.Next[0].Next.Count > 0)) {
-				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  Removing unnecessary " + state.Next[0].OpString() + ".");
-			    ReplaceLinksWith(root, state.Next[0], state.Next[0].Next);
-				IndexUnlinks(root); // FIXME
-				if (Fsm.TraceSwitch.TraceVerbose) Trace.WriteLine("  New:    " + root);
-				return RemoveRedundantSteps(ref root, state);
-			}
-			if (state.HasNext) {
-				for (var i = 0; i < state.Next.Count; i++) {
-					state.Next[i] = RemoveRedundantSteps(ref root, state.Next[i]);
-				}
-			}
-			return state;
 		}
 
 		void IndexUnlinks(FsmState state) {
@@ -150,8 +94,7 @@ namespace Jgr.Grammar
 		}
 	}
 
-	public class FsmState
-	{
+	public class FsmState {
 		public Operator Op { get; private set; }
 		public List<FsmState> Next { get; private set; }
 		public bool IsReference { get; protected set; }
@@ -167,9 +110,9 @@ namespace Jgr.Grammar
 
 		internal virtual string OpString() {
 			if (IsReference) {
-				return (Index > 0 ? Index + ":" : "") + ((ReferenceOperator)Op).Reference;
+				return ((ReferenceOperator)Op).Reference;
 			}
-			return (Index > 0 ? Index + ":"  : "") + "(" + (Op != null ? Op.Op.ToString().ToLower() : "null") + ")";
+			return "(" + (Op != null ? Op.Op.ToString().ToLower() : "null") + ")";
 		}
 
 		public virtual bool HasNext {
@@ -179,7 +122,7 @@ namespace Jgr.Grammar
 		}
 
 		public override string ToString() {
-			var rv = OpString();
+			var rv = (Index > 0 ? Index + ":" : "") + OpString();
 			if (Next.Count == 1) {
 				rv += " -> " + Next[0].ToString();
 			} else if (Next.Count > 1) {
@@ -187,20 +130,109 @@ namespace Jgr.Grammar
 			}
 			return rv;
 		}
+
+		bool FilledCache = false;
+		List<FsmState> _NextStates;
+		bool _NextStateHasFinish = false;
+		List<FsmState> _NextReferences;
+		List<string> _NextReferenceNames;
+		void FillCache() {
+			if (FilledCache) return;
+			_NextStates = new List<FsmState>();
+			_NextReferences = new List<FsmState>();
+			_NextReferenceNames = new List<string>();
+			foreach (var next in Next) {
+				if (next is FsmStateUnlink) {
+					_NextStates.Add(next.Next[0]);
+					if (next.Next[0] is FsmStateFinish) {
+						_NextStateHasFinish = true;
+					}
+					if (next.Next[0].IsReference) {
+						_NextReferences.Add(next.Next[0]);
+						_NextReferenceNames.Add(((ReferenceOperator)(next.Next[0].Op)).Reference);
+					}
+				} else {
+					_NextStates.Add(next);
+					if (next is FsmStateFinish) {
+						_NextStateHasFinish = true;
+					}
+					if (next.IsReference) {
+						_NextReferences.Add(next);
+						_NextReferenceNames.Add(((ReferenceOperator)(next.Op)).Reference);
+					}
+				}
+			}
+			FilledCache = true;
+		}
+
+		public IEnumerable<FsmState> NextStates {
+			get {
+				FillCache();
+				return _NextStates;
+			}
+		}
+
+		public bool NextStateHasFinish {
+			get {
+				FillCache();
+				return _NextStateHasFinish;
+			}
+		}
+
+		public IEnumerable<FsmState> NextReferences {
+			get {
+				FillCache();
+				return _NextReferences;
+			}
+		}
+
+		public IEnumerable<string> NextReferenceNames {
+			get {
+				FillCache();
+				return _NextReferenceNames;
+			}
+		}
 	}
 
-	public class FsmStateUnlink : FsmState
-	{
+	public class FsmStateStart : FsmState {
+		internal FsmStateStart()
+			: base(null) {
+			IsReference = false;
+			IsStructure = false;
+		}
+
+		internal FsmStateStart(IEnumerable<FsmState> state)
+			: this() {
+			Next.AddRange(state);
+		}
+
+		internal override string OpString() {
+			return "<start>";
+		}
+	}
+
+	public class FsmStateFinish : FsmState {
+		internal FsmStateFinish()
+			: base(null) {
+			IsReference = false;
+			IsStructure = false;
+		}
+
+		internal override string OpString() {
+			return "<finish>";
+		}
+	}
+
+	public class FsmStateUnlink : FsmState {
 		internal FsmStateUnlink(FsmState state)
-			: base(null)
-		{
+			: base(null) {
 			Next.Add(state);
 			IsReference = false;
 			IsStructure = false;
 		}
 
 		internal override string OpString() {
-			return (Index > 0 ? Index + ":" : "") + (Next.Count == 0 ? "^???" : "^" + Next[0].Index);
+			return (Next.Count == 0 ? "^???" : "^" + Next[0].Index);
 		}
 
 		public override bool HasNext {
@@ -210,7 +242,7 @@ namespace Jgr.Grammar
 		}
 
 		public override string ToString() {
-			return OpString();
+			return (Index > 0 ? Index + ":" : "") + OpString();
 		}
 	}
 }
