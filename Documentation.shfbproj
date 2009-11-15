@@ -59,8 +59,13 @@
     <Preliminary>True</Preliminary>
     <ProjectLinkType>Local</ProjectLinkType>
     <RootNamespaceContainer>True</RootNamespaceContainer>
-    <SdkLinkTarget>Blank</SdkLinkTarget>
+    <SdkLinkTarget>Top</SdkLinkTarget>
     <SyntaxFilters>Standard</SyntaxFilters>
+    <MissingTags>Summary, Parameter, Returns, Value, Namespace, TypeParameter, IncludeTargets</MissingTags>
+    <VisibleItems>Attributes, ExplicitInterfaceImplementations, InheritedMembers, InheritedFrameworkMembers, Protected, SealedProtected</VisibleItems>
+    <KeepLogFile>False</KeepLogFile>
+    <PlugInConfigurations>
+    </PlugInConfigurations>
   </PropertyGroup>
   <!-- There are no properties for these two groups but they need to appear in
        order for Visual Studio to perform the build. -->
