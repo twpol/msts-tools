@@ -43,6 +43,8 @@ namespace SimisEditor
 		TreeNode SelectedNode;
 		SimisProvider SimisProvider;
 
+		#region Initialization
+
 		public Editor() {
 			InitializeComponent();
 			ToolStripManager.Renderer = new ToolStripNativeRenderer();
@@ -129,6 +131,10 @@ namespace SimisEditor
 			};
 		}
 
+		#endregion
+
+		#region File Operations (New, Open, Modified, Save)
+
 		void NewFile() {
 			//WaitForSimisProvider();
 			Modified = false;
@@ -209,6 +215,151 @@ namespace SimisEditor
 			UpdateMenu();
 			return true;
 		}
+
+		#endregion
+
+		#region Menu Events - File
+
+		void newToolStripMenuItem_Click(object sender, EventArgs e) {
+			if (!SaveFileIfModified()) {
+				return;
+			}
+			NewFile();
+		}
+
+		void openToolStripMenuItem_Click(object sender, EventArgs e) {
+			if (!SaveFileIfModified()) {
+				return;
+			}
+			if (!UpdateFromSimisProvider()) return;
+			if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
+				OpenFile(openFileDialog.FileName);
+			}
+		}
+
+		void saveToolStripMenuItem_Click(object sender, EventArgs e) {
+			SaveFile();
+		}
+
+		void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
+			// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
+			if (!UpdateFromSimisProvider()) return;
+			saveFileDialog.FilterIndex = File.StreamCompressed ? 3 : File.StreamFormat == SimisStreamFormat.Text ? 1 : 2;
+			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
+				Filename = saveFileDialog.FileName;
+				File.StreamFormat = saveFileDialog.FilterIndex == 1 ? SimisStreamFormat.Text : SimisStreamFormat.Binary;
+				File.StreamCompressed = saveFileDialog.FilterIndex == 3;
+				SaveFile();
+			}
+		}
+
+		void exitToolStripMenuItem_Click(object sender, EventArgs e) {
+			if (!SaveFileIfModified()) {
+				return;
+			}
+			Close();
+		}
+
+		#endregion
+
+		#region Menu Events - Edit
+
+		private void undoToolStripMenuItem_Click(object sender, EventArgs e) {
+			File.Undo();
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
+		}
+
+		private void redoToolStripMenuItem_Click(object sender, EventArgs e) {
+			File.Redo();
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
+		}
+
+		#endregion
+
+		#region Menu Events - Help
+
+		void homepageToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutHomepageUrl);
+		}
+
+		void updatesToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutUpdatesUrl);
+		}
+
+		void discussionsToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutDiscussionsUrl);
+		}
+
+		void issueTrackerToolStripMenuItem_Click(object sender, EventArgs e) {
+			Process.Start(Settings.Default.AboutIssuesUrl);
+		}
+
+		void reloadSimisResourcesToolStripMenuItem_Click(object sender, EventArgs e) {
+			InitializeSimisProvider();
+		}
+
+		#endregion
+
+		#region Main Events (Editor, SimisTree, SimisProperties)
+
+		void Editor_DragEnter(object sender, DragEventArgs e) {
+			e.Effect = DragDropEffects.None;
+			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
+				return;
+			}
+			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			if (files.Length != 1) {
+				return;
+			}
+			if (!WaitForSimisProvider()) return;
+			if (!SimisProvider.Formats.Any<SimisFormat>((f) => files[0].EndsWith("." + f.Extension))) {
+				return;
+			}
+			e.Effect = DragDropEffects.Copy;
+		}
+
+		void Editor_DragDrop(object sender, DragEventArgs e) {
+			if (!SaveFileIfModified()) {
+				return;
+			}
+			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			OpenFile(files[0]);
+		}
+
+        void SimisTree_AfterSelect(object sender, TreeViewEventArgs e) {
+            SelectNode(e.Node);
+        }
+
+		void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
+			if (SelectedNode == null) return;
+
+			var node = SelectedNode;
+			if (node.Tag is SimisTreeNodeValue) node = node.Parent;
+			var blockPath = new Stack<SimisTreeNode>();
+			while (node != null) {
+				blockPath.Push((SimisTreeNode)node.Tag);
+				node = node.Parent;
+			}
+
+			var child = (SimisTreeNodeValue)SimisProperties.SelectedObject.GetType().GetProperty(e.ChangedItem.Label + "_SimisTreeNodeValue").GetValue(SimisProperties.SelectedObject, null);
+			var value = e.ChangedItem.Value;
+
+			var blockPathList = new List<SimisTreeNode>(blockPath);
+			if (child is SimisTreeNodeValueInteger) {
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueInteger(child.Type, child.Name, (long)value), child));
+			} else if (child is SimisTreeNodeValueFloat) {
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (float)value), child));
+			} else if (child is SimisTreeNodeValueString) {
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
+			}
+
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
+		}
+
+		#endregion
 
 		void UpdateTitle() {
 			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
@@ -291,18 +442,6 @@ namespace SimisEditor
 				ResyncSimisNodes(viewTreeNode.Nodes, simisTreeNode);
 			}
 		}
-
-		//void InsertSimisBlock(TreeNodeCollection treeNodes, SimisTreeNode block) {
-		//    var treeNode = treeNodes.Add(GetNodeText(block));
-		//    treeNode.Tag = block;
-
-		//    if (block.Children.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
-		//        // If we have any non-value child blocks, add everything.
-		//        foreach (var child in block.Children) {
-		//            InsertSimisBlock(treeNode.Nodes, child);
-		//        }
-		//    }
-		//}
 
         void SelectNode(TreeNode treeNode) {
 			if ((treeNode == null) || (treeNode.Tag == null)) {
@@ -504,136 +643,6 @@ namespace SimisEditor
 			dProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name), new CodeVariableReferenceExpression("value")));
 			dProperties.Add(dProperty);
 			return dProperty;
-		}
-
-		void newToolStripMenuItem_Click(object sender, EventArgs e) {
-			if (!SaveFileIfModified()) {
-				return;
-			}
-			NewFile();
-		}
-
-		void openToolStripMenuItem_Click(object sender, EventArgs e) {
-			if (!SaveFileIfModified()) {
-				return;
-			}
-			if (!UpdateFromSimisProvider()) return;
-			if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
-				OpenFile(openFileDialog.FileName);
-			}
-		}
-
-		void saveToolStripMenuItem_Click(object sender, EventArgs e) {
-			SaveFile();
-		}
-
-		void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
-			// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
-			if (!UpdateFromSimisProvider()) return;
-			saveFileDialog.FilterIndex = File.StreamCompressed ? 3 : File.StreamFormat == SimisStreamFormat.Text ? 1 : 2;
-			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
-				Filename = saveFileDialog.FileName;
-				File.StreamFormat = saveFileDialog.FilterIndex == 1 ? SimisStreamFormat.Text : SimisStreamFormat.Binary;
-				File.StreamCompressed = saveFileDialog.FilterIndex == 3;
-				SaveFile();
-			}
-		}
-
-		void exitToolStripMenuItem_Click(object sender, EventArgs e) {
-			if (!SaveFileIfModified()) {
-				return;
-			}
-			Close();
-		}
-
-        void SimisTree_AfterSelect(object sender, TreeViewEventArgs e) {
-            SelectNode(e.Node);
-        }
-
-		void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
-			if (SelectedNode == null) return;
-
-			var node = SelectedNode;
-			if (node.Tag is SimisTreeNodeValue) node = node.Parent;
-			var blockPath = new Stack<SimisTreeNode>();
-			while (node != null) {
-				blockPath.Push((SimisTreeNode)node.Tag);
-				node = node.Parent;
-			}
-
-			var child = (SimisTreeNodeValue)SimisProperties.SelectedObject.GetType().GetProperty(e.ChangedItem.Label + "_SimisTreeNodeValue").GetValue(SimisProperties.SelectedObject, null);
-			var value = e.ChangedItem.Value;
-
-			var blockPathList = new List<SimisTreeNode>(blockPath);
-			if (child is SimisTreeNodeValueInteger) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueInteger(child.Type, child.Name, (long)value), child));
-			} else if (child is SimisTreeNodeValueFloat) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (float)value), child));
-			} else if (child is SimisTreeNodeValueString) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
-			}
-
-			ResyncSimisNodes();
-			SelectNode(SimisTree.SelectedNode);
-		}
-
-		void reloadSimisResourcesToolStripMenuItem_Click(object sender, EventArgs e) {
-			InitializeSimisProvider();
-		}
-
-		void homepageToolStripMenuItem_Click(object sender, EventArgs e) {
-			Process.Start(Settings.Default.AboutHomepageUrl);
-		}
-
-		void updatesToolStripMenuItem_Click(object sender, EventArgs e) {
-			Process.Start(Settings.Default.AboutUpdatesUrl);
-		}
-
-		void discussionsToolStripMenuItem_Click(object sender, EventArgs e) {
-			Process.Start(Settings.Default.AboutDiscussionsUrl);
-		}
-
-		void issueTrackerToolStripMenuItem_Click(object sender, EventArgs e) {
-			Process.Start(Settings.Default.AboutIssuesUrl);
-		}
-
-		void Editor_DragEnter(object sender, DragEventArgs e) {
-			e.Effect = DragDropEffects.None;
-			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
-				return;
-			}
-			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-			if (files.Length != 1) {
-				return;
-			}
-			if (!WaitForSimisProvider()) return;
-			if (!SimisProvider.Formats.Any<SimisFormat>((f) => files[0].EndsWith("." + f.Extension))) {
-				return;
-			}
-			e.Effect = DragDropEffects.Copy;
-		}
-
-		void Editor_DragDrop(object sender, DragEventArgs e) {
-			if (!SaveFileIfModified()) {
-				return;
-			}
-			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-			OpenFile(files[0]);
-		}
-
-		private void editToolStripMenuItem_DropDownOpening(object sender, EventArgs e) {
-		}
-
-		private void undoToolStripMenuItem_Click(object sender, EventArgs e) {
-			File.Undo();
-			ResyncSimisNodes();
-			SelectNode(SimisTree.SelectedNode);
-		}
-
-		private void redoToolStripMenuItem_Click(object sender, EventArgs e) {
-			File.Redo();
-			ResyncSimisNodes();
-			SelectNode(SimisTree.SelectedNode);
 		}
 	}
 }
