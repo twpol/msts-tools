@@ -220,6 +220,8 @@ namespace SimisEditor
 		}
 
 		void ResyncSimisNodes() {
+			undoToolStripMenuItem.Enabled = File.CanUndo;
+			redoToolStripMenuItem.Enabled = File.CanRedo;
 			if (TraceSwitch.TraceVerbose) Trace.WriteLine(File.Tree.ToString());
 			ResyncSimisNodes(SimisTree.Nodes, File.Tree);
 		}
@@ -617,6 +619,21 @@ namespace SimisEditor
 			}
 			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
 			OpenFile(files[0]);
+		}
+
+		private void editToolStripMenuItem_DropDownOpening(object sender, EventArgs e) {
+		}
+
+		private void undoToolStripMenuItem_Click(object sender, EventArgs e) {
+			File.Undo();
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
+		}
+
+		private void redoToolStripMenuItem_Click(object sender, EventArgs e) {
+			File.Redo();
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
 		}
 	}
 }
