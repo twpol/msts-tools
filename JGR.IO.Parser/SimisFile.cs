@@ -16,9 +16,9 @@ namespace Jgr.IO.Parser
 		public SimisStreamFormat StreamFormat { get; set; }
 		public bool StreamCompressed { get; set; }
 		public string SimisFormat { get; set; }
-		private Stack<SimisTreeNode> UndoBuffer { get; set; }
-		private Stack<SimisTreeNode> RedoBuffer { get; set; }
-		private SimisTreeNode _Tree { get; set; }
+		Stack<SimisTreeNode> UndoBuffer { get; set; }
+		Stack<SimisTreeNode> RedoBuffer { get; set; }
+		SimisTreeNode _Tree { get; set; }
 		SimisProvider SimisProvider;
 
 		public SimisFile(string fileName, SimisProvider provider) {
