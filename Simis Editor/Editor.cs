@@ -26,6 +26,7 @@ namespace SimisEditor
 	{
 		static TraceSwitch TraceSwitch = new TraceSwitch("editor", "Trace Editor");
 
+		EditState EditState;
 		string Filename = "";
 		string FilenameTitle {
 			get {
@@ -47,10 +48,15 @@ namespace SimisEditor
 
 		public Editor() {
 			InitializeComponent();
-			ToolStripManager.Renderer = new ToolStripNativeRenderer();
+			InitializeEditor();
 			InitializeSimisProvider();
 			InitializeNewVersionCheck();
 			InitializeFromCommandLine();
+		}
+
+		void InitializeEditor() {
+			EditState = new EditState(this);
+			ToolStripManager.Renderer = new ToolStripNativeRenderer();
 		}
 
 		void InitializeNewVersionCheck() {
@@ -251,9 +257,6 @@ namespace SimisEditor
 		}
 
 		void exitToolStripMenuItem_Click(object sender, EventArgs e) {
-			if (!SaveFileIfModified()) {
-				return;
-			}
 			Close();
 		}
 
@@ -261,7 +264,19 @@ namespace SimisEditor
 
 		#region Menu Events - Edit
 
-		private void undoToolStripMenuItem_Click(object sender, EventArgs e) {
+		void UpdateEditState() {
+			cutToolStripMenuItem.Enabled = EditState.CanCut;
+			copyToolStripMenuItem.Enabled = EditState.CanCopy;
+			pasteToolStripMenuItem.Enabled = EditState.CanPaste;
+			deleteToolStripMenuItem.Enabled = EditState.CanDelete;
+			selectAllToolStripMenuItem.Enabled = EditState.CanSelectAll;
+		}
+
+		void editToolStripMenuItem_DropDownOpening(object sender, EventArgs e) {
+			UpdateEditState();
+		}
+
+		void undoToolStripMenuItem_Click(object sender, EventArgs e) {
 			File.Undo();
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
@@ -269,12 +284,32 @@ namespace SimisEditor
 			UpdateMenu();
 		}
 
-		private void redoToolStripMenuItem_Click(object sender, EventArgs e) {
+		void redoToolStripMenuItem_Click(object sender, EventArgs e) {
 			File.Redo();
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
 			UpdateTitle();
 			UpdateMenu();
+		}
+
+		void cutToolStripMenuItem_Click(object sender, EventArgs e) {
+			EditState.DoCut();
+		}
+
+		void copyToolStripMenuItem_Click(object sender, EventArgs e) {
+			EditState.DoCopy();
+		}
+
+		void pasteToolStripMenuItem_Click(object sender, EventArgs e) {
+			EditState.DoPaste();
+		}
+
+		void deleteToolStripMenuItem_Click(object sender, EventArgs e) {
+			EditState.DoDelete();
+		}
+
+		void selectAllToolStripMenuItem_Click(object sender, EventArgs e) {
+			EditState.DoSelectAll();
 		}
 
 		#endregion
@@ -333,6 +368,14 @@ namespace SimisEditor
 			}
 			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
 			OpenFile(files[0]);
+		}
+
+		void SimisTree_Enter(object sender, EventArgs e) {
+			UpdateEditState();
+		}
+
+		void SimisTree_Leave(object sender, EventArgs e) {
+			UpdateEditState();
 		}
 
         void SimisTree_AfterSelect(object sender, TreeViewEventArgs e) {
