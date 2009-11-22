@@ -26,7 +26,6 @@ namespace SimisEditor
 	{
 		static TraceSwitch TraceSwitch = new TraceSwitch("editor", "Trace Editor");
 
-		bool Modified = true;
 		string Filename = "";
 		string FilenameTitle {
 			get {
@@ -40,6 +39,7 @@ namespace SimisEditor
 			}
 		}
 		SimisFile File;
+		SimisTreeNode SavedFileTree;
 		TreeNode SelectedNode;
 		SimisProvider SimisProvider;
 
@@ -122,7 +122,6 @@ namespace SimisEditor
 
 		void InitializeFromCommandLine() {
 			this.Shown += (o, e) => {
-				NewFile();
 				foreach (var argument in Environment.GetCommandLineArgs().Where<string>((s, i) => i > 0)) {
 					if (argument.StartsWith("/") || argument.StartsWith("-")) continue;
 					OpenFile(argument);
@@ -133,13 +132,13 @@ namespace SimisEditor
 
 		#endregion
 
-		#region File Operations (New, Open, Modified, Save)
+		#region File Operations (New, Open, Save)
 
 		void NewFile() {
-			//WaitForSimisProvider();
-			Modified = false;
+			WaitForSimisProvider();
 			Filename = "";
 			File = new SimisFile("", SimisProvider);
+			SavedFileTree = File.Tree;
 			SelectNode(null);
 			ResyncSimisNodes();
 			UpdateTitle();
@@ -158,21 +157,15 @@ namespace SimisEditor
 				return;
 			}
 
-			Modified = false;
 			Filename = filename;
 			File = newFile;
+			SavedFileTree = File.Tree;
 			SelectNode(null);
 			ResyncSimisNodes();
 			SimisTree.ExpandAll();
 			if (SimisTree.Nodes.Count > 0) {
 				SimisTree.TopNode = SimisTree.Nodes[0];
 			}
-			UpdateTitle();
-			UpdateMenu();
-		}
-
-		void FileModified() {
-			Modified = true;
 			UpdateTitle();
 			UpdateMenu();
 		}
@@ -194,13 +187,13 @@ namespace SimisEditor
 				return;
 			}
 
-			Modified = false;
+			SavedFileTree = File.Tree;
 			UpdateTitle();
 			UpdateMenu();
 		}
 
 		bool SaveFileIfModified() {
-			if (Modified) {
+			if ((File != null) && (File.Tree != SavedFileTree)) {
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
 					switch (MessageBox.Show("Do you want to save changes to '" + FilenameTitle + "'?", Application.ProductName, MessageBoxButtons.YesNoCancel)) {
 						case DialogResult.Yes:
@@ -231,7 +224,9 @@ namespace SimisEditor
 			if (!SaveFileIfModified()) {
 				return;
 			}
-			if (!UpdateFromSimisProvider()) return;
+			if (!UpdateFromSimisProvider()) {
+				return;
+			}
 			if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
 				OpenFile(openFileDialog.FileName);
 			}
@@ -243,7 +238,9 @@ namespace SimisEditor
 
 		void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
 			// FilterIndex is 1-based, SIGH. Filters: 1=Text, 2=Binary, 3=Compressed Binary.
-			if (!UpdateFromSimisProvider()) return;
+			if (!UpdateFromSimisProvider()) {
+				return;
+			}
 			saveFileDialog.FilterIndex = File.StreamCompressed ? 3 : File.StreamFormat == SimisStreamFormat.Text ? 1 : 2;
 			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
 				Filename = saveFileDialog.FileName;
@@ -268,12 +265,16 @@ namespace SimisEditor
 			File.Undo();
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
+			UpdateTitle();
+			UpdateMenu();
 		}
 
 		private void redoToolStripMenuItem_Click(object sender, EventArgs e) {
 			File.Redo();
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
+			UpdateTitle();
+			UpdateMenu();
 		}
 
 		#endregion
@@ -304,6 +305,10 @@ namespace SimisEditor
 
 		#region Main Events (Editor, SimisTree, SimisProperties)
 
+		void Editor_FormClosing(object sender, FormClosingEventArgs e) {
+			e.Cancel = !SaveFileIfModified();
+		}
+
 		void Editor_DragEnter(object sender, DragEventArgs e) {
 			e.Effect = DragDropEffects.None;
 			if (!e.Data.GetDataPresent(DataFormats.FileDrop)) {
@@ -313,7 +318,9 @@ namespace SimisEditor
 			if (files.Length != 1) {
 				return;
 			}
-			if (!WaitForSimisProvider()) return;
+			if (!WaitForSimisProvider()) {
+				return;
+			}
 			if (!SimisProvider.Formats.Any<SimisFormat>((f) => files[0].EndsWith("." + f.Extension))) {
 				return;
 			}
@@ -333,7 +340,9 @@ namespace SimisEditor
         }
 
 		void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
-			if (SelectedNode == null) return;
+			if (SelectedNode == null) {
+				return;
+			}
 
 			var node = SelectedNode;
 			if (node.Tag is SimisTreeNodeValue) node = node.Parent;
@@ -357,17 +366,23 @@ namespace SimisEditor
 
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
+			UpdateTitle();
+			UpdateMenu();
 		}
 
 		#endregion
 
 		void UpdateTitle() {
-			Text = FilenameTitle + (Modified ? "*" : "") + " - " + Application.ProductName;
+			if (File == null) {
+				Text = Application.ProductName;
+			} else {
+				Text = FilenameTitle + (File.Tree != SavedFileTree ? "*" : "") + " - " + Application.ProductName;
+			}
 		}
 
 		void UpdateMenu() {
-			saveToolStripMenuItem.Enabled = Filename.Length > 0;
-			saveAsToolStripMenuItem.Enabled = Filename.Length > 0;
+			saveToolStripMenuItem.Enabled = File != null;
+			saveAsToolStripMenuItem.Enabled = File != null;
 		}
 
 		void ResyncSimisNodes() {
@@ -454,12 +469,16 @@ namespace SimisEditor
         }
 
 		static string BlockToNameString(SimisTreeNode block) {
-			if (block.Name.Length > 0) return block.Type + " \"" + block.Name + "\"";
+			if (block.Name.Length > 0) {
+				return block.Type + " \"" + block.Name + "\"";
+			}
 			return block.Type;
 		}
 
 		static string BlockToNameOnlyString(SimisTreeNode block) {
-			if (block.Name.Length > 0) return block.Name;
+			if (block.Name.Length > 0) {
+				return block.Name;
+			}
 			return block.Type;
 		}
 
@@ -499,7 +518,9 @@ namespace SimisEditor
 		}
 
 		object CreateEditObjectFor(SimisTreeNode block) {
-			if (block.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) return null;
+			if (block.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
+				return null;
+			}
 
 			var dClassName = "block_" + block.Type.Replace(".", "_");
 
