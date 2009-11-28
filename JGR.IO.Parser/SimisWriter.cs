@@ -28,7 +28,7 @@ namespace Jgr.IO.Parser
 		bool TextBlockEmpty;
 		Stack<long> BlockStarts;
 		BnfState BnfState;
-		static readonly string SafeTokenCharacters = "._!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		public static readonly string SafeTokenCharacters = "._!/-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		public SimisWriter(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
 			if (!stream.CanWrite) throw new InvalidDataException("Stream must support writing.");

@@ -49,11 +49,11 @@ namespace Jgr.IO.Parser
 		}
 
 		static char[] InitDecFloatDigits() {
-			return InitDecDigits().Union<char>(new char[] { '.', 'e', 'E', '+', '-' }).ToArray();
+			return InitDecDigits().Union(new char[] { '.', 'e', 'E', '+', '-' }).ToArray();
 		}
 
 		static char[] InitHexDigits() {
-			return InitDecDigits().Union<char>(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' }).ToArray();
+			return InitDecDigits().Union(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' }).ToArray();
 		}
 
 		static string[] InitDataTypes() {
@@ -127,7 +127,7 @@ namespace Jgr.IO.Parser
 				}
 
 				// Consume all whitespace now that we've got a token.
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains<char>((char)BinaryReader.PeekChar())) {
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains((char)BinaryReader.PeekChar())) {
 					BinaryReader.ReadChar();
 				}
 			} else {
@@ -146,7 +146,7 @@ namespace Jgr.IO.Parser
 
 			// Any blocks that should have ended at or before this point, are now ended.
 			while ((BlockEndOffsets.Count > 0) && (BinaryReader.BaseStream.Position >= BlockEndOffsets.Peek())) {
-				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockEnd }); //, String = String.Join(", ", BlockEndOffsets.Select<uint, string>(o => o.ToString("X8")).ToArray<string>()) });
+				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockEnd }); //, String = String.Join(", ", BlockEndOffsets.Select(o => o.ToString("X8")).ToArray()) });
 				BlockEndOffsets.Pop();
 			}
 
@@ -198,7 +198,10 @@ namespace Jgr.IO.Parser
 			}
 
 			if ((token.ToLower() == "skip") || (token.ToLower() == "comment")) {
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && (')' != BinaryReader.PeekChar())) {
+				var blockCount = 0;
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
+					if (BinaryReader.PeekChar() == '(') blockCount++;
+					if (BinaryReader.PeekChar() == ')') blockCount--;
 					token += BinaryReader.ReadChar();
 				}
 				if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected ')'; got EOF.");
@@ -219,7 +222,7 @@ namespace Jgr.IO.Parser
 				// possible string token. The only possible Kind values are thus
 				// BlockBegin, BlockEnd and Block. BlockEnd would be weird (and wrong).
 				PinReader();
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains<char>((char)BinaryReader.PeekChar())) {
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains((char)BinaryReader.PeekChar())) {
 					BinaryReader.ReadChar();
 				}
 				string name = ReadTokenOrString();
@@ -232,25 +235,25 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			var validDataTypeStates = validStates.Where<string>(s => {
+			var validDataTypeStates = validStates.Where(s => {
 				switch (s) {
 					case "uint":
-						return token.ToCharArray().All<char>(c => DecDigits.Contains(c));
+						return token.ToCharArray().All(c => DecDigits.Contains(c));
 					case "sint":
-						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All<char>(c => DecDigits.Contains(c));
-						return token.ToCharArray().All<char>(c => DecDigits.Contains(c));
+						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All(c => DecDigits.Contains(c));
+						return token.ToCharArray().All(c => DecDigits.Contains(c));
 					case "dword":
-						return (token.Length == 8) && (token.ToCharArray().All<char>(c => HexDigits.Contains(c)));
+						return (token.Length == 8) && (token.ToCharArray().All(c => HexDigits.Contains(c)));
 					case "float":
-						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All<char>(c => DecFloatDigits.Contains(c));
-						return token.ToCharArray().All<char>(c => DecFloatDigits.Contains(c));
+						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All(c => DecFloatDigits.Contains(c));
+						return token.ToCharArray().All(c => DecFloatDigits.Contains(c));
 					case "string":
 						return true;
 					case "buffer":
 					default:
 						return false;
 				}
-			}).ToArray<string>();
+			}).ToArray();
 			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BnfStateException(BnfState, ""));
 
 			rv.Type = validDataTypeStates[0];
@@ -315,7 +318,7 @@ namespace Jgr.IO.Parser
 				do {
 					// Eat whitespace. (This is for the 2nd and further times through, to each whitespace after the "+".)
 					if ('+' == BinaryReader.PeekChar()) BinaryReader.ReadChar();
-					while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Any<char>(c => c == BinaryReader.PeekChar())) {
+					while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Any(c => c == BinaryReader.PeekChar())) {
 						BinaryReader.ReadChar();
 					}
 					// Consume string.
@@ -348,13 +351,13 @@ namespace Jgr.IO.Parser
 					if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected '\"'; got EOF.");
 					BinaryReader.ReadChar(); // "\""
 					// Eat whitespace. (This is for the 2nd and further times through, to each whitespace after the "+".)
-					while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Any<char>(c => c == BinaryReader.PeekChar())) {
+					while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Any(c => c == BinaryReader.PeekChar())) {
 						BinaryReader.ReadChar();
 					}
 				} while ('+' == BinaryReader.PeekChar());
 			} else {
 				// Consume all non-whitespace, non-special characters.
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && !WhitespaceAndSpecialChars.Contains<char>((char)BinaryReader.PeekChar())) {
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && !WhitespaceAndSpecialChars.Contains((char)BinaryReader.PeekChar())) {
 					token += BinaryReader.ReadChar();
 				}
 			}
@@ -400,7 +403,7 @@ namespace Jgr.IO.Parser
 						break;
 					case "buffer":
 						var bufferLength = BlockEndOffsets.Peek() - BinaryReader.BaseStream.Position;
-						rv.String = String.Join("", BinaryReader.ReadBytes((int)bufferLength).Select<byte, string>(b => b.ToString("X2")).ToArray<string>());
+						rv.String = String.Join("", BinaryReader.ReadBytes((int)bufferLength).Select(b => b.ToString("X2")).ToArray());
 						rv.Kind = SimisTokenKind.String;
 						break;
 					default:
@@ -429,7 +432,7 @@ namespace Jgr.IO.Parser
 				if (BinaryReader.BaseStream.Position + contentsLength > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block longer than stream.", new BnfStateException(BnfState, ""));
 
 				BlockEndOffsets.Push((uint)BinaryReader.BaseStream.Position + contentsLength);
-				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8") }); // , String = String.Join(", ", BlockEndOffsets.Select<uint, string>(o => o.ToString("X8")).ToArray<string>())
+				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8") }); // , String = String.Join(", ", BlockEndOffsets.Select(o => o.ToString("X8")).ToArray())
 
 				var nameLength = BinaryReader.Read();
 				if (nameLength > 0) {
@@ -485,7 +488,7 @@ namespace Jgr.IO.Parser
 
 			{
 				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", BinaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
 				if ((signature != "SIMISA@F") && (signature != "SIMISA@@")) {
 					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
@@ -498,7 +501,7 @@ namespace Jgr.IO.Parser
 				StreamLength = BinaryReader.BaseStream.Position + uncompressedSize;
 				{
 					PinReader();
-					var signature = String.Join("", BinaryReader.ReadChars(4).Select<char, string>(c => c.ToString()).ToArray<string>());
+					var signature = String.Join("", BinaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
 					if (signature != "@@@@") {
 						throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 					}
@@ -519,7 +522,7 @@ namespace Jgr.IO.Parser
 				BinaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(BaseStream, CompressionMode.Decompress)), new ByteEncoding());
 			} else {
 				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", BinaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
 				if (signature != "@@@@@@@@") {
 					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
@@ -528,14 +531,14 @@ namespace Jgr.IO.Parser
 			{
 				// For uncompressed binary or test, we start from index 16. For compressed binary, we start from index 0 inside the compressed stream.
 				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(4).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", BinaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
 				if (signature != "JINX") {
 					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
 			}
 			{
 				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(4).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", BinaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
 				if ((signature[3] != 'b') && (signature[3] != 't')) {
 					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid. Final character must be 'b' or 't'.");
 				}
@@ -548,7 +551,7 @@ namespace Jgr.IO.Parser
 			}
 			{
 				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(8).Select<char, string>(c => c.ToString()).ToArray<string>());
+				var signature = String.Join("", BinaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
 				if (signature != "______\r\n") {
 					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
@@ -556,7 +559,7 @@ namespace Jgr.IO.Parser
 
 			if (StreamFormat == SimisStreamFormat.Text) {
 				// Consume all whitespace up to the first token.
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Any<char>(c => c == BinaryReader.PeekChar())) {
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Any(c => c == BinaryReader.PeekChar())) {
 					BinaryReader.ReadChar();
 				}
 			}
