@@ -197,7 +197,7 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			if (token.ToLower() == "skip") {
+			if ((token.ToLower() == "skip") || (token.ToLower() == "comment")) {
 				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && (')' != BinaryReader.PeekChar())) {
 					token += BinaryReader.ReadChar();
 				}
@@ -258,37 +258,37 @@ namespace Jgr.IO.Parser
 				case "uint":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.Integer = UInt32.Parse(token);
+						rv.IntegerUnsigned = UInt32.Parse(token);
 						if (token.Length == 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected decimal number; got possible hex '" + token + "'.");
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					}
-					rv.Kind = SimisTokenKind.Integer;
+					rv.Kind = SimisTokenKind.IntegerUnsigned;
 					break;
 				case "sint":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.Integer = Int32.Parse(token);
+						rv.IntegerSigned = Int32.Parse(token);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					}
-					rv.Kind = SimisTokenKind.Integer;
+					rv.Kind = SimisTokenKind.IntegerSigned;
 					break;
 				case "dword":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
 					try {
-						rv.Integer = UInt32.Parse(token, NumberStyles.HexNumber);
+						rv.IntegerDWord = UInt32.Parse(token, NumberStyles.HexNumber);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					}
-					rv.Kind = SimisTokenKind.Integer;
+					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "float":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
@@ -375,16 +375,16 @@ namespace Jgr.IO.Parser
 				rv.Type = validDataTypes[0];
 				switch (rv.Type) {
 					case "uint":
-						rv.Integer = BinaryReader.ReadUInt32();
-						rv.Kind = SimisTokenKind.Integer;
+						rv.IntegerUnsigned = BinaryReader.ReadUInt32();
+						rv.Kind = SimisTokenKind.IntegerUnsigned;
 						break;
 					case "sint":
-						rv.Integer = BinaryReader.ReadInt32();
-						rv.Kind = SimisTokenKind.Integer;
+						rv.IntegerSigned = BinaryReader.ReadInt32();
+						rv.Kind = SimisTokenKind.IntegerSigned;
 						break;
 					case "dword":
-						rv.Integer = BinaryReader.ReadUInt32();
-						rv.Kind = SimisTokenKind.Integer;
+						rv.IntegerDWord = BinaryReader.ReadUInt32();
+						rv.Kind = SimisTokenKind.IntegerDWord;
 						break;
 					case "float":
 						rv.Float = BinaryReader.ReadSingle();

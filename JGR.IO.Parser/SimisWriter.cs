@@ -88,19 +88,40 @@ namespace Jgr.IO.Parser
 						BinaryWriter.Write(")\r\n".ToCharArray());
 						TextBlocked = true;
 						break;
-					case SimisTokenKind.Integer:
-						var intDatatypes = BnfState.ValidStates.Where(s => s == "uint" || s == "sint" || s == "dword");
-						BnfState.MoveTo(intDatatypes.First());
+					case SimisTokenKind.IntegerUnsigned:
+						BnfState.MoveTo("uint");
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						if (intDatatypes.First() == "dword") {
-							BinaryWriter.Write(token.Integer.ToString("X8").ToCharArray());
-						} else {
-							BinaryWriter.Write(token.Integer.ToString().ToCharArray());
+						BinaryWriter.Write(token.IntegerUnsigned.ToString().ToCharArray());
+						if (TextBlocked) {
+							BinaryWriter.Write("\r\n".ToCharArray());
 						}
+						TextBlockEmpty = false;
+						break;
+					case SimisTokenKind.IntegerSigned:
+						BnfState.MoveTo("sint");
+						if (TextBlocked) {
+							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+						} else {
+							BinaryWriter.Write(' ');
+						}
+						BinaryWriter.Write(token.IntegerSigned.ToString().ToCharArray());
+						if (TextBlocked) {
+							BinaryWriter.Write("\r\n".ToCharArray());
+						}
+						TextBlockEmpty = false;
+						break;
+					case SimisTokenKind.IntegerDWord:
+						BnfState.MoveTo("dword");
+						if (TextBlocked) {
+							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+						} else {
+							BinaryWriter.Write(' ');
+						}
+						BinaryWriter.Write(token.IntegerDWord.ToString("X8").ToCharArray());
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -125,10 +146,10 @@ namespace Jgr.IO.Parser
 						break;
 					case SimisTokenKind.String:
 						// Special-case Skip(...) blocks which are not parsed.
-						if (!token.String.StartsWith("Skip", StringComparison.InvariantCultureIgnoreCase) && !token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase)) {
+						//if (!token.String.StartsWith("Skip", StringComparison.InvariantCultureIgnoreCase) && !token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase)) {
 							var stringDatatypes = BnfState.ValidStates.Where(s => s == "string" || s == "buffer");
 							BnfState.MoveTo(stringDatatypes.First());
-						}
+						//}
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -172,12 +193,14 @@ namespace Jgr.IO.Parser
 						BinaryWriter.Write(length);
 						BinaryWriter.BaseStream.Seek(0, SeekOrigin.End);
 						break;
-					case SimisTokenKind.Integer:
-						if (token.Integer > int.MaxValue) {
-							BinaryWriter.Write((uint)token.Integer);
-						} else {
-							BinaryWriter.Write((int)token.Integer);
-						}
+					case SimisTokenKind.IntegerUnsigned:
+						BinaryWriter.Write(token.IntegerUnsigned);
+						break;
+					case SimisTokenKind.IntegerSigned:
+						BinaryWriter.Write(token.IntegerSigned);
+						break;
+					case SimisTokenKind.IntegerDWord:
+						BinaryWriter.Write(token.IntegerDWord);
 						break;
 					case SimisTokenKind.Float:
 						BinaryWriter.Write((float)token.Float);
