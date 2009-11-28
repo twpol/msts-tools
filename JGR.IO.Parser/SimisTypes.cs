@@ -19,7 +19,9 @@ namespace Jgr.IO.Parser
 		BlockBegin,
 		BlockEnd,
 		String,
-		Integer,
+		IntegerUnsigned,
+		IntegerSigned,
+		IntegerDWord,
 		Float
 	}
 
@@ -33,7 +35,9 @@ namespace Jgr.IO.Parser
 		public SimisTokenKind Kind { get; set; }
 		public string Type { get; set; }
 		public string String { get; set; }
-		public long Integer { get; set; }
+		public uint IntegerUnsigned { get; set; }
+		public int IntegerSigned { get; set; }
+		public uint IntegerDWord { get; set; }
 		public float Float { get; set; }
 	}
 }

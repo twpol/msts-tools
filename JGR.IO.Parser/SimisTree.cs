@@ -138,14 +138,40 @@ namespace Jgr.IO.Parser
 		}
 	}
 
-	public class SimisTreeNodeValueInteger : SimisTreeNodeValue
+	public abstract class SimisTreeNodeValueInteger : SimisTreeNodeValue
 	{
-		public SimisTreeNodeValueInteger(string type, string name, long value)
+		protected SimisTreeNodeValueInteger(string type, string name, object value)
+			: base(type, name, value) {
+		}
+	}
+
+	public class SimisTreeNodeValueIntegerUnsigned : SimisTreeNodeValueInteger {
+		public SimisTreeNodeValueIntegerUnsigned(string type, string name, uint value)
 			: base(type, name, value) {
 		}
 
 		public override string ToString() {
-			return ((long)Value).ToString();
+			return ((uint)Value).ToString();
+		}
+	}
+
+	public class SimisTreeNodeValueIntegerSigned : SimisTreeNodeValueInteger {
+		public SimisTreeNodeValueIntegerSigned(string type, string name, int value)
+			: base(type, name, value) {
+		}
+
+		public override string ToString() {
+			return ((int)Value).ToString();
+		}
+	}
+
+	public class SimisTreeNodeValueIntegerDWord : SimisTreeNodeValueInteger {
+		public SimisTreeNodeValueIntegerDWord(string type, string name, uint value)
+			: base(type, name, value) {
+		}
+
+		public override string ToString() {
+			return ((uint)Value).ToString();
 		}
 	}
 

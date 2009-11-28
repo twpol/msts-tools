@@ -32,16 +32,18 @@ namespace Normalize
 			// "/" or "-" alone is ignored.
 			var flags = args.Where<string>(s => (s.Length > 1) && (s.StartsWith("/") || s.StartsWith("-"))).Select<string, string>(s => s.Substring(1));
 			var items = args.Where<string>(s => !s.StartsWith("/") && !s.StartsWith("-"));
+			var verbose = flags.Any<string>(s => "verbose".StartsWith(s, StringComparison.InvariantCultureIgnoreCase));
 
 			if (flags.Contains("?") || flags.Contains("h")) {
 				ShowHelp();
 			} else if (flags.Any<string>(s => "formats".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
 				ShowFormats();
-			} else if (flags.Any<string>(s => "test".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
-				var verbose = flags.Any<string>(s => "verbose".StartsWith(s, StringComparison.InvariantCultureIgnoreCase));
-				RunTest(ExpandFilesAndDirectories(items), verbose);
+			} else if (flags.Any<string>(s => "dump".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
+				RunDump(ExpandFilesAndDirectories(items), verbose);
 			} else if (flags.Any<string>(s => "normalize".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
-				RunNormalize(ExpandFilesAndDirectories(items));
+				RunNormalize(ExpandFilesAndDirectories(items), verbose);
+			} else if (flags.Any<string>(s => "test".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
+				RunTest(ExpandFilesAndDirectories(items), verbose);
 			} else {
 				ShowHelp();
 			}
@@ -55,15 +57,15 @@ namespace Normalize
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /F[ORMATS]");
 			Console.WriteLine();
-			Console.WriteLine("  SIMISFILE /T[EST] [/V[ERBOSE]] [file ...] [dir ...]");
+			Console.WriteLine("  SIMISFILE /D[DUMP]  [/V[ERBOSE]][file ...]");
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /N[ORMALIZE] [file ...]");
 			Console.WriteLine();
+			Console.WriteLine("  SIMISFILE /T[EST] [/V[ERBOSE]] [file ...] [dir ...]");
+			Console.WriteLine();
 			//                 12345678901234567890123456789012345678901234567890123456789012345678901234567890
 			Console.WriteLine("  /FORMATS  Displays a list of the supported Simis file formats.");
-			Console.WriteLine("  /TEST     Tests all the files specified and found in the directories");
-			Console.WriteLine("            specified against the reading and writing code. No files are");
-			Console.WriteLine("            changed. A report of read/write success by file type is produced.");
+			Console.WriteLine("  /DUMP     Reads all files and displays the resulting Simis tree for each.");
 			Console.WriteLine("  /NORMALIZE");
 			Console.WriteLine("            Normalizes the specified files for comparisons. For binary files,");
 			Console.WriteLine("            this uncompresses the contents only. For text files, whitespace,");
@@ -71,8 +73,11 @@ namespace Normalize
 			Console.WriteLine("            is written to the current directory, with the '.normalized'");
 			Console.WriteLine("            extension added if the source file is also in the current");
 			Console.WriteLine("            directory. This will overwrite files in the current directory only.");
-			Console.WriteLine("  /VERBOSE  Produces more output. For /TEST, displays the individual failures");
-			Console.WriteLine("            encountered while testing.");
+			Console.WriteLine("  /TEST     Tests all the files specified and found in the directories");
+			Console.WriteLine("            specified against the reading and writing code. No files are");
+			Console.WriteLine("            changed. A report of read/write success by file type is produced.");
+			Console.WriteLine("  /VERBOSE  Produces more output. For /DUMP and /TEST, displays the individual");
+			Console.WriteLine("            failures encountered while reading or writing files.");
 			Console.WriteLine("  file      One or more Simis files to process.");
 			Console.WriteLine("  dir       One or more directories containing Simis files. These will be");
 			Console.WriteLine("            scanned recursively.");
@@ -101,6 +106,35 @@ namespace Normalize
 			yield break;
 		}
 
+		static void PrintSimisTree(int indent, SimisTreeNode node) {
+			Console.Write(new String(' ', 2 * indent));
+			if (node is SimisTreeNodeValue) {
+				if (node.Name.Length > 0) {
+					Console.Write(node.Name);
+					Console.Write(" ");
+				}
+				Console.Write("(");
+				Console.Write(node.Type);
+				Console.Write(")");
+				Console.Write(": ");
+				Console.WriteLine((node as SimisTreeNodeValue).Value);
+			} else {
+				Console.Write(node.Type);
+				if (node.Name.Length > 0) {
+					Console.Write(" \"");
+					Console.Write(node.Name);
+					Console.WriteLine("\" {");
+				} else {
+					Console.WriteLine(" {");
+				}
+				foreach (var child in node) {
+					PrintSimisTree(indent + 1, child);
+				}
+				Console.Write(new String(' ', 2 * indent));
+				Console.WriteLine("}");
+			}
+		}
+
 		static void ShowFormats() {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
@@ -116,6 +150,55 @@ namespace Normalize
 			Console.WriteLine(String.Empty.PadLeft(40 + 2 + 15 + 2 + 15 + 2, '='));
 			foreach (var format in provider.Formats) {
 				Console.WriteLine(String.Format(outFormat, format.Name, format.Extension, format.Format));
+			}
+		}
+
+		static void RunDump(IEnumerable<string> files, bool verbose) {
+			var resourcesDirectory = Application.ExecutablePath;
+			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
+			var provider = new SimisProvider(resourcesDirectory);
+			try {
+				provider.Join();
+			} catch (FileException ex) {
+				Console.WriteLine(ex.ToString());
+				return;
+			}
+
+			foreach (var inputFile in files) {
+				try {
+					var parsedFile = new SimisFile(inputFile, provider);
+					parsedFile.ReadFile();
+					Console.WriteLine(inputFile);
+					PrintSimisTree(0, parsedFile.Tree);
+				} catch (Exception ex) {
+					if (verbose) {
+						Console.WriteLine("Read: " + ex + "\n");
+					}
+				}
+			}
+		}
+
+		static void RunNormalize(IEnumerable<string> files, bool verbose) {
+			foreach (var inputFile in files) {
+				try {
+					var inputStream = new SimisTestableStream(File.OpenRead(inputFile));
+					var outputFile = Path.GetFileName(inputFile);
+					if (inputFile == outputFile) {
+						outputFile += ".normalized";
+					}
+					using (var outputStream = File.OpenWrite(outputFile)) {
+						using (var outputStreamWriter = new BinaryWriter(outputStream, new ByteEncoding())) {
+							while (inputStream.Position < inputStream.Length) {
+								outputStreamWriter.Write((byte)inputStream.ReadByte());
+							}
+						}
+					}
+					Console.WriteLine(inputFile + " --> " + outputFile);
+				} catch (Exception ex) {
+					if (verbose) {
+						Console.WriteLine("Read: " + ex + "\n");
+					}
+				}
 			}
 		}
 
@@ -254,29 +337,6 @@ namespace Normalize
 			//Console.WriteLine("Tested " + totalCount.Total + " files; " + totalCount.CompareSuccess + " passed (" + ((double)100 * totalCount.CompareSuccess / totalCount.Total).ToString("F0") + "%).");
 			//Messages = new Messages();
 			//messageLog.RegisterMessageSink(Messages);
-		}
-
-		static void RunNormalize(IEnumerable<string> files) {
-			foreach (var inputFile in files) {
-				try {
-					var inputStream = new SimisTestableStream(File.OpenRead(inputFile));
-					var outputFile = Path.GetFileName(inputFile);
-					if (inputFile == outputFile) {
-						outputFile += ".normalized";
-					}
-					using (var outputStream = File.OpenWrite(outputFile)) {
-						using (var outputStreamWriter = new BinaryWriter(outputStream, new ByteEncoding())) {
-							while (inputStream.Position < inputStream.Length) {
-								outputStreamWriter.Write((byte)inputStream.ReadByte());
-							}
-						}
-					}
-					Console.WriteLine(inputFile + " --> " + outputFile);
-				} catch (Exception ex) {
-					Console.WriteLine(inputFile + " error:");
-					Console.WriteLine(ex.ToString());
-				}
-			}
 		}
 	}
 }
