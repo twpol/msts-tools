@@ -23,7 +23,6 @@ namespace Jgr.Grammar {
 			if (Fsm.TraceSwitch.TraceVerbose) {
 				Trace.WriteLine("FSM: " + Root);
 			}
-			IndexUnlinks(Root);
 		}
 
 		public override string ToString() {
@@ -85,7 +84,9 @@ namespace Jgr.Grammar {
 
 		void IndexUnlinks(ref int index, FsmState state) {
 			if (state is FsmStateUnlink) {
-				state.Next[0].Index = ++index;
+				if (state.Next[0].Index == 0) {
+					state.Next[0].Index = ++index;
+				}
 			} else {
 				foreach (var next in state.Next) {
 					IndexUnlinks(ref index, next);
