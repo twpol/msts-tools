@@ -167,6 +167,7 @@ namespace Jgr.Grammar
 		}
 	}
 
+	[Immutable]
 	public class BnfRule
 	{
 		public Bnf Bnf { get; private set; }
@@ -223,6 +224,7 @@ namespace Jgr.Grammar
 		}
 	}
 
+	[Immutable]
 	public class BnfDefinition : BnfRule
 	{
 		public BnfDefinition(Bnf bnf, ReferenceOperator symbol, Operator expression) : base(bnf, symbol, expression) { }
@@ -232,6 +234,7 @@ namespace Jgr.Grammar
 		}
 	}
 
+	[Immutable]
 	public class BnfProduction : BnfRule
 	{
 		public BnfProduction(Bnf bnf, ReferenceOperator symbol, Operator expression) : base(bnf, symbol, expression) { }
