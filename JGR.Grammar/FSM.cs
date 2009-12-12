@@ -95,6 +95,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class FsmState {
 		public Operator Op { get; private set; }
 		public List<FsmState> Next { get; private set; }
@@ -195,6 +196,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class FsmStateStart : FsmState {
 		internal FsmStateStart()
 			: base(null) {
@@ -212,6 +214,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class FsmStateFinish : FsmState {
 		internal FsmStateFinish()
 			: base(null) {
@@ -224,6 +227,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class FsmStateUnlink : FsmState {
 		internal FsmStateUnlink(FsmState state)
 			: base(null) {

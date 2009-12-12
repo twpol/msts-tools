@@ -11,6 +11,7 @@ using System.Linq;
 
 namespace Jgr.IO.Parser
 {
+	[Immutable]
 	public class SimisTreeNode : ReadOnlyCollection<SimisTreeNode>
 	{
 		public string Type { get; private set; }
@@ -120,6 +121,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public abstract class SimisTreeNodeValue : SimisTreeNode
 	{
 		public object Value { get; private set; }
@@ -138,6 +140,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public abstract class SimisTreeNodeValueInteger : SimisTreeNodeValue
 	{
 		protected SimisTreeNodeValueInteger(string type, string name, object value)
@@ -145,6 +148,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public class SimisTreeNodeValueIntegerUnsigned : SimisTreeNodeValueInteger {
 		public SimisTreeNodeValueIntegerUnsigned(string type, string name, uint value)
 			: base(type, name, value) {
@@ -155,6 +159,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public class SimisTreeNodeValueIntegerSigned : SimisTreeNodeValueInteger {
 		public SimisTreeNodeValueIntegerSigned(string type, string name, int value)
 			: base(type, name, value) {
@@ -165,6 +170,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public class SimisTreeNodeValueIntegerDWord : SimisTreeNodeValueInteger {
 		public SimisTreeNodeValueIntegerDWord(string type, string name, uint value)
 			: base(type, name, value) {
@@ -175,6 +181,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public class SimisTreeNodeValueFloat : SimisTreeNodeValue
 	{
 		public SimisTreeNodeValueFloat(string type, string name, float value)
@@ -186,6 +193,7 @@ namespace Jgr.IO.Parser
 		}
 	}
 
+	[Immutable]
 	public class SimisTreeNodeValueString : SimisTreeNodeValue
 	{
 		public SimisTreeNodeValueString(string type, string name, string value)

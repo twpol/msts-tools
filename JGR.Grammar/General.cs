@@ -15,6 +15,7 @@ namespace Jgr.Grammar {
 		LogicalAnd
 	}
 
+	[Immutable]
 	public abstract class Operator : ICloneable {
 		public OperatorType Op { get; private set; }
 
@@ -31,6 +32,7 @@ namespace Jgr.Grammar {
 		#endregion
 	}
 
+	[Immutable]
 	public class ReferenceOperator : Operator {
 		public string Reference { get; private set; }
 
@@ -52,6 +54,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class NamedReferenceOperator : ReferenceOperator {
 		public string Name { get; private set; }
 
@@ -69,6 +72,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class StringOperator : Operator {
 		public string Value { get; private set; }
 
@@ -86,6 +90,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public abstract class UnaryOperator : Operator {
 		public Operator Right { get; private set; }
 
@@ -99,6 +104,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class OptionalOperator : UnaryOperator {
 		public OptionalOperator(Operator right)
 			: base(OperatorType.Optional, right) {
@@ -113,6 +119,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class RepeatOperator : UnaryOperator {
 		public RepeatOperator(Operator right)
 			: base(OperatorType.Repeat, right) {
@@ -127,6 +134,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public abstract class LogicalOperator : Operator {
 		public Operator Left { get; private set; }
 		public Operator Right { get; private set; }
@@ -142,6 +150,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class LogicalAndOperator : LogicalOperator {
 		public LogicalAndOperator(Operator left, Operator right)
 			: base(OperatorType.LogicalAnd, left, right) {
@@ -156,6 +165,7 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	[Immutable]
 	public class LogicalOrOperator : LogicalOperator {
 		public LogicalOrOperator(Operator left, Operator right)
 			: base(OperatorType.LogicalOr, left, right) {
