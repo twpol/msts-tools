@@ -57,7 +57,7 @@ namespace Normalize
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /F[ORMATS]");
 			Console.WriteLine();
-			Console.WriteLine("  SIMISFILE /D[DUMP]  [/V[ERBOSE]][file ...]");
+			Console.WriteLine("  SIMISFILE /D[DUMP] [/V[ERBOSE]] [file ...]");
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /N[ORMALIZE] [file ...]");
 			Console.WriteLine();
@@ -94,6 +94,9 @@ namespace Normalize
 				} else if (item.Contains("?") || item.Contains("*")) {
 					var rootpath = Path.GetDirectoryName(item);
 					var filename = Path.GetFileName(item);
+					foreach (var filepath in Directory.GetFileSystemEntries(rootpath, filename)) {
+						yield return filepath;
+					}
 					foreach (var path in Directory.GetDirectories(rootpath, "*", SearchOption.AllDirectories)) {
 						foreach (var filepath in Directory.GetFileSystemEntries(path, filename)) {
 							yield return filepath;
@@ -237,6 +240,7 @@ namespace Normalize
 
 				var success = true;
 				var newFile = new SimisFile(file, provider);
+				newFile.SimisFormat = provider.GetForPath(file);
 				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
 				Stream saveStream = new MemoryStream();
 

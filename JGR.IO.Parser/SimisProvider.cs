@@ -53,6 +53,10 @@ namespace Jgr.IO.Parser
 			return Formats.FirstOrDefault<SimisFormat>(f => Path.GetExtension(fileName).Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase));
 		}
 
+		public SimisFormat GetForFormat(string format) {
+			return Formats.FirstOrDefault<SimisFormat>(f => f.Format == format);
+		}
+
 		public Bnf GetBnf(string simisFormat, string root) {
 			var key = simisFormat + "|" + root;
 			if (FormatByRoot.ContainsKey(key)) {
