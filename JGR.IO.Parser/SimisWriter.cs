@@ -16,9 +16,9 @@ namespace Jgr.IO.Parser
 {
 	class SimisWriter
 	{
+		public SimisFormat SimisFormat { get; private set; }
 		public SimisStreamFormat StreamFormat { get; private set; }
 		public bool StreamCompressed { get; private set; }
-		public string SimisFormat { get; private set; }
 		UnclosableStream BaseStream;
 		SimisProvider SimisProvider;
 		BinaryWriter BinaryWriter;
@@ -30,21 +30,23 @@ namespace Jgr.IO.Parser
 		BnfState BnfState;
 		public static readonly string SafeTokenCharacters = "._!/-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-		public SimisWriter(Stream stream, SimisProvider provider, SimisStreamFormat format, bool compressed, string simisFormat) {
+		public SimisWriter(Stream stream, SimisProvider provider, SimisFormat simisFormat, SimisStreamFormat format, bool compressed) {
 			if (!stream.CanWrite) throw new InvalidDataException("Stream must support writing.");
 			if (!stream.CanSeek) throw new InvalidDataException("Stream must support seeking.");
+			if (simisFormat == null) throw new ArgumentException("Cannot save a stream without a simisFormat.", "simisFormat");
+			if (format == SimisStreamFormat.AutoDetect) throw new ArgumentException("Cannot save a stream in Autodetect format.", "format");
+
 			BaseStream = new UnclosableStream(stream);
-			SimisProvider = provider;
 			BinaryWriter = new BinaryWriter(BaseStream, new ByteEncoding());
+			SimisProvider = provider;
+			SimisFormat = simisFormat;
 			StreamFormat = format;
 			StreamCompressed = compressed;
-			SimisFormat = simisFormat;
 			DoneHeader = false;
 			TextIndent = 0;
 			TextBlocked = true;
 			TextBlockEmpty = false;
 			BlockStarts = new Stack<long>();
-			Debug.Assert(StreamFormat != SimisStreamFormat.AutoDetect, "Cannot save a stream in Autodetect format - must be Binary or Text.");
 		}
 
 		public void WriteToken(SimisToken token) {
@@ -54,7 +56,7 @@ namespace Jgr.IO.Parser
 				switch (token.Kind) {
 					case SimisTokenKind.Block:
 						if (BnfState == null) {
-							BnfState = new BnfState(SimisProvider.GetBnf(SimisFormat, token.Type));
+							BnfState = new BnfState(SimisFormat.Bnf);
 						}
 						BnfState.MoveTo(token.Type);
 						if (!TextBlocked) {
@@ -265,9 +267,9 @@ namespace Jgr.IO.Parser
 			}
 
 			if (StreamFormat == SimisStreamFormat.Text) {
-				BinaryWriter.Write(("JINX0" + SimisFormat + "t______\r\n\r\n").ToCharArray());
+				BinaryWriter.Write(("JINX0" + SimisFormat.Format + "t______\r\n\r\n").ToCharArray());
 			} else {
-				BinaryWriter.Write(("JINX0" + SimisFormat + "b______\r\n").ToCharArray());
+				BinaryWriter.Write(("JINX0" + SimisFormat.Format + "b______\r\n").ToCharArray());
 			}
 
 			DoneHeader = true;
