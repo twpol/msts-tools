@@ -81,13 +81,18 @@ namespace Jgr.IO.Parser
 			var isText = false;
 			{
 				var signature = String.Join("", binaryReader.ReadChars(16).Select(c => c.ToString()).ToArray());
-				if (signature.Substring(0, 5) != "JINX0") {
-					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
+				if (signature.Substring(0, 4) == "\x01\x00\x00\x00") {
+					// Texture/ACE format.
+					isText = false;
+				} else {
+					if (signature.Substring(0, 5) != "JINX0") {
+						throw new InvalidDataException("Signature '" + signature + "' is invalid.");
+					}
+					if (signature.Substring(8, 8) != "______\r\n") {
+						throw new InvalidDataException("Signature '" + signature + "' is invalid.");
+					}
+					isText = (signature[7] == 't');
 				}
-				if (signature.Substring(8, 8) != "______\r\n") {
-					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
-				}
-				isText = (signature[7] == 't');
 				binaryWriter.Write(signature.ToCharArray());
 			}
 
