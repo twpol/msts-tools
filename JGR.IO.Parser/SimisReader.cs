@@ -541,6 +541,12 @@ namespace Jgr.IO.Parser
 				// For uncompressed binary or test, we start from index 16. For compressed binary, we start from index 0 inside the compressed stream.
 				PinReader();
 				var signature = String.Join("", BinaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
+				// If we put ACE support into SimisReader...
+				//if (signature == "\x01\x00\x00\x00") {
+				//	StreamFormat = SimisStreamFormat.ACE;
+				//	DoneAutoDetect = true;
+				//	return;
+				//}
 				if (signature != "JINX") {
 					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
