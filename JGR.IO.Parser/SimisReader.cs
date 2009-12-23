@@ -380,11 +380,11 @@ namespace Jgr.IO.Parser
 			//if (validStates.Length == 0) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found no non-meta states available.", new BNFStateException(BNFState, ""));
 
 			// If we have any valid data types, we read that instead of a block start. They should all be the same data type, too.
-			var validDataTypes = validStates.Where(s => DataTypes.Contains(s)).ToArray();
-			if (validDataTypes.Length > 0) {
-				if (!validDataTypes.All(s => s == validDataTypes[0])) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BnfStateException(BnfState, ""));
+			var dataType = validStates.FirstOrDefault(s => DataTypes.Contains(s));
+			if (dataType != null) {
+				if (!validStates.All(s => s == dataType || !DataTypes.Contains(s))) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found inconsistent data types available.", new BnfStateException(BnfState, ""));
 
-				rv.Type = validDataTypes[0];
+				rv.Type = dataType;
 				switch (rv.Type) {
 					case "uint":
 						rv.IntegerUnsigned = BinaryReader.ReadUInt32();

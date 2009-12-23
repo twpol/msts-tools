@@ -82,39 +82,42 @@ namespace Jgr.IO.Parser
 		public void ReadStream(Stream stream) {
 			var reader = new SimisReader(new BufferedInMemoryStream(stream), SimisProvider, SimisFormat);
 
-			var tree = new SimisTreeNode("<root>", "");
-			var blockStack = new List<SimisTreeNode>();
+			var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
+			blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(null, new List<SimisTreeNode>()));
 			while (!reader.EndOfStream) {
 				var token = reader.ReadToken();
 
 				switch (token.Kind) {
 					case SimisTokenKind.Block:
-						var block = new SimisTreeNode(token.Type, token.String);
-						tree = tree.Apply(blockStack, node => node.AppendChild(block));
-						blockStack.Add(block);
+						blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(token, new List<SimisTreeNode>()));
 						break;
 					case SimisTokenKind.BlockBegin:
 						break;
 					case SimisTokenKind.BlockEnd:
-						blockStack.RemoveAt(blockStack.Count - 1);
+						var block = blockStack.Pop();
+						var node = new SimisTreeNode(block.Key.Type, block.Key.String, block.Value);
+						blockStack.Peek().Value.Add(node);
 						break;
 					case SimisTokenKind.IntegerUnsigned:
-						tree = tree.Apply(blockStack, node => node.AppendChild(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.String, token.IntegerUnsigned)));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, "", token.IntegerUnsigned));
 						break;
 					case SimisTokenKind.IntegerSigned:
-						tree = tree.Apply(blockStack, node => node.AppendChild(new SimisTreeNodeValueIntegerSigned(token.Type, token.String, token.IntegerSigned)));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, "", token.IntegerSigned));
 						break;
 					case SimisTokenKind.IntegerDWord:
-						tree = tree.Apply(blockStack, node => node.AppendChild(new SimisTreeNodeValueIntegerDWord(token.Type, token.String, token.IntegerDWord)));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, "", token.IntegerDWord));
 						break;
 					case SimisTokenKind.Float:
-						tree = tree.Apply(blockStack, node => node.AppendChild(new SimisTreeNodeValueFloat(token.Type, token.String, token.Float)));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, "", token.Float));
 						break;
 					case SimisTokenKind.String:
-						tree = tree.Apply(blockStack, node => node.AppendChild(new SimisTreeNodeValueString(token.Type, token.String, token.String)));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, "", token.String));
 						break;
 				}
 			}
+
+			var rootBlock = blockStack.Pop();
+			var tree = new SimisTreeNode("<root>", "", rootBlock.Value);
 
 			// We need to do this AFTER reading the file, otherwise they'll not be correct.
 			SimisFormat = reader.SimisFormat;

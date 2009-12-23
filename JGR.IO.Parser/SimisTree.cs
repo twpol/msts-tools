@@ -21,7 +21,7 @@ namespace Jgr.IO.Parser
 			: this(type, name, new SimisTreeNode[0]) {
 		}
 
-		SimisTreeNode(string type, string name, IList<SimisTreeNode> children)
+		public SimisTreeNode(string type, string name, IList<SimisTreeNode> children)
 			: base(children) {
 			Type = type;
 			Name = name;
