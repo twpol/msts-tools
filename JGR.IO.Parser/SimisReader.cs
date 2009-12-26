@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -16,6 +17,8 @@ namespace Jgr.IO.Parser
 {
 	public class SimisReader //: BufferedMessageSource
 	{
+		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.io.parser.simisreader", "Trace SimisReader");
+
 		public SimisFormat SimisFormat { get; private set; }
 		public SimisStreamFormat StreamFormat { get; private set; }
 		public bool StreamCompressed { get; private set; }
@@ -87,7 +90,9 @@ namespace Jgr.IO.Parser
 		}
 
 		public SimisToken ReadToken() {
-			if (!DoneAutoDetect) AutodetectStreamFormat();
+			if (!DoneAutoDetect) {
+				AutodetectStreamFormat();
+			}
 
 			// Any pending tokens go first.
 			if (PendingTokens.Count > 0) {
@@ -101,6 +106,11 @@ namespace Jgr.IO.Parser
 				if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 1)) {
 					if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
 					EndOfStream = true;
+				}
+				if (SimisReader.TraceSwitch.TraceInfo) {
+					var token = PendingTokens.Dequeue();
+					Trace.WriteLine("Token: " + token);
+					return token;
 				}
 				return PendingTokens.Dequeue();
 			}
@@ -120,7 +130,7 @@ namespace Jgr.IO.Parser
 							if (rv.Type.Length > 0) {
 								BnfState.MoveTo(rv.Type);
 								if (BnfState.State.Op is NamedReferenceOperator) {
-									rv.String = ((NamedReferenceOperator)BnfState.State.Op).Name;
+									rv.Name = ((NamedReferenceOperator)BnfState.State.Op).Name;
 								}
 							}
 						} else {
@@ -142,7 +152,7 @@ namespace Jgr.IO.Parser
 						if ((rv.Kind != SimisTokenKind.BlockBegin) && (rv.Kind != SimisTokenKind.BlockEnd)) {
 							BnfState.MoveTo(rv.Type);
 							if (BnfState.State.Op is NamedReferenceOperator) {
-								rv.String = ((NamedReferenceOperator)BnfState.State.Op).Name;
+								rv.Name = ((NamedReferenceOperator)BnfState.State.Op).Name;
 							}
 						} else {
 							throw new ReaderException(BinaryReader, true, PinReaderChanged(), "ReadTokenAsBinary returned invalid token type: " + rv.Type);
@@ -155,6 +165,7 @@ namespace Jgr.IO.Parser
 
 			// Any blocks that should have ended at or before this point, are now ended.
 			while ((BlockEndOffsets.Count > 0) && (BinaryReader.BaseStream.Position >= BlockEndOffsets.Peek())) {
+				if (BinaryReader.BaseStream.Position > BlockEndOffsets.Peek()) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, (int)(BinaryReader.BaseStream.Position - BlockEndOffsets.Peek()), "SimisReader stream positioned at 0x" + BinaryReader.BaseStream.Position.ToString("X8") + " but a block ended at 0x" + BlockEndOffsets.Peek().ToString("X8") + "; overshot by " + (BinaryReader.BaseStream.Position - BlockEndOffsets.Peek()) + " bytes.");
 				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockEnd });
 				BlockEndOffsets.Pop();
 			}
@@ -165,6 +176,12 @@ namespace Jgr.IO.Parser
 				EndOfStream = true;
 			}
 
+			if (SimisReader.TraceSwitch.TraceInfo) {
+				Trace.WriteLine("Token: " + rv);
+				if (EndOfStream) {
+					Trace.WriteLine("End Of Stream");
+				}
+			}
 			return rv;
 		}
 
@@ -201,7 +218,7 @@ namespace Jgr.IO.Parser
 			if (BnfState.IsEnterBlockTime) {
 				// We should only end up here when called recursively by the
 				// if (validStates.Contains(token)) code below.
-				rv.String = token;
+				rv.Name = token;
 				rv.Kind = token.Length > 0 ? SimisTokenKind.Block : SimisTokenKind.None;
 				return rv;
 			}
@@ -236,7 +253,7 @@ namespace Jgr.IO.Parser
 				}
 				string name = ReadTokenOrString();
 				if (name.Length > 0) {
-					rv.String = name;
+					rv.Name = name;
 				} else {
 					PinReaderReset();
 				}
@@ -441,13 +458,13 @@ namespace Jgr.IO.Parser
 				if (BinaryReader.BaseStream.Position + contentsLength > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block longer than stream.", new BnfStateException(BnfState, ""));
 
 				BlockEndOffsets.Push((uint)BinaryReader.BaseStream.Position + contentsLength);
-				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8") }); // , String = String.Join(", ", BlockEndOffsets.Select(o => o.ToString("X8")).ToArray())
+				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8") });
 
 				var nameLength = BinaryReader.Read();
 				if (nameLength > 0) {
 					if (BinaryReader.BaseStream.Position + nameLength * 2 > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block with name longer than stream.", new BnfStateException(BnfState, ""));
 					for (var i = 0; i < nameLength; i++) {
-						rv.String += (char)BinaryReader.ReadUInt16();
+						rv.Name += (char)BinaryReader.ReadUInt16();
 					}
 				}
 			}
@@ -479,6 +496,8 @@ namespace Jgr.IO.Parser
 		}
 
 		void AutodetectStreamFormat() {
+			if (SimisReader.TraceSwitch.TraceInfo) Trace.WriteLine("Autodetecting stream format...");
+
 			var start = BaseStream.Position;
 			var streamIsBinary = true;
 
@@ -587,6 +606,7 @@ namespace Jgr.IO.Parser
 			}
 
 			DoneAutoDetect = true;
+			if (SimisReader.TraceSwitch.TraceInfo) Trace.WriteLine("Format: " + (StreamCompressed ? "(compressed) " : "") + StreamFormat + " " + SimisFormat.Name + " (*." + SimisFormat.Extension + ")");
 		}
 	}
 }
