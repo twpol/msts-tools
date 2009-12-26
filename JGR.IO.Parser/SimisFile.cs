@@ -95,23 +95,23 @@ namespace Jgr.IO.Parser
 						break;
 					case SimisTokenKind.BlockEnd:
 						var block = blockStack.Pop();
-						var node = new SimisTreeNode(block.Key.Type, block.Key.String, block.Value);
+						var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
 						blockStack.Peek().Value.Add(node);
 						break;
 					case SimisTokenKind.IntegerUnsigned:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, "", token.IntegerUnsigned));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.Name, token.IntegerUnsigned));
 						break;
 					case SimisTokenKind.IntegerSigned:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, "", token.IntegerSigned));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, token.Name, token.IntegerSigned));
 						break;
 					case SimisTokenKind.IntegerDWord:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, "", token.IntegerDWord));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, token.Name, token.IntegerDWord));
 						break;
 					case SimisTokenKind.Float:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, "", token.Float));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, token.Name, token.Float));
 						break;
 					case SimisTokenKind.String:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, "", token.String));
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, token.Name, token.String));
 						break;
 				}
 			}
@@ -145,7 +145,7 @@ namespace Jgr.IO.Parser
 		}
 
 		void WriteBlock(SimisWriter writer, SimisTreeNode block) {
-			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, String = block.Name });
+			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, Name = block.Name });
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
 			foreach (var child in block) {
 				if (child is SimisTreeNodeValueIntegerUnsigned) {
