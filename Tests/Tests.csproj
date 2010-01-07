@@ -48,8 +48,13 @@
   <ItemGroup>
     <Compile Include="BufferedInMemoryStreamTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimisReaderTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\JGR.IO.Parser\JGR.IO.Parser.csproj">
+      <Project>{C0430CE2-1634-4E34-9170-5CF954E00965}</Project>
+      <Name>JGR.IO.Parser</Name>
+    </ProjectReference>
     <ProjectReference Include="..\JGR.IO\JGR.IO.csproj">
       <Project>{774CA6A0-E350-4A54-B74A-21FEF0361198}</Project>
       <Name>JGR.IO</Name>
@@ -57,6 +62,11 @@
   </ItemGroup>
   <ItemGroup>
     <Shadow Include="Test References\JGR.IO.accessor" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MSTS files.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

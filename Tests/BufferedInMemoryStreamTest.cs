@@ -1,19 +1,14 @@
-﻿using Jgr.IO;
+﻿using System.IO;
+using Jgr.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
 
-namespace Tests
-{
-    
-    
-    /// <summary>
-    ///This is a test class for BufferedInMemoryStreamTest and is intended
-    ///to contain all BufferedInMemoryStreamTest Unit Tests
-    ///</summary>
-	[TestClass()]
+namespace Tests {
+	/// <summary>
+	///This is a test class for BufferedInMemoryStreamTest and is intended
+	///to contain all BufferedInMemoryStreamTest Unit Tests
+	///</summary>
+	[TestClass]
 	public class BufferedInMemoryStreamTest {
-
-
 		private TestContext testContextInstance;
 
 		/// <summary>
@@ -29,41 +24,10 @@ namespace Tests
 			}
 		}
 
-		#region Additional test attributes
-		// 
-		//You can use the following additional attributes as you write your tests:
-		//
-		//Use ClassInitialize to run code before running the first test in the class
-		//[ClassInitialize()]
-		//public static void MyClassInitialize(TestContext testContext)
-		//{
-		//}
-		//
-		//Use ClassCleanup to run code after all tests in a class have run
-		//[ClassCleanup()]
-		//public static void MyClassCleanup()
-		//{
-		//}
-		//
-		//Use TestInitialize to run code before running each test
-		//[TestInitialize()]
-		//public void MyTestInitialize()
-		//{
-		//}
-		//
-		//Use TestCleanup to run code after each test has run
-		//[TestCleanup()]
-		//public void MyTestCleanup()
-		//{
-		//}
-		//
-		#endregion
-
-
 		/// <summary>
 		///A test for BufferedInMemoryStream Constructor
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void BufferedInMemoryStreamConstructorTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -72,7 +36,7 @@ namespace Tests
 		/// <summary>
 		///A test for CanRead
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void CanReadTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -82,7 +46,7 @@ namespace Tests
 		/// <summary>
 		///A test for CanSeek
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void CanSeekTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -92,7 +56,7 @@ namespace Tests
 		/// <summary>
 		///A test for CanWrite
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void CanWriteTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -102,7 +66,7 @@ namespace Tests
 		/// <summary>
 		///A test for Close
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void CloseTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -113,7 +77,7 @@ namespace Tests
 		/// <summary>
 		///A test for Length
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void LengthTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -123,7 +87,7 @@ namespace Tests
 		/// <summary>
 		///A test for Flush
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void FlushTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -134,7 +98,7 @@ namespace Tests
 		/// <summary>
 		///A test for Position
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void PositionTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
@@ -144,7 +108,7 @@ namespace Tests
 		/// <summary>
 		///A test for Read
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void ReadTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
@@ -161,7 +125,7 @@ namespace Tests
 		/// <summary>
 		///A test for RealFlush
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void RealFlushTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
@@ -172,7 +136,7 @@ namespace Tests
 		/// <summary>
 		///A test for SetLength
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void SetLengthTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
@@ -184,7 +148,7 @@ namespace Tests
 		/// <summary>
 		///A test for Seek
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void SeekTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
@@ -200,7 +164,7 @@ namespace Tests
 		/// <summary>
 		///A test for Write
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void WriteTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
