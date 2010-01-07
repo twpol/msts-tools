@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Jgr.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -110,16 +111,17 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadTest() {
-			Stream stream = new MemoryStream(1024);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
-			byte[] buffer = null; // TODO: Initialize to an appropriate value
-			int offset = 0; // TODO: Initialize to an appropriate value
-			int count = 0; // TODO: Initialize to an appropriate value
-			int expected = 0; // TODO: Initialize to an appropriate value
+			Stream stream = new MemoryStream(new byte[1024]);
+			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			byte[] buffer = new byte[10];
+			int offset = 0;
+			int count = 10;
+			int expected = 10;
 			int actual;
 			actual = target.Read(buffer, offset, count);
 			Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
+			Assert.AreEqual(10, target.Position);
+			Assert.AreEqual(1024, stream.Position);
 		}
 
 		/// <summary>
@@ -128,9 +130,11 @@ namespace Tests {
 		[TestMethod]
 		public void RealFlushTest() {
 			Stream stream = new MemoryStream(1024);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
+			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			target.WriteByte(1);
+			Assert.AreEqual(0, stream.Position);
 			target.RealFlush();
-			Assert.Inconclusive("A method that does not return a value cannot be verified.");
+			Assert.AreNotEqual(0, stream.Position);
 		}
 
 		/// <summary>
@@ -139,10 +143,13 @@ namespace Tests {
 		[TestMethod]
 		public void SetLengthTest() {
 			Stream stream = new MemoryStream(1024);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
-			long value = 0; // TODO: Initialize to an appropriate value
-			target.SetLength(value);
-			Assert.Inconclusive("A method that does not return a value cannot be verified.");
+			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			try {
+				target.SetLength(0);
+				Assert.Fail("Should have thrown NotImplementedException");
+			} catch (Exception e) {
+				Assert.IsInstanceOfType(e, typeof(NotImplementedException));
+			}
 		}
 
 		/// <summary>
