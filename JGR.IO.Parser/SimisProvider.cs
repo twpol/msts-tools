@@ -32,13 +32,12 @@ namespace Jgr.IO.Parser
 		public List<SimisFormat> Formats { get; private set; }
 		Thread BackgroundLoader;
 		Exception LoadError;
-		Dictionary<string, SimisFormat> FormatByRoot;
 
 		public SimisProvider(string directory) {
 			TokenNames = new Dictionary<uint, string>();
 			TokenIds = new Dictionary<string, uint>();
 			Formats = new List<SimisFormat>();
-			FormatByRoot = new Dictionary<string, SimisFormat>();
+			//FormatByRoot = new Dictionary<string, SimisFormat>();
 
 			BackgroundLoader = new Thread(() => BackgroundLoad(directory));
 			BackgroundLoader.Start();
@@ -57,14 +56,6 @@ namespace Jgr.IO.Parser
 			return Formats.FirstOrDefault<SimisFormat>(f => f.Format == format);
 		}
 
-		public Bnf GetBnf(string simisFormat, string root) {
-			var key = simisFormat + "|" + root;
-			if (FormatByRoot.ContainsKey(key)) {
-				return FormatByRoot[key].Bnf;
-			}
-			throw new UnknownSimisFormatException(simisFormat, root);
-		}
-
 		void BackgroundLoad(string directory) {
 			foreach (var filename in Directory.GetFiles(directory, "*.bnf")) {
 				var BNF = new BnfFile(filename);
@@ -79,9 +70,6 @@ namespace Jgr.IO.Parser
 				}
 				var simisFormat = new SimisFormat(BNF);
 				Formats.Add(simisFormat);
-				foreach (var root in BNF.BnfFileRoots) {
-					FormatByRoot.Add(BNF.BnfFileType + BNF.BnfFileTypeVersion + "|" + root, simisFormat);
-				}
 			}
 			Formats.Sort((a, b) => StringComparer.InvariantCultureIgnoreCase.Compare(a.Name, b.Name));
 

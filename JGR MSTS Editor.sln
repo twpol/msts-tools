@@ -15,7 +15,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simis File", "Simis File\Si
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR.GUI", "JGR.GUI\JGR.GUI.csproj", "{CE8C7450-8044-4158-8F93-CAD730CB2946}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{7EDBE4DE-EEA9-4C7B-99FA-A863121B1428}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5EFA45EF-FEFB-41CA-BEF6-7C54DDC57F37}"
+	ProjectSection(SolutionItems) = preProject
+		JGR MSTS Editor.vsmdi = JGR MSTS Editor.vsmdi
+		LocalTestRun.testrunconfig = LocalTestRun.testrunconfig
+	EndProjectSection
+EndProject
 Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = JGR MSTS Editor.vsmdi
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -49,6 +60,10 @@ Global
 		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE8C7450-8044-4158-8F93-CAD730CB2946}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EDBE4DE-EEA9-4C7B-99FA-A863121B1428}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EDBE4DE-EEA9-4C7B-99FA-A863121B1428}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EDBE4DE-EEA9-4C7B-99FA-A863121B1428}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EDBE4DE-EEA9-4C7B-99FA-A863121B1428}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
