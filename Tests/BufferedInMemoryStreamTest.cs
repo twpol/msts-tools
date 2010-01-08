@@ -29,7 +29,7 @@ namespace Tests {
 		///A test for BufferedInMemoryStream Constructor
 		///</summary>
 		[TestMethod]
-		public void BufferedInMemoryStreamConstructorTest() {
+		public void _ctorTest() {
 			Stream stream = new MemoryStream(1024);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
 		}
