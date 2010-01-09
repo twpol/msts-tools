@@ -35,8 +35,8 @@ namespace Jgr.IO
 
 		void ReadChunk(int chunk) {
 			var buffer = new char[chunk];
-			Incomming.Read(buffer, 0, chunk);
-			Memory += new String(buffer);
+			var length = Incomming.Read(buffer, 0, chunk);
+			Memory += new String(buffer, 0, length);
 		}
 
 		public long Length {
@@ -88,7 +88,7 @@ namespace Jgr.IO
 
 		public override string ReadLine() {
 			var poses = new int[] {};
-			while (!poses.Any<int>(p => p >= 0)) {
+			while (!poses.Any(p => p >= 0)) {
 				ReadChunk(ChunkSize);
 				var posR = Memory.IndexOf('\r', (int)MemoryPosition);
 				var posN = Memory.IndexOf('\n', (int)MemoryPosition);
@@ -97,8 +97,8 @@ namespace Jgr.IO
 				// If the incomming TextReader has run out, we have to bail no matter what.
 				if (Incomming.Peek() == -1) break;
 			}
-			if (poses.Any<int>(p => p >= 0)) {
-				var first = poses.Where<int>(p => p >= 0).OrderBy<int, int>(p => p).First<int>();
+			if (poses.Any(p => p >= 0)) {
+				var first = poses.Where(p => p >= 0).OrderBy(p => p).First();
 				var rv = Memory.Substring((int)MemoryPosition, first - (int)MemoryPosition);
 				if (Memory.Substring(first, Environment.NewLine.Length) == Environment.NewLine) {
 					MemoryPosition = first + Environment.NewLine.Length;
