@@ -64,8 +64,8 @@ namespace Jgr.IO.Parser
 						}
 						for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						BinaryWriter.Write(token.Type.ToCharArray());
-						if (token.String.Length > 0) {
-							BinaryWriter.Write((" " + token.String).ToCharArray());
+						if (token.Name.Length > 0) {
+							BinaryWriter.Write((" " + token.Name).ToCharArray());
 						}
 						TextBlocked = true;
 						break;
@@ -189,8 +189,8 @@ namespace Jgr.IO.Parser
 						BinaryWriter.Write((uint)id);
 						BinaryWriter.Write((uint)0x7F8F7F8F); // Length, set to sentinel value for now.
 						BlockStarts.Push(BinaryWriter.BaseStream.Position);
-						BinaryWriter.Write((byte)token.String.Length);
-						foreach (var ch in token.String.ToCharArray()) {
+						BinaryWriter.Write((byte)token.Name.Length);
+						foreach (var ch in token.Name.ToCharArray()) {
 							BinaryWriter.Write((ushort)ch);
 						}
 						break;
