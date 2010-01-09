@@ -134,6 +134,28 @@ namespace Jgr.IO.Parser
 							inWhitespace = !inString;
 						}
 					} else {
+						if ((bite == '+') || (bite == '-') || (bite == '0') || (bite == '1') || (bite == '2') || (bite == '3') || (bite == '4') || (bite == '5') || (bite == '6') || (bite == '7') || (bite == '8') || (bite == '9')) {
+							var biteStart = bite;
+							var numberStart = binaryReader.BaseStream.Position;
+							var numberString = "";
+							while ((bite == '+') || (bite == '-') || (bite == 'e') || (bite == 'E') || (bite == '.') || (bite == '0') || (bite == '1') || (bite == '2') || (bite == '3') || (bite == '4') || (bite == '5') || (bite == '6') || (bite == '7') || (bite == '8') || (bite == '9')) {
+								numberString += bite;
+								bite = binaryReader.ReadChar();
+							}
+							double value;
+							if (((bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ':') || (bite == ' ') || (bite == ')')) && double.TryParse(numberString, out value)) {
+								if (value.ToString("G6").IndexOf("E") >= 0) {
+									binaryWriter.Write(value.ToString("0.#####e000").ToCharArray());
+								} else {
+									binaryWriter.Write(value.ToString("G6").ToCharArray());
+								}
+								inWhitespace = false;
+							} else {
+								bite = biteStart;
+								binaryReader.BaseStream.Position = numberStart;
+							}
+						}
+
 						if ((bite == '(') || (bite == ')') || (bite == '+')) {
 							if (!inWhitespace) binaryWriter.Write(' ');
 						}
