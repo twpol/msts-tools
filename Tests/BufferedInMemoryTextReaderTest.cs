@@ -1,13 +1,12 @@
-﻿using Jgr.IO;
+﻿using System.IO;
+using Jgr.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
 
-namespace Tests
-{
-    /// <summary>
-    ///This is a test class for BufferedInMemoryTextReaderTest and is intended
-    ///to contain all BufferedInMemoryTextReaderTest Unit Tests
-    ///</summary>
+namespace Tests {
+	/// <summary>
+	///This is a test class for BufferedInMemoryTextReaderTest and is intended
+	///to contain all BufferedInMemoryTextReaderTest Unit Tests
+	///</summary>
 	[TestClass()]
 	public class BufferedInMemoryTextReaderTest {
 		private TestContext testContextInstance;

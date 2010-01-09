@@ -1,11 +1,11 @@
 ﻿using Jgr.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-namespace Tests
-{
-    /// <summary>
-    ///This is a test class for ByteEncodingTest and is intended
-    ///to contain all ByteEncodingTest Unit Tests
-    ///</summary>
+
+namespace Tests {
+	/// <summary>
+	///This is a test class for ByteEncodingTest and is intended
+	///to contain all ByteEncodingTest Unit Tests
+	///</summary>
 	[TestClass()]
 	public class ByteEncodingTest {
 		private TestContext testContextInstance;
