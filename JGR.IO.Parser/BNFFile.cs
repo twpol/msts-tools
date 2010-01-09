@@ -68,7 +68,7 @@ namespace Jgr.IO.Parser
 			BnfFileName = "";
 			BnfFileExtension = "";
 			BnfFileType = "";
-			BnfFileTypeVersion = 0;
+			BnfFileTypeVersion = -1;
 			Bnf = new Bnf(FileName);
 		}
 
@@ -133,9 +133,10 @@ namespace Jgr.IO.Parser
 				}
 			}
 			MessageSend(LevelInformation, "Done.");
-			if (BnfFileName== "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a name.");
+			if (BnfFileName == "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a name.");
 			if (BnfFileExtension == "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a file extension.");
 			if (BnfFileType == "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format.");
+			if (BnfFileTypeVersion == -1) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format Version.");
 		}
 	}
 

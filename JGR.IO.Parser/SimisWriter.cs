@@ -147,29 +147,37 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.String:
-						// Special-case Skip(...) blocks which are not parsed.
-						//if (!token.String.StartsWith("Skip", StringComparison.InvariantCultureIgnoreCase) && !token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase)) {
-							var stringDatatypes = BnfState.ValidStates.Where(s => s == "string" || s == "buffer");
-							BnfState.MoveTo(stringDatatypes.First());
-						//}
-						if (TextBlocked) {
+						// Special-case Skip(...) and Comment(...) blocks which are not parsed.
+						if (token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase) || token.String.Replace(" ", "").StartsWith("Comment(", StringComparison.InvariantCultureIgnoreCase)) {
+							if (!TextBlocked) {
+								BinaryWriter.Write("\r\n".ToCharArray());
+							}
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
-						} else {
-							BinaryWriter.Write(' ');
-						}
-						if ((token.String.Length > 0) && token.String.ToCharArray().All(c => SafeTokenCharacters.Contains(c))) {
 							BinaryWriter.Write(token.String.ToCharArray());
-						} else {
-							var wrap = "\"+\r\n";
-							for (var i = 0; i < TextIndent; i++) wrap += '\t';
-							wrap += " \"";
-
-							BinaryWriter.Write(('"' + token.String.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\t", "\\t").Replace("\n\n", "\\n\n").Replace("\n", "\\n" + wrap) + '"').Replace(wrap + '"', "\"" + wrap.Substring(2, wrap.Length - 4)).ToCharArray());
-						}
-						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
+							TextBlocked = true;
+							TextBlockEmpty = true;
+						} else {
+							BnfState.MoveTo("string");
+							if (TextBlocked) {
+								for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
+							} else {
+								BinaryWriter.Write(' ');
+							}
+							if ((token.String.Length > 0) && token.String.ToCharArray().All(c => SafeTokenCharacters.Contains(c))) {
+								BinaryWriter.Write(token.String.ToCharArray());
+							} else {
+								var wrap = "\"+\r\n";
+								for (var i = 0; i < TextIndent; i++) wrap += '\t';
+								wrap += " \"";
+
+								BinaryWriter.Write(('"' + token.String.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\t", "\\t").Replace("\n\n", "\\n\n").Replace("\n", "\\n" + wrap) + '"').Replace(wrap + '"', "\"" + wrap.Substring(2, wrap.Length - 4)).ToCharArray());
+							}
+							if (TextBlocked) {
+								BinaryWriter.Write("\r\n".ToCharArray());
+							}
+							TextBlockEmpty = false;
 						}
-						TextBlockEmpty = false;
 						break;
 					default:
 						throw new InvalidDataException("SimisToken.Kind is invalid: " + token.Kind);

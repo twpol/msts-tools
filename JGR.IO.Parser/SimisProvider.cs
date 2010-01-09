@@ -37,7 +37,6 @@ namespace Jgr.IO.Parser
 			TokenNames = new Dictionary<uint, string>();
 			TokenIds = new Dictionary<string, uint>();
 			Formats = new List<SimisFormat>();
-			//FormatByRoot = new Dictionary<string, SimisFormat>();
 
 			BackgroundLoader = new Thread(() => BackgroundLoad(directory));
 			BackgroundLoader.Start();
