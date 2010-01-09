@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="BufferedInMemoryStreamTest.cs" />
     <Compile Include="BufferedInMemoryTextReaderTest.cs" />
+    <Compile Include="ByteEncodingTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
