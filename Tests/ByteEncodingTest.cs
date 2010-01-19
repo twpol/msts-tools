@@ -1,4 +1,9 @@
-﻿using Jgr.IO;
+﻿//------------------------------------------------------------------------------
+// Tests, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// License: Microsoft Public License (Ms-PL).
+//------------------------------------------------------------------------------
+
+using Jgr.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests {

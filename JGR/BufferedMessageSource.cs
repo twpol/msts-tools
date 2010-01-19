@@ -1,12 +1,8 @@
 ﻿//------------------------------------------------------------------------------
-// JGR library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// Jgr library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Collections.ObjectModel;
 
 namespace Jgr

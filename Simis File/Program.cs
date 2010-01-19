@@ -1,5 +1,5 @@
 ﻿//------------------------------------------------------------------------------
-// Simis Editor, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// Simis File, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 

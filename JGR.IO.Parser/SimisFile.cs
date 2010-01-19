@@ -1,12 +1,11 @@
 ﻿//------------------------------------------------------------------------------
-// JGR.IO.Parser library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// Jgr.IO.Parser library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Jgr.Grammar;
 
 namespace Jgr.IO.Parser
 {
