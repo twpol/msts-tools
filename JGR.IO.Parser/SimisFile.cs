@@ -106,6 +106,12 @@ namespace Jgr.IO.Parser
 					case SimisTokenKind.IntegerDWord:
 						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, token.Name, token.IntegerDWord));
 						break;
+					case SimisTokenKind.IntegerWord:
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerWord(token.Type, token.Name, (ushort)token.IntegerDWord));
+						break;
+					case SimisTokenKind.IntegerByte:
+						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerByte(token.Type, token.Name, (byte)token.IntegerDWord));
+						break;
 					case SimisTokenKind.Float:
 						blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, token.Name, token.Float));
 						break;
@@ -153,6 +159,10 @@ namespace Jgr.IO.Parser
 					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerSigned, IntegerSigned = (int)((SimisTreeNodeValue)child).Value });
 				} else if (child is SimisTreeNodeValueIntegerDWord) {
 					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerDWord, IntegerDWord = (uint)((SimisTreeNodeValue)child).Value });
+				} else if (child is SimisTreeNodeValueIntegerWord) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerWord, IntegerDWord = (ushort)((SimisTreeNodeValue)child).Value });
+				} else if (child is SimisTreeNodeValueIntegerByte) {
+					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerByte, IntegerDWord = (byte)((SimisTreeNodeValue)child).Value });
 				} else if (child is SimisTreeNodeValueFloat) {
 					writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (float)((SimisTreeNodeValue)child).Value });
 				} else if (child is SimisTreeNodeValueString) {

@@ -22,6 +22,8 @@ namespace Jgr.IO.Parser
 		IntegerUnsigned,
 		IntegerSigned,
 		IntegerDWord,
+		IntegerWord,
+		IntegerByte,
 		Float
 	}
 

@@ -116,13 +116,15 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.IntegerDWord:
-						BnfState.MoveTo("dword");
+					case SimisTokenKind.IntegerWord:
+					case SimisTokenKind.IntegerByte:
+						BnfState.MoveTo(token.Kind == SimisTokenKind.IntegerDWord ? "dword" : token.Kind == SimisTokenKind.IntegerWord ? "word" : "byte");
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						BinaryWriter.Write(token.IntegerDWord.ToString("X8").ToCharArray());
+						BinaryWriter.Write(token.IntegerDWord.ToString(token.Kind == SimisTokenKind.IntegerDWord ? "X8" : token.Kind == SimisTokenKind.IntegerWord ? "X4" : "X2").ToCharArray());
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -210,6 +212,12 @@ namespace Jgr.IO.Parser
 						break;
 					case SimisTokenKind.IntegerDWord:
 						BinaryWriter.Write(token.IntegerDWord);
+						break;
+					case SimisTokenKind.IntegerWord:
+						BinaryWriter.Write((ushort)token.IntegerDWord);
+						break;
+					case SimisTokenKind.IntegerByte:
+						BinaryWriter.Write((byte)token.IntegerDWord);
 						break;
 					case SimisTokenKind.Float:
 						BinaryWriter.Write((float)token.Float);
