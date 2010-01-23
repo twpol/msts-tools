@@ -182,6 +182,28 @@ namespace Jgr.IO.Parser
 	}
 
 	[Immutable]
+	public class SimisTreeNodeValueIntegerWord : SimisTreeNodeValueInteger {
+		public SimisTreeNodeValueIntegerWord(string type, string name, ushort value)
+			: base(type, name, value) {
+		}
+
+		public override string ToString() {
+			return ((ushort)Value).ToString();
+		}
+	}
+
+	[Immutable]
+	public class SimisTreeNodeValueIntegerByte : SimisTreeNodeValueInteger {
+		public SimisTreeNodeValueIntegerByte(string type, string name, byte value)
+			: base(type, name, value) {
+		}
+
+		public override string ToString() {
+			return ((byte)Value).ToString();
+		}
+	}
+
+	[Immutable]
 	public class SimisTreeNodeValueFloat : SimisTreeNodeValue
 	{
 		public SimisTreeNodeValueFloat(string type, string name, float value)

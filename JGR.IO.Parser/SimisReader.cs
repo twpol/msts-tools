@@ -60,7 +60,7 @@ namespace Jgr.IO.Parser
 		}
 
 		static string[] InitDataTypes() {
-			return new string[] { "uint", "sint", "dword", "float", "string", "buffer" };
+			return new string[] { "uint", "sint", "dword", "word", "byte", "float", "string", "buffer" };
 		}
 		#endregion
 
@@ -319,6 +319,30 @@ namespace Jgr.IO.Parser
 					}
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
+				case "word":
+					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.Length != 4) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 4-digit hex number; got '" + token + "'.");
+					try {
+						rv.IntegerDWord = UInt16.Parse(token, NumberStyles.HexNumber);
+					} catch (FormatException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					} catch (OverflowException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					}
+					rv.Kind = SimisTokenKind.IntegerDWord;
+					break;
+				case "byte":
+					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.Length != 2) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 2-digit hex number; got '" + token + "'.");
+					try {
+						rv.IntegerDWord = Byte.Parse(token, NumberStyles.HexNumber);
+					} catch (FormatException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					} catch (OverflowException ex) {
+						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
+					}
+					rv.Kind = SimisTokenKind.IntegerDWord;
+					break;
 				case "float":
 					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
 					try {
@@ -334,6 +358,8 @@ namespace Jgr.IO.Parser
 					rv.String = token;
 					rv.Kind = SimisTokenKind.String;
 					break;
+				default:
+					throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found unexpected data type '" + rv.Type + "'.", new BnfStateException(BnfState, ""));
 			}
 			return rv;
 		}
@@ -415,6 +441,14 @@ namespace Jgr.IO.Parser
 						rv.IntegerDWord = BinaryReader.ReadUInt32();
 						rv.Kind = SimisTokenKind.IntegerDWord;
 						break;
+					case "word":
+						rv.IntegerDWord = BinaryReader.ReadUInt16();
+						rv.Kind = SimisTokenKind.IntegerWord;
+						break;
+					case "byte":
+						rv.IntegerDWord = BinaryReader.ReadByte();
+						rv.Kind = SimisTokenKind.IntegerByte;
+						break;
 					case "float":
 						rv.Float = BinaryReader.ReadSingle();
 						rv.Kind = SimisTokenKind.Float;
@@ -422,6 +456,7 @@ namespace Jgr.IO.Parser
 					case "string":
 						var stringLength = BinaryReader.ReadUInt16();
 						if (stringLength > 10000) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found a string longer than 10,000 characters.", new BnfStateException(BnfState, ""));
+						if (BinaryReader.BaseStream.Position + stringLength * 2 > BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader found a string extending beyond the end of the file.", new BnfStateException(BnfState, ""));
 						for (var i = 0; i < stringLength; i++) {
 							rv.String += (char)BinaryReader.ReadUInt16();
 						}
