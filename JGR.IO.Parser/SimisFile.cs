@@ -25,8 +25,8 @@ namespace Jgr.IO.Parser
 			UndoBuffer = new Stack<SimisTreeNode>();
 			RedoBuffer = new Stack<SimisTreeNode>();
 			ResetUndo(new SimisTreeNode("<root>", ""));
-			SimisFormat = provider.GetForPath(fileName);
-			SimisProvider = provider;
+			SimisFormat = null;
+			SimisProvider = provider.GetForPath(fileName);
 		}
 
 		public SimisTreeNode Tree {

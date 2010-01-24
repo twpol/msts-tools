@@ -618,6 +618,9 @@ namespace Jgr.IO.Parser
 					}
 				} else {
 					SimisFormat = SimisProvider.GetForFormat(simisFormat);
+					if (SimisFormat == null) {
+						throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Simis format '" + simisFormat + "' is not known to " + SimisProvider + ".");
+					}
 				}
 				if (signature[3] == 'b') {
 					StreamFormat = SimisStreamFormat.Binary;

@@ -1,0 +1,56 @@
+/* File format information */
+FILE                          = :Tr_RouteFile .
+FILE_NAME                     = "Route" .
+FILE_EXT                      = "trk" .
+FILE_TYPE                     = "r" .
+FILE_TYPE_VER                 = "1" .
+
+/* Base types */
+AutumnClear                   ==> :string .
+AutumnRain                    ==> :string .
+AutumnSnow                    ==> :string .
+DefaultCoalTowerSMS           ==> :string .
+DefaultCrossingSMS            ==> :string .
+DefaultDieselTowerSMS         ==> :string .
+DefaultSignalSMS              ==> :string .
+DefaultWaterTowerSMS          ==> :string .
+DerailScale                   ==> :float .
+Description                   ==> :string .
+Electrified                   ==> :dword .
+Era                           ==> :uint .
+Filename                      ==> :string .
+FreightRuleSet                ==> :uint .
+GantrySet                     ==> :uint .
+Graphic                       ==> :string .
+GravityScale                  ==> :float .
+LoadingScreen                 ==> :string .
+MaxLineVoltage                ==> :float .
+MilepostUnitsKilometers       ==> .
+MilepostUnitsMiles            ==> .
+Mountains                     ==> :dword .
+Name                          ==> :string .
+OverheadWireHeight            ==> :float .
+PassengerRuleSet              ==> :uint .
+RouteID                       ==> :string .
+RouteStart                    ==> :sint :uint :float :float .
+SignalSet                     ==> :uint .
+SpeedLimit                    ==> :float .
+SpringClear                   ==> :string .
+SpringRain                    ==> :string .
+SpringSnow                    ==> :string .
+SummerClear                   ==> :string .
+SummerRain                    ==> :string .
+SummerSnow                    ==> :string .
+TempRestrictedSpeed           ==> :float .
+TerrainErrorScale             ==> :float .
+TimetableTollerance           ==> :float .
+TrackGauge                    ==> :uint .
+WinterClear                   ==> :string .
+WinterRain                    ==> :string .
+WinterSnow                    ==> :string .
+
+/* Format types */
+Tr_RouteFile                  ==> :RouteID :Name :Description :Graphic :LoadingScreen :Filename :Electrified :Mountains :OverheadWireHeight :PassengerRuleSet :FreightRuleSet :SignalSet :GantrySet :TrackGauge :Era :SpeedLimit :Environment :TerrainErrorScale :RouteStart {:DefaultCoalTowerSMS|:DefaultCrossingSMS|:DefaultDieselTowerSMS|:DefaultSignalSMS|:DefaultWaterTowerSMS|:DerailScale|:GravityScale|:MaxLineVoltage|:MilepostUnitsKilometers|:MilepostUnitsMiles|:TempRestrictedSpeed|:TimetableTollerance} .
+Environment                   ==> :SpringClear :SpringRain :SpringSnow :SummerClear :SummerRain :SummerSnow :AutumnClear :AutumnRain :AutumnSnow :WinterClear :WinterRain :WinterSnow .
+
+EOF                           /* End of file */

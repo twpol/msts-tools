@@ -11,10 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Jgr.IO.Parser
-{
-	public class UnknownSimisFormatException : DescriptiveException
-	{
+namespace Jgr.IO.Parser {
+	public class UnknownSimisFormatException : DescriptiveException {
 		public UnknownSimisFormatException(string simisFormat, string root)
 			: base("Unknown Simis Format '" + simisFormat + "' with root '" + root + "'.") {
 		}
@@ -24,19 +22,20 @@ namespace Jgr.IO.Parser
 		}
 	}
 
-	public class SimisProvider
-	{
-		public Dictionary<uint, string> TokenNames { get; private set; }
-		public Dictionary<string, uint> TokenIds { get; private set; }
-		public List<SimisFormat> Formats { get; private set; }
+	public class SimisProvider {
+		public Dictionary<uint, string> TokenNames { get; protected set; }
+		public Dictionary<string, uint> TokenIds { get; protected set; }
+		public List<SimisFormat> Formats { get; protected set; }
 		Thread BackgroundLoader;
 		Exception LoadError;
 
-		public SimisProvider(string directory) {
+		protected SimisProvider() {
 			TokenNames = new Dictionary<uint, string>();
 			TokenIds = new Dictionary<string, uint>();
 			Formats = new List<SimisFormat>();
+		}
 
+		public SimisProvider(string directory) : this() {
 			BackgroundLoader = new Thread(() => BackgroundLoad(directory));
 			BackgroundLoader.Start();
 		}
@@ -46,8 +45,8 @@ namespace Jgr.IO.Parser
 			if (LoadError != null) throw LoadError;
 		}
 
-		public SimisFormat GetForPath(string fileName) {
-			return Formats.FirstOrDefault(f => Path.GetExtension(fileName).Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase));
+		public SimisProvider GetForPath(string fileName) {
+			return new SimisProviderForFile(this, fileName);
 		}
 
 		public SimisFormat GetForFormat(string format) {
@@ -88,6 +87,26 @@ namespace Jgr.IO.Parser
 					if (ffReader.EndOfStream) break;
 				}
 			}
+		}
+
+		public override string ToString() {
+			return "SimisProvider()";
+		}
+	}
+
+	public class SimisProviderForFile : SimisProvider {
+		string Extension;
+
+		public SimisProviderForFile(SimisProvider baseProvider, string fileName) : base() {
+			Extension = Path.GetExtension(fileName);
+
+			TokenNames = baseProvider.TokenNames;
+			TokenIds = baseProvider.TokenIds;
+			Formats = new List<SimisFormat>(baseProvider.Formats.Where(f => Extension.Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase)));
+		}
+
+		public override string ToString() {
+			return "SimisProvider(" + Extension + ")";
 		}
 	}
 }

@@ -227,10 +227,11 @@ namespace Normalize
 
 				var extension = Path.GetExtension(file).ToUpperInvariant();
 				if (!formatCounts.ContainsKey(extension)) {
-					if (provider.GetForPath(file) == null) {
+					var fileProvider = provider.GetForPath(file);
+					if (fileProvider.Formats.Count == 0) {
 						continue;
 					}
-					formatCounts[extension] = new TestFormatCount() { FormatName = provider.GetForPath(file).Name };
+					formatCounts[extension] = new TestFormatCount() { FormatName = fileProvider.Formats[0].Name };
 					formatCounts[extension].SortKey = formatCounts[extension].FormatName;
 				}
 				var formatCount = formatCounts[extension];
@@ -240,7 +241,6 @@ namespace Normalize
 
 				var success = true;
 				var newFile = new SimisFile(file, provider);
-				newFile.SimisFormat = provider.GetForPath(file);
 				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
 				Stream saveStream = new MemoryStream();
 
