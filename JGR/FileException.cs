@@ -64,7 +64,7 @@ namespace Jgr
 		/// </summary>
 		/// <returns>A string representation of the current exception.</returns>
 		public override string ToString() {
-			return FileName + "\n\n" + base.ToString();
+			return FileName + "\r\n\r\n" + base.ToString();
 		}
 	}
 }

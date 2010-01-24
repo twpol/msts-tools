@@ -20,27 +20,27 @@ namespace Jgr.IO.Parser
 			reader.Position -= alreadyRead;
 			reader.Position -= beforeError;
 
-			var sourceText = message + "\n\n";
+			var sourceText = message + "\r\n\r\n";
 			if (beforeError > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data preceding failure:\n";
+				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data preceding failure:\r\n";
 				for (var i = 0; i < beforeError; i++) {
 					sourceText += (char)reader.Read();
 				}
-				sourceText += "\n\n";
+				sourceText += "\r\n\r\n";
 			}
 			if (alreadyRead > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data at failure:\n";
+				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data at failure:\r\n";
 				for (var i = 0; i < alreadyRead; i++) {
 					sourceText += (char)reader.Read();
 				}
-				sourceText += "\n\n";
+				sourceText += "\r\n\r\n";
 			}
 			if (afterError > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data following failure:\n";
+				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data following failure:\r\n";
 				for (var i = 0; i < afterError; i++) {
 					sourceText += (char)reader.Read();
 				}
-				sourceText += "\n\n";
+				sourceText += "\r\n\r\n";
 			}
 
 			return sourceText;
