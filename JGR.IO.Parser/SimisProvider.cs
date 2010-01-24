@@ -47,11 +47,11 @@ namespace Jgr.IO.Parser
 		}
 
 		public SimisFormat GetForPath(string fileName) {
-			return Formats.FirstOrDefault<SimisFormat>(f => Path.GetExtension(fileName).Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase));
+			return Formats.FirstOrDefault(f => Path.GetExtension(fileName).Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase));
 		}
 
 		public SimisFormat GetForFormat(string format) {
-			return Formats.FirstOrDefault<SimisFormat>(f => f.Format == format);
+			return Formats.FirstOrDefault(f => f.Format == format);
 		}
 
 		void BackgroundLoad(string directory) {
