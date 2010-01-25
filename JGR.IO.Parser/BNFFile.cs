@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Jgr.Grammar;
@@ -22,21 +23,21 @@ namespace Jgr.IO.Parser
 
 			var sourceText = message + "\r\n\r\n";
 			if (beforeError > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data preceding failure:\r\n";
+				sourceText += "From 0x" + reader.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data preceding failure:\r\n";
 				for (var i = 0; i < beforeError; i++) {
 					sourceText += (char)reader.Read();
 				}
 				sourceText += "\r\n\r\n";
 			}
 			if (alreadyRead > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data at failure:\r\n";
+				sourceText += "From 0x" + reader.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data at failure:\r\n";
 				for (var i = 0; i < alreadyRead; i++) {
 					sourceText += (char)reader.Read();
 				}
 				sourceText += "\r\n\r\n";
 			}
 			if (afterError > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8") + " - data following failure:\r\n";
+				sourceText += "From 0x" + reader.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data following failure:\r\n";
 				for (var i = 0; i < afterError; i++) {
 					sourceText += (char)reader.Read();
 				}
@@ -118,7 +119,7 @@ namespace Jgr.IO.Parser
 									BnfFileType = ((StringOperator)rule.Expression).Value;
 								} else if ((rule.Symbol.Reference == "FILE_TYPE_VER") && (rule.Expression is StringOperator)) {
 									if (((StringOperator)rule.Expression).Value.Length > 0) {
-										BnfFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value);
+										BnfFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value, CultureInfo.InvariantCulture);
 									}
 								}
 								Bnf.Definitions.Add(rule.Symbol.Reference, (BnfDefinition)rule);
@@ -133,9 +134,9 @@ namespace Jgr.IO.Parser
 				}
 			}
 			MessageSend(LevelInformation, "Done.");
-			if (BnfFileName == "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a name.");
-			if (BnfFileExtension == "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a file extension.");
-			if (BnfFileType == "") throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format.");
+			if (BnfFileName.Length == 0) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a name.");
+			if (BnfFileExtension.Length == 0) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a file extension.");
+			if (BnfFileType.Length == 0) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format.");
 			if (BnfFileTypeVersion == -1) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format Version.");
 		}
 	}
