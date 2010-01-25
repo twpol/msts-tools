@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -28,12 +29,12 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return "<" + Type + (Name.Length > 0 ? " \"" + Name + "\"" : "") + ">" + String.Join(", ", this.Select<SimisTreeNode, string>(n => n.ToString()).ToArray()) + "</" + Type + ">";
+			return "<" + Type + (Name.Length > 0 ? " \"" + Name + "\"" : "") + ">" + String.Join(", ", this.Select(n => n.ToString()).ToArray()) + "</" + Type + ">";
 		}
 
-		public bool EqualsByValue(object obj) {
-			if ((obj == null) || (GetType() != obj.GetType())) return false;
-			var stn = obj as SimisTreeNode;
+		public bool EqualsByValue(object value) {
+			if ((value == null) || (GetType() != value.GetType())) return false;
+			var stn = value as SimisTreeNode;
 			return (Type == stn.Type) && (Name == stn.Name);
 		}
 
@@ -155,7 +156,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((uint)Value).ToString();
+			return ((uint)Value).ToString(CultureInfo.CurrentCulture);
 		}
 	}
 
@@ -166,7 +167,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((int)Value).ToString();
+			return ((int)Value).ToString(CultureInfo.CurrentCulture);
 		}
 	}
 
@@ -177,7 +178,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((uint)Value).ToString();
+			return ((uint)Value).ToString(CultureInfo.CurrentCulture);
 		}
 	}
 
@@ -188,7 +189,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((ushort)Value).ToString();
+			return ((ushort)Value).ToString(CultureInfo.CurrentCulture);
 		}
 	}
 
@@ -199,7 +200,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((byte)Value).ToString();
+			return ((byte)Value).ToString(CultureInfo.CurrentCulture);
 		}
 	}
 
@@ -211,7 +212,7 @@ namespace Jgr.IO.Parser
 		}
 
 		public override string ToString() {
-			return ((float)Value).ToString("G6");
+			return ((float)Value).ToString("G6", CultureInfo.CurrentCulture);
 		}
 	}
 

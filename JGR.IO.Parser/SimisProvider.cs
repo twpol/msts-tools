@@ -75,11 +75,11 @@ namespace Jgr.IO.Parser {
 				var tokenType = (ushort)0x0000;
 				var tokenIndex = (ushort)0x0000;
 				for (var ffLine = ffReader.ReadLine(); ; ffLine = ffReader.ReadLine()) {
-					if (ffLine.StartsWith("SID_DEFINE_FIRST_ID(")) {
+					if (ffLine.StartsWith("SID_DEFINE_FIRST_ID(", StringComparison.Ordinal)) {
 						var type = ffLine.Substring(ffLine.IndexOf('(') + 1, ffLine.LastIndexOf(')') - ffLine.IndexOf('(') - 1);
-						tokenType = ushort.Parse(type.Substring(2), NumberStyles.HexNumber);
+						tokenType = ushort.Parse(type.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 						tokenIndex = 0x0000;
-					} else if (ffLine.StartsWith("SIDDEF(")) {
+					} else if (ffLine.StartsWith("SIDDEF(", StringComparison.Ordinal)) {
 						var name = ffLine.Substring(ffLine.IndexOf('"') + 1, ffLine.LastIndexOf('"') - ffLine.IndexOf('"') - 1);
 						TokenNames.Add(((uint)tokenType << 16) + ++tokenIndex, name);
 						TokenIds.Add(name, ((uint)tokenType << 16) + tokenIndex);
@@ -102,7 +102,7 @@ namespace Jgr.IO.Parser {
 
 			TokenNames = baseProvider.TokenNames;
 			TokenIds = baseProvider.TokenIds;
-			Formats = new List<SimisFormat>(baseProvider.Formats.Where(f => Extension.Equals("." + f.Extension, StringComparison.InvariantCultureIgnoreCase)));
+			Formats = new List<SimisFormat>(baseProvider.Formats.Where(f => Extension.Equals("." + f.Extension, StringComparison.OrdinalIgnoreCase)));
 		}
 
 		public override string ToString() {
