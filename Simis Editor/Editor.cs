@@ -98,7 +98,7 @@ namespace SimisEditor
 			} catch (FileException ex) {
 				this.Invoke((MethodInvoker)(() => {
 					using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-						MessageBox.Show(ex.ToString(), "Load Resources - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						ShowMessageBox(ex.ToString(), "Load Resources", MessageBoxIcon.Error);
 					}
 				}));
 				return false;
@@ -118,18 +118,18 @@ namespace SimisEditor
 				simisFormats.Add(new List<string>(new string[] { format.Name + " files", "*." + format.Extension }));
 			}
 			simisFormats.Add(new List<string>(new string[] { "All files", "*.*" }));
-			openFileDialog.Filter = String.Join("|", simisFormats.Select<List<string>, string>(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray());
+			openFileDialog.Filter = String.Join("|", simisFormats.Select(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray());
 
 			var streamFormats = new string[] { "Text", "Binary", "Compressed Binary" };
-			saveFileDialog.Filter = String.Join("|", streamFormats.Select<string, string>(s => s + " " + generalName + "|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
+			saveFileDialog.Filter = String.Join("|", streamFormats.Select(s => s + " " + generalName + "|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
 
 			return true;
 		}
 
 		void InitializeFromCommandLine() {
 			this.Shown += (o, e) => {
-				foreach (var argument in Environment.GetCommandLineArgs().Where<string>((s, i) => i > 0)) {
-					if (argument.StartsWith("/") || argument.StartsWith("-")) continue;
+				foreach (var argument in Environment.GetCommandLineArgs().Where((s, i) => i > 0)) {
+					if (argument.StartsWith("/", StringComparison.Ordinal) || argument.StartsWith("-", StringComparison.Ordinal)) continue;
 					OpenFile(argument);
 					break;
 				}
@@ -158,7 +158,7 @@ namespace SimisEditor
 				newFile.ReadFile();
 			} catch (FileException ex) {
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					MessageBox.Show(ex.ToString(), "Open File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					ShowMessageBox(ex.ToString(), "Open File", MessageBoxIcon.Error);
 				}
 				return;
 			}
@@ -185,9 +185,9 @@ namespace SimisEditor
 			} catch (FileException ex) {
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
 					if (ex.InnerException is UnauthorizedAccessException) {
-						MessageBox.Show(ex.InnerException.Message, "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						ShowMessageBox(ex.InnerException.Message, "Save File", MessageBoxIcon.Error);
 					} else {
-						MessageBox.Show(ex.ToString(), "Save File - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						ShowMessageBox(ex.ToString(), "Save File", MessageBoxIcon.Error);
 					}
 				}
 				return;
@@ -201,7 +201,7 @@ namespace SimisEditor
 		bool SaveFileIfModified() {
 			if ((File != null) && (File.Tree != SavedFileTree)) {
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					switch (MessageBox.Show("Do you want to save changes to '" + FilenameTitle + "'?", Application.ProductName, MessageBoxButtons.YesNoCancel)) {
+					switch (ShowMessageBox("Do you want to save changes to '" + FilenameTitle + "'?", "", MessageBoxButtons.YesNoCancel)) {
 						case DialogResult.Yes:
 							SaveFile();
 							break;
@@ -356,7 +356,7 @@ namespace SimisEditor
 			if (!WaitForSimisProvider()) {
 				return;
 			}
-			if (!SimisProvider.Formats.Any<SimisFormat>((f) => files[0].EndsWith("." + f.Extension))) {
+			if (!SimisProvider.Formats.Any((f) => files[0].EndsWith("." + f.Extension, StringComparison.OrdinalIgnoreCase))) {
 				return;
 			}
 			e.Effect = DragDropEffects.Copy;
@@ -419,6 +419,18 @@ namespace SimisEditor
 
 		#endregion
 
+		DialogResult ShowMessageBox(string text, string caption, MessageBoxButtons buttons) {
+			return ShowMessageBox(text, caption, buttons, MessageBoxIcon.None);
+		}
+
+		DialogResult ShowMessageBox(string text, string caption, MessageBoxIcon icon) {
+			return ShowMessageBox(text, caption, MessageBoxButtons.OK, icon);
+		}
+
+		DialogResult ShowMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon) {
+			return MessageBox.Show(text, caption + (caption.Length > 0 ? " - " : "") + Application.ProductName, buttons, icon, MessageBoxDefaultButton.Button1, RightToLeft == RightToLeft.Yes ? MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading : 0);
+		}
+
 		void UpdateTitle() {
 			if (File == null) {
 				Text = Application.ProductName;
@@ -443,7 +455,7 @@ namespace SimisEditor
 			var viewTreeNodeIndex = 0;
 			var simisTreeNodeIndex = 0;
 
-			if (simisTreeNodes.All<SimisTreeNode>(n => n is SimisTreeNodeValue)) {
+			if (simisTreeNodes.All(n => n is SimisTreeNodeValue)) {
 				simisTreeNodes = new SimisTreeNode[] { };
 			}
 
@@ -500,7 +512,7 @@ namespace SimisEditor
 		void ResyncSimisNodes(TreeNode viewTreeNode, SimisTreeNode simisTreeNode) {
 			viewTreeNode.Text = GetNodeText(simisTreeNode);
 			viewTreeNode.Nodes.Clear();
-			if (simisTreeNode.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
+			if (simisTreeNode.Any(b => !(b is SimisTreeNodeValue))) {
 				ResyncSimisNodes(viewTreeNode.Nodes, simisTreeNode);
 			}
 		}
@@ -536,9 +548,9 @@ namespace SimisEditor
 			return block.ToString();
 		}
 
-		string GetNodeText(SimisTreeNode block) {
+		static string GetNodeText(SimisTreeNode block) {
 			// Non-trivial node, don't bother trying.
-			if (block.Count<SimisTreeNode>(b => !(b is SimisTreeNodeValue)) > 0) {
+			if (block.Count(b => !(b is SimisTreeNodeValue)) > 0) {
 				return BlockToNameString(block);
 			}
 
@@ -565,7 +577,7 @@ namespace SimisEditor
 		}
 
 		object CreateEditObjectFor(SimisTreeNode block) {
-			if (block.Any<SimisTreeNode>(b => !(b is SimisTreeNodeValue))) {
+			if (block.Any(b => !(b is SimisTreeNodeValue))) {
 				return null;
 			}
 
@@ -584,7 +596,7 @@ namespace SimisEditor
 			var dPropertyValues = new Dictionary<string, object>();
 			Action<SimisTreeNode> AddPropertyFor = (node) => {
 				var dPropertyName = node.Name.Length > 0 ? node.Name : node.Type;
-				if (block.Count<SimisTreeNode>(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
+				if (block.Count(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
 					var index = 1;
 					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "_" + index))) index++;
 					dPropertyName += "_" + index;
@@ -677,8 +689,8 @@ namespace SimisEditor
 				compileResults.Output.CopyTo(messages, 0);
 
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					MessageBox.Show("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
-						+ String.Join("\n", messages), "Create Property Editor Data - " + Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					ShowMessageBox("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
+						+ String.Join("\n", messages), "Create Property Editor Data", MessageBoxIcon.Error);
 				}
 				return null;
 			}

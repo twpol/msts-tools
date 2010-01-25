@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -30,19 +31,19 @@ namespace Normalize
 			// Flags: at least 2 characters, starts with "/" or "-", stored without the "/" or "-".
 			// Items: anything not starting "/" or "-".
 			// "/" or "-" alone is ignored.
-			var flags = args.Where<string>(s => (s.Length > 1) && (s.StartsWith("/") || s.StartsWith("-"))).Select<string, string>(s => s.Substring(1));
-			var items = args.Where<string>(s => !s.StartsWith("/") && !s.StartsWith("-"));
-			var verbose = flags.Any<string>(s => "verbose".StartsWith(s, StringComparison.InvariantCultureIgnoreCase));
+			var flags = args.Where(s => (s.Length > 1) && (s.StartsWith("/", StringComparison.Ordinal) || s.StartsWith("-", StringComparison.Ordinal))).Select(s => s.Substring(1));
+			var items = args.Where(s => !s.StartsWith("/", StringComparison.Ordinal) && !s.StartsWith("-", StringComparison.Ordinal));
+			var verbose = flags.Any(s => "verbose".StartsWith(s, StringComparison.OrdinalIgnoreCase));
 
 			if (flags.Contains("?") || flags.Contains("h")) {
 				ShowHelp();
-			} else if (flags.Any<string>(s => "formats".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
+			} else if (flags.Any(s => "formats".StartsWith(s, StringComparison.OrdinalIgnoreCase))) {
 				ShowFormats();
-			} else if (flags.Any<string>(s => "dump".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
+			} else if (flags.Any(s => "dump".StartsWith(s, StringComparison.OrdinalIgnoreCase))) {
 				RunDump(ExpandFilesAndDirectories(items), verbose);
-			} else if (flags.Any<string>(s => "normalize".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
+			} else if (flags.Any(s => "normalize".StartsWith(s, StringComparison.OrdinalIgnoreCase))) {
 				RunNormalize(ExpandFilesAndDirectories(items), verbose);
-			} else if (flags.Any<string>(s => "test".StartsWith(s, StringComparison.InvariantCultureIgnoreCase))) {
+			} else if (flags.Any(s => "test".StartsWith(s, StringComparison.OrdinalIgnoreCase))) {
 				RunTest(ExpandFilesAndDirectories(items), verbose);
 			} else {
 				ShowHelp();
@@ -111,16 +112,17 @@ namespace Normalize
 
 		static void PrintSimisTree(int indent, SimisTreeNode node) {
 			Console.Write(new String(' ', 2 * indent));
-			if (node is SimisTreeNodeValue) {
-				if (node.Name.Length > 0) {
-					Console.Write(node.Name);
+			var nodeValue = node as SimisTreeNodeValue;
+			if (nodeValue != null) {
+				if (nodeValue.Name.Length > 0) {
+					Console.Write(nodeValue.Name);
 					Console.Write(" ");
 				}
 				Console.Write("(");
-				Console.Write(node.Type);
+				Console.Write(nodeValue.Type);
 				Console.Write(")");
 				Console.Write(": ");
-				Console.WriteLine((node as SimisTreeNodeValue).Value);
+				Console.WriteLine(nodeValue.Value);
 			} else {
 				Console.Write(node.Type);
 				if (node.Name.Length > 0) {
@@ -149,10 +151,10 @@ namespace Normalize
 				return;
 			}
 			var outFormat = "{0,-40:S}  {1,-15:S}  {2,-15:S}";
-			Console.WriteLine(String.Format(outFormat, "Format Name", "File Extension", "Internal Type"));
+			Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, "Format Name", "File Extension", "Internal Type"));
 			Console.WriteLine(String.Empty.PadLeft(40 + 2 + 15 + 2 + 15 + 2, '='));
 			foreach (var format in provider.Formats) {
-				Console.WriteLine(String.Format(outFormat, format.Name, format.Extension, format.Format));
+				Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, format.Name, format.Extension, format.Format));
 			}
 		}
 
@@ -219,7 +221,7 @@ namespace Normalize
 			var totalCount = new TestFormatCount();
 			var supportedCount = new TestFormatCount();
 			var formatCounts = new Dictionary<string, TestFormatCount>();
-			var messageLog = new BufferedMessageSource();
+			//var messageLog = new BufferedMessageSource();
 			var timeStart = DateTime.Now;
 
 			foreach (var file in files) {
@@ -295,7 +297,7 @@ namespace Normalize
 							var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
 							var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
 							if (verbose) {
-								Console.WriteLine("Compare: " + String.Format("{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
 							}
 							break;
 						}
@@ -305,7 +307,7 @@ namespace Normalize
 						var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
 						var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
 						if (verbose) {
-							Console.WriteLine("Compare: " + String.Format("{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+							Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
 						}
 					}
 				}
@@ -328,10 +330,10 @@ namespace Normalize
 			//}
 
 			var outFormat = "{0,-40:S} {1,1:S}{2,-7:D} {3,1:S}{4,-7:D} {5,1:S}{6,-7:D}";
-			Console.WriteLine(String.Format(outFormat, "Format Name", "", "Total", "", "Read", "", "Write"));
+			Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, "Format Name", "", "Total", "", "Read", "", "Write"));
 			Console.WriteLine(String.Empty.PadLeft(69, '='));
-			foreach (var formatCount in formatCounts.OrderBy<KeyValuePair<string, TestFormatCount>, string>(kvp => kvp.Value.SortKey).Select<KeyValuePair<string, TestFormatCount>, TestFormatCount>(kvp => kvp.Value)) {
-				Console.WriteLine(String.Format(outFormat,
+			foreach (var formatCount in formatCounts.OrderBy(kvp => kvp.Value.SortKey).Select(kvp => kvp.Value)) {
+				Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat,
 						formatCount.FormatName,
 						"", formatCount.Total,
 						formatCount.Total == formatCount.ReadSuccess ? "*" : "", formatCount.ReadSuccess,
