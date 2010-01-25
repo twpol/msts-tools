@@ -223,7 +223,7 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			if ((token.ToLowerInvariant() == "skip") || (token.ToLowerInvariant() == "comment")) {
+			if ((token.ToUpperInvariant() == "SKIP") || (token.ToUpperInvariant() == "COMMENT")) {
 				var blockCount = 0;
 				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
 					if (BinaryReader.PeekChar() == '(') blockCount++;
@@ -266,12 +266,12 @@ namespace Jgr.IO.Parser
 					case "uint":
 						return token.ToCharArray().All(c => DecDigits.Contains(c));
 					case "sint":
-						if (token.StartsWith("-", StringComparison.InvariantCulture)) return token.Substring(1).ToCharArray().All(c => DecDigits.Contains(c));
+						if (token.StartsWith("-", StringComparison.Ordinal)) return token.Substring(1).ToCharArray().All(c => DecDigits.Contains(c));
 						return token.ToCharArray().All(c => DecDigits.Contains(c));
 					case "dword":
 						return (token.Length == 8) && (token.ToCharArray().All(c => HexDigits.Contains(c)));
 					case "float":
-						if (token.StartsWith("-", StringComparison.InvariantCulture)) return token.Substring(1).ToCharArray().All(c => DecFloatDigits.Contains(c));
+						if (token.StartsWith("-", StringComparison.Ordinal)) return token.Substring(1).ToCharArray().All(c => DecFloatDigits.Contains(c));
 						return token.ToCharArray().All(c => DecFloatDigits.Contains(c));
 					case "string":
 						return true;
@@ -285,7 +285,7 @@ namespace Jgr.IO.Parser
 			rv.Type = validDataTypeStates[0];
 			switch (rv.Type) {
 				case "uint":
-					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					try {
 						rv.IntegerUnsigned = UInt32.Parse(token, CultureInfo.InvariantCulture);
 						if (token.Length == 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected decimal number; got possible hex '" + token + "'.");
@@ -297,7 +297,7 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerUnsigned;
 					break;
 				case "sint":
-					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					try {
 						rv.IntegerSigned = Int32.Parse(token, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
@@ -308,7 +308,7 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerSigned;
 					break;
 				case "dword":
-					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
 					try {
 						rv.IntegerDWord = UInt32.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
@@ -320,7 +320,7 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "word":
-					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 4) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 4-digit hex number; got '" + token + "'.");
 					try {
 						rv.IntegerDWord = UInt16.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
@@ -332,7 +332,7 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "byte":
-					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 2) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 2-digit hex number; got '" + token + "'.");
 					try {
 						rv.IntegerDWord = Byte.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
@@ -344,7 +344,7 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "float":
-					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					try {
 						rv.Float = float.Parse(token, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
