@@ -165,7 +165,7 @@ namespace Jgr.IO.Parser
 
 			// Any blocks that should have ended at or before this point, are now ended.
 			while ((BlockEndOffsets.Count > 0) && (BinaryReader.BaseStream.Position >= BlockEndOffsets.Peek())) {
-				if (BinaryReader.BaseStream.Position > BlockEndOffsets.Peek()) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, (int)(BinaryReader.BaseStream.Position - BlockEndOffsets.Peek()), "SimisReader stream positioned at 0x" + BinaryReader.BaseStream.Position.ToString("X8") + " but a block ended at 0x" + BlockEndOffsets.Peek().ToString("X8") + "; overshot by " + (BinaryReader.BaseStream.Position - BlockEndOffsets.Peek()) + " bytes.");
+				if (BinaryReader.BaseStream.Position > BlockEndOffsets.Peek()) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, (int)(BinaryReader.BaseStream.Position - BlockEndOffsets.Peek()), "SimisReader stream positioned at 0x" + BinaryReader.BaseStream.Position.ToString("X8", CultureInfo.CurrentCulture) + " but a block ended at 0x" + BlockEndOffsets.Peek().ToString("X8", CultureInfo.CurrentCulture) + "; overshot by " + (BinaryReader.BaseStream.Position - BlockEndOffsets.Peek()) + " bytes.");
 				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockEnd });
 				BlockEndOffsets.Pop();
 			}
@@ -223,7 +223,7 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			if ((token.ToLower() == "skip") || (token.ToLower() == "comment")) {
+			if ((token.ToLowerInvariant() == "skip") || (token.ToLowerInvariant() == "comment")) {
 				var blockCount = 0;
 				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
 					if (BinaryReader.PeekChar() == '(') blockCount++;
@@ -266,12 +266,12 @@ namespace Jgr.IO.Parser
 					case "uint":
 						return token.ToCharArray().All(c => DecDigits.Contains(c));
 					case "sint":
-						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All(c => DecDigits.Contains(c));
+						if (token.StartsWith("-", StringComparison.InvariantCulture)) return token.Substring(1).ToCharArray().All(c => DecDigits.Contains(c));
 						return token.ToCharArray().All(c => DecDigits.Contains(c));
 					case "dword":
 						return (token.Length == 8) && (token.ToCharArray().All(c => HexDigits.Contains(c)));
 					case "float":
-						if (token.StartsWith("-")) return token.Substring(1).ToCharArray().All(c => DecFloatDigits.Contains(c));
+						if (token.StartsWith("-", StringComparison.InvariantCulture)) return token.Substring(1).ToCharArray().All(c => DecFloatDigits.Contains(c));
 						return token.ToCharArray().All(c => DecFloatDigits.Contains(c));
 					case "string":
 						return true;
@@ -285,9 +285,9 @@ namespace Jgr.IO.Parser
 			rv.Type = validDataTypeStates[0];
 			switch (rv.Type) {
 				case "uint":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.IntegerUnsigned = UInt32.Parse(token);
+						rv.IntegerUnsigned = UInt32.Parse(token, CultureInfo.InvariantCulture);
 						if (token.Length == 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected decimal number; got possible hex '" + token + "'.");
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
@@ -297,9 +297,9 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerUnsigned;
 					break;
 				case "sint":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.IntegerSigned = Int32.Parse(token);
+						rv.IntegerSigned = Int32.Parse(token, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
@@ -308,10 +308,10 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerSigned;
 					break;
 				case "dword":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 8) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 8-digit hex number; got '" + token + "'.");
 					try {
-						rv.IntegerDWord = UInt32.Parse(token, NumberStyles.HexNumber);
+						rv.IntegerDWord = UInt32.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
@@ -320,10 +320,10 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "word":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 4) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 4-digit hex number; got '" + token + "'.");
 					try {
-						rv.IntegerDWord = UInt16.Parse(token, NumberStyles.HexNumber);
+						rv.IntegerDWord = UInt16.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
@@ -332,10 +332,10 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "byte":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
 					if (token.Length != 2) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader expected 2-digit hex number; got '" + token + "'.");
 					try {
-						rv.IntegerDWord = Byte.Parse(token, NumberStyles.HexNumber);
+						rv.IntegerDWord = Byte.Parse(token, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
@@ -344,9 +344,9 @@ namespace Jgr.IO.Parser
 					rv.Kind = SimisTokenKind.IntegerDWord;
 					break;
 				case "float":
-					if (token.EndsWith(",")) token = token.Substring(0, token.Length - 1);
+					if (token.EndsWith(",", StringComparison.InvariantCulture)) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.Float = float.Parse(token);
+						rv.Float = float.Parse(token, CultureInfo.InvariantCulture);
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
@@ -464,7 +464,7 @@ namespace Jgr.IO.Parser
 						break;
 					case "buffer":
 						var bufferLength = BlockEndOffsets.Peek() - BinaryReader.BaseStream.Position;
-						rv.String = String.Join("", BinaryReader.ReadBytes((int)bufferLength).Select(b => b.ToString("X2")).ToArray());
+						rv.String = String.Join("", BinaryReader.ReadBytes((int)bufferLength).Select(b => b.ToString("X2", CultureInfo.InvariantCulture)).ToArray());
 						rv.Kind = SimisTokenKind.String;
 						break;
 					default:
@@ -474,8 +474,8 @@ namespace Jgr.IO.Parser
 				var tokenID = BinaryReader.ReadUInt16();
 				var tokenType = BinaryReader.ReadUInt16();
 				var token = ((uint)tokenType << 16) + tokenID;
-				if (!SimisProvider.TokenNames.ContainsKey(token)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}.", tokenID, tokenType), new BnfStateException(BnfState, ""));
-				if ((tokenType != 0x0000) && (tokenType != 0x0004)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format("SimisReader got invalid block: id={0:X4}, type={1:X4}, name={2}.", tokenID, tokenType, SimisProvider.TokenNames[token]), new BnfStateException(BnfState, ""));
+				if (!SimisProvider.TokenNames.ContainsKey(token)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format(CultureInfo.CurrentCulture, "SimisReader got invalid block: id={0:X4}, type={1:X4}.", tokenID, tokenType), new BnfStateException(BnfState, ""));
+				if ((tokenType != 0x0000) && (tokenType != 0x0004)) throw new ReaderException(BinaryReader, true, PinReaderChanged(), String.Format(CultureInfo.CurrentCulture, "SimisReader got invalid block: id={0:X4}, type={1:X4}, name={2}.", tokenID, tokenType, SimisProvider.TokenNames[token]), new BnfStateException(BnfState, ""));
 
 				rv.Type = SimisProvider.TokenNames[token];
 				rv.Kind = SimisTokenKind.Block;
@@ -493,7 +493,7 @@ namespace Jgr.IO.Parser
 				if (BinaryReader.BaseStream.Position + contentsLength > StreamLength) throw new ReaderException(BinaryReader, true, PinReaderChanged(), "SimisReader got block longer than stream.", new BnfStateException(BnfState, ""));
 
 				BlockEndOffsets.Push((uint)BinaryReader.BaseStream.Position + contentsLength);
-				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8") });
+				PendingTokens.Enqueue(new SimisToken() { Kind = SimisTokenKind.BlockBegin, String = BlockEndOffsets.Peek().ToString("X8", CultureInfo.CurrentCulture) });
 
 				var nameLength = BinaryReader.Read();
 				if (nameLength > 0) {
@@ -521,14 +521,6 @@ namespace Jgr.IO.Parser
 			BinaryReader.BaseStream.Position = PinReaderPosition;
 		}
 		#endregion
-
-		static bool CompareCharArray(char[] a, char[] b) {
-			if (a.Length != b.Length) return false;
-			for (var i = 0; i < a.Length; i++) {
-				if (a[i] != b[i]) return false;
-			}
-			return true;
-		}
 
 		void AutodetectStreamFormat() {
 			if (SimisReader.TraceSwitch.TraceInfo) Trace.WriteLine("Autodetecting stream format...");
