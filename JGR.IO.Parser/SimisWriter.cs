@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -41,10 +42,7 @@ namespace Jgr.IO.Parser
 			SimisFormat = simisFormat;
 			StreamFormat = format;
 			StreamCompressed = compressed;
-			DoneHeader = false;
-			TextIndent = 0;
 			TextBlocked = true;
-			TextBlockEmpty = false;
 			BlockStarts = new Stack<long>();
 		}
 
@@ -96,7 +94,7 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						BinaryWriter.Write(token.IntegerUnsigned.ToString().ToCharArray());
+						BinaryWriter.Write(token.IntegerUnsigned.ToString(CultureInfo.InvariantCulture).ToCharArray());
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -109,7 +107,7 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						BinaryWriter.Write(token.IntegerSigned.ToString().ToCharArray());
+						BinaryWriter.Write(token.IntegerSigned.ToString(CultureInfo.InvariantCulture).ToCharArray());
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -124,7 +122,7 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						BinaryWriter.Write(token.IntegerDWord.ToString(token.Kind == SimisTokenKind.IntegerDWord ? "X8" : token.Kind == SimisTokenKind.IntegerWord ? "X4" : "X2").ToCharArray());
+						BinaryWriter.Write(token.IntegerDWord.ToString(token.Kind == SimisTokenKind.IntegerDWord ? "X8" : token.Kind == SimisTokenKind.IntegerWord ? "X4" : "X2", CultureInfo.InvariantCulture).ToCharArray());
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -137,10 +135,10 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						if (token.Float.ToString("G6").IndexOf("E") >= 0) {
-							BinaryWriter.Write(token.Float.ToString("0.#####e000").ToCharArray());
+						if (token.Float.ToString("G6", CultureInfo.InvariantCulture).IndexOf("E") >= 0) {
+							BinaryWriter.Write(token.Float.ToString("0.#####e000", CultureInfo.InvariantCulture).ToCharArray());
 						} else {
-							BinaryWriter.Write(token.Float.ToString("G6").ToCharArray());
+							BinaryWriter.Write(token.Float.ToString("G6", CultureInfo.InvariantCulture).ToCharArray());
 						}
 						if (TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
@@ -149,7 +147,7 @@ namespace Jgr.IO.Parser
 						break;
 					case SimisTokenKind.String:
 						// Special-case Skip(...) and Comment(...) blocks which are not parsed.
-						if (token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.InvariantCultureIgnoreCase) || token.String.Replace(" ", "").StartsWith("Comment(", StringComparison.InvariantCultureIgnoreCase)) {
+						if (token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("Comment(", StringComparison.OrdinalIgnoreCase)) {
 							if (!TextBlocked) {
 								BinaryWriter.Write("\r\n".ToCharArray());
 							}
