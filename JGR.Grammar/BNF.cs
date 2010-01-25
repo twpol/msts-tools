@@ -27,7 +27,7 @@ namespace Jgr.Grammar
 		public Dictionary<string, BnfProduction> Productions { get; private set; }
 
 		public override string ToString() {
-			return String.Join("\n", Definitions.Values.OrderBy<BnfDefinition, string>(d => d.ToString()).Select<BnfDefinition, string>(d => d.ToString()).Union<string>(Productions.Values.OrderBy<BnfProduction, string>(p => p.ToString()).Select<BnfProduction, string>(p => p.ToString())).ToArray<string>());
+			return String.Join("\n", Definitions.Values.OrderBy(d => d.ToString()).Select(d => d.ToString()).Union(Productions.Values.OrderBy(p => p.ToString()).Select(p => p.ToString())).ToArray());
 		}
 	}
 
@@ -125,7 +125,7 @@ namespace Jgr.Grammar
 				IsEnterBlockTime = true;
 			} else {
 				var targets = ValidReferences;
-				var target = targets.FirstOrDefault<FsmState>(s => ((ReferenceOperator)s.Op).Reference == reference);
+				var target = targets.FirstOrDefault(s => ((ReferenceOperator)s.Op).Reference == reference);
 				if (target == null) throw new BnfStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
 
 				var rop = (ReferenceOperator)target.Op;
@@ -161,9 +161,9 @@ namespace Jgr.Grammar
 		}
 
 		public override string ToString() {
-			return "Available states: " + String.Join(", ", ValidStates.Select<string, string>(s => s.StartsWith("<") ? s : "'" + s + "'").ToArray<string>()) + ".\n"
+			return "Available states: " + String.Join(", ", ValidStates.Select(s => s.StartsWith("<", StringComparison.Ordinal) ? s : "'" + s + "'").ToArray()) + ".\n"
 				+ "Current rule: " + (Rules.Count == 0 ? "<none>." : "[" + Rules.Peek().Key.Symbol.Reference + "] " + Rules.Peek().Key.ExpressionFsm) + "\n"
-				+ "Current state: " + String.Join(" // ", Rules.Select<KeyValuePair<BnfProduction, FsmState>, string>(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray<string>());
+				+ "Current state: " + String.Join(" // ", Rules.Select(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray());
 		}
 	}
 
@@ -186,38 +186,36 @@ namespace Jgr.Grammar
 			if (op == null) {
 				return op;
 			}
-			if (op is NamedReferenceOperator) {
-				var nrop = (NamedReferenceOperator)op;
+			var nrop = op as NamedReferenceOperator;
+			if (nrop != null) {
 				if (Bnf.Definitions.ContainsKey(nrop.Reference)) {
 					return ExpandReferences(Bnf.Definitions[nrop.Reference].Expression);
 				}
 				return new NamedReferenceOperator(nrop.Name, nrop.Reference);
 			}
+			var rop = op as ReferenceOperator;
 			if (op is ReferenceOperator) {
-				var rop = (ReferenceOperator)op;
 				if (Bnf.Definitions.ContainsKey(rop.Reference)) {
 					return ExpandReferences(Bnf.Definitions[rop.Reference].Expression);
 				}
 				return new ReferenceOperator(rop.Reference);
 			}
-			if (op is StringOperator) {
-				var sop = (StringOperator)op;
+			var sop = op as StringOperator;
+			if (sop != null) {
 				return new StringOperator(sop.Value);
 			}
+			var uop = op as UnaryOperator;
 			if (op is OptionalOperator) {
-				var uop = (UnaryOperator)op;
 				return new OptionalOperator(ExpandReferences(uop.Right));
 			}
 			if (op is RepeatOperator) {
-				var uop = (UnaryOperator)op;
 				return new RepeatOperator(ExpandReferences(uop.Right));
 			}
+			var lop = op as LogicalOperator;
 			if (op is LogicalOrOperator) {
-				var lop = (LogicalOperator)op;
 				return new LogicalOrOperator(ExpandReferences(lop.Left), ExpandReferences(lop.Right));
 			}
 			if (op is LogicalAndOperator) {
-				var lop = (LogicalOperator)op;
 				return new LogicalAndOperator(ExpandReferences(lop.Left), ExpandReferences(lop.Right));
 			}
 			throw new InvalidDataException("Unhandled Operator: " + op);

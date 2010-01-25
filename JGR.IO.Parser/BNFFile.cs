@@ -90,23 +90,27 @@ namespace Jgr.IO.Parser
 							if (rule == null) break;
 							MessageSend(LevelDebug, rule.ToString());
 
-							if (rule is BnfDefinition) {
+							var ruleD = rule as BnfDefinition;
+							if (ruleD != null) {
 								if (rule.Symbol.Reference == "FILE") {
 									Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan = null;
 									scan = (op, finder) => {
-										if (op is UnaryOperator) {
-											return scan(((UnaryOperator)op).Right, finder);
+										var uop = op as UnaryOperator;
+										if (uop != null) {
+											return scan(uop.Right, finder);
 										}
-										if (op is LogicalOperator) {
-											return scan(((LogicalOperator)op).Left, finder).Concat(scan(((LogicalOperator)op).Right, finder));
+										var lop = op as LogicalOperator;
+										if (lop != null) {
+											return scan(lop.Left, finder).Concat(scan(lop.Right, finder));
 										}
 										return finder(op);
 									};
 
 									BnfFileRoots = new List<string>(
 										scan(rule.Expression, op => {
-											if (op is ReferenceOperator) {
-												return new string[] { ((ReferenceOperator)op).Reference };
+											var rop = op as ReferenceOperator;
+											if (rop != null) {
+												return new string[] { rop.Reference };
 											}
 											return new string[] { };
 										})
@@ -122,10 +126,11 @@ namespace Jgr.IO.Parser
 										BnfFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value, CultureInfo.InvariantCulture);
 									}
 								}
-								Bnf.Definitions.Add(rule.Symbol.Reference, (BnfDefinition)rule);
+								Bnf.Definitions.Add(rule.Symbol.Reference, ruleD);
 							}
-							if (rule is BnfProduction) {
-								Bnf.Productions.Add(rule.Symbol.Reference, (BnfProduction)rule);
+							var ruleP = rule as BnfProduction;
+							if (ruleP != null) {
+								Bnf.Productions.Add(rule.Symbol.Reference, ruleP);
 							}
 						}
 
