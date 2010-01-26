@@ -9,13 +9,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Jgr.Gui {
-	public class EditState {
-		public Form Owner { get; private set; }
-
-		public EditState(Form owner) {
-			Owner = owner;
-		}
-
+	public static class EditState {
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		internal static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
 
@@ -44,42 +38,42 @@ namespace Jgr.Gui {
 			return null;
 		}
 
-		public bool CanCut {
+		public static bool CanCut {
 			get {
 				var textbox = GetTextBox();
 				return (textbox != null) && textbox.Enabled && !textbox.ReadOnly && (textbox.SelectionLength > 0);
 			}
 		}
 
-		public bool CanCopy {
+		public static bool CanCopy {
 			get {
 				var textbox = GetTextBox();
 				return (textbox != null) && (textbox.SelectionLength > 0);
 			}
 		}
 
-		public bool CanPaste {
+		public static bool CanPaste {
 			get {
 				var textbox = GetTextBox();
 				return (textbox != null) && textbox.Enabled && !textbox.ReadOnly && Clipboard.ContainsText(TextDataFormat.Text);
 			}
 		}
 
-		public bool CanDelete {
+		public static bool CanDelete {
 			get {
 				var textbox = GetTextBox();
 				return (textbox != null) && textbox.Enabled && !textbox.ReadOnly && (textbox.SelectionLength > 0);
 			}
 		}
 
-		public bool CanSelectAll {
+		public static bool CanSelectAll {
 			get {
 				var textbox = GetTextBox();
 				return (textbox != null) && textbox.CanSelect;
 			}
 		}
 
-		public void DoCut() {
+		public static void DoCut() {
 			var textbox = GetTextBox();
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
@@ -87,7 +81,7 @@ namespace Jgr.Gui {
 			if (SendMessage(textbox.Handle, WM_CUT, 0, 0) != 0) throw new Win32Exception();
 		}
 
-		public void DoCopy() {
+		public static void DoCopy() {
 			var textbox = GetTextBox();
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
@@ -95,7 +89,7 @@ namespace Jgr.Gui {
 			if (SendMessage(textbox.Handle, WM_COPY, 0, 0) != 0) throw new Win32Exception();
 		}
 
-		public void DoPaste() {
+		public static void DoPaste() {
 			var textbox = GetTextBox();
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
@@ -103,7 +97,7 @@ namespace Jgr.Gui {
 			if (SendMessage(textbox.Handle, WM_PASTE, 0, 0) != 0) throw new Win32Exception();
 		}
 
-		public void DoDelete() {
+		public static void DoDelete() {
 			var textbox = GetTextBox();
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
@@ -111,7 +105,7 @@ namespace Jgr.Gui {
 			if (SendMessage(textbox.Handle, WM_CLEAR, 0, 0) != 0) throw new Win32Exception();
 		}
 
-		public void DoSelectAll() {
+		public static void DoSelectAll() {
 			var textbox = GetTextBox();
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");

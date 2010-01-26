@@ -110,8 +110,8 @@ namespace Jgr.Grammar {
 		internal FsmState(Operator op, bool isReference, bool isStructure) {
 			Op = op;
 			Next = new List<FsmState>();
-			IsReference = Op is ReferenceOperator;
-			IsStructure = !IsReference;
+			IsReference = isReference;
+			IsStructure = isStructure;
 		}
 
 		internal virtual string OpString() {

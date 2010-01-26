@@ -26,7 +26,6 @@ namespace SimisEditor
 	{
 		static TraceSwitch TraceSwitch = new TraceSwitch("editor", "Trace Editor");
 
-		EditState EditState;
 		string Filename = "";
 		string FilenameTitle {
 			get {
@@ -55,7 +54,6 @@ namespace SimisEditor
 		}
 
 		void InitializeEditor() {
-			EditState = new EditState(this);
 			ToolStripManager.Renderer = new ToolStripNativeRenderer();
 		}
 
