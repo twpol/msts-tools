@@ -5,9 +5,11 @@
 			<Word>bnf</Word>
 			<Word>fsm</Word>
 			<Word>jgr</Word>
+			<Word>msts</Word>
 			<Word>plex</Word>
 			<Word>renderer</Word>
 			<Word>simis</Word>
+			<Word>unclosable</Word>
 		</Recognized>
 	</Words>
 </Dictionary>

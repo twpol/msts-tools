@@ -7,6 +7,6 @@ using System;
 
 namespace Jgr {
 	[AttributeUsage(AttributeTargets.Class)]
-	public class ImmutableAttribute : Attribute {
+	public sealed class ImmutableAttribute : Attribute {
 	}
 }

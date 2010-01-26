@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Jgr.Grammar {
 	public class Fsm {
-		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.fsm", "Trace Fsm and FsmState");
+		internal static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.fsm", "Trace Fsm and FsmState");
 
 		public FsmState Root { get; private set; }
 
@@ -99,11 +99,15 @@ namespace Jgr.Grammar {
 	public class FsmState {
 		public Operator Op { get; private set; }
 		public List<FsmState> Next { get; private set; }
-		public bool IsReference { get; protected set; }
-		public bool IsStructure { get; protected set; }
+		public readonly bool IsReference;
+		public readonly bool IsStructure;
 		public int Index { get; internal set; }
 
-		internal FsmState(Operator op) {
+		internal FsmState(Operator op)
+			: this(op, op is ReferenceOperator, !(op is ReferenceOperator)) {
+		}
+
+		internal FsmState(Operator op, bool isReference, bool isStructure) {
 			Op = op;
 			Next = new List<FsmState>();
 			IsReference = Op is ReferenceOperator;
@@ -199,9 +203,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateStart : FsmState {
 		internal FsmStateStart()
-			: base(null) {
-			IsReference = false;
-			IsStructure = false;
+			: base(null, false, false) {
 		}
 
 		internal FsmStateStart(IEnumerable<FsmState> state)
@@ -217,9 +219,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateFinish : FsmState {
 		internal FsmStateFinish()
-			: base(null) {
-			IsReference = false;
-			IsStructure = false;
+			: base(null, false, false) {
 		}
 
 		internal override string OpString() {
@@ -230,10 +230,8 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateUnlink : FsmState {
 		internal FsmStateUnlink(FsmState state)
-			: base(null) {
+			: base(null, false, false) {
 			Next.Add(state);
-			IsReference = false;
-			IsStructure = false;
 		}
 
 		internal override string OpString() {
