@@ -34,7 +34,7 @@ namespace Tests {
 		///A test for BufferedInMemoryStream Constructor
 		///</summary>
 		[TestMethod]
-		public void _ctorTest() {
+		public void ConstructorTest() {
 			Stream stream = new MemoryStream(new byte[1024]);
 			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
 			Assert.AreEqual(0, stream.Position, "Base stream must not be read from.");

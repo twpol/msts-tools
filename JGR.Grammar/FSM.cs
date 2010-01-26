@@ -114,7 +114,7 @@ namespace Jgr.Grammar {
 			if (IsReference) {
 				return ((ReferenceOperator)Op).Reference;
 			}
-			return "(" + (Op != null ? Op.Op.ToString().ToLower() : "null") + ")";
+			return "(" + (Op != null ? Op.Op.ToString().ToUpperInvariant() : "null") + ")";
 		}
 
 		public virtual bool HasNext {
