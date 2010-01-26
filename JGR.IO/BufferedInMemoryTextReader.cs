@@ -90,7 +90,7 @@ namespace Jgr.IO
 				ReadChunk(ChunkSize);
 				var posR = Memory.IndexOf('\r', (int)MemoryPosition);
 				var posN = Memory.IndexOf('\n', (int)MemoryPosition);
-				var posNL = Memory.IndexOf(Environment.NewLine, (int)MemoryPosition);
+				var posNL = Memory.IndexOf(Environment.NewLine, (int)MemoryPosition, StringComparison.Ordinal);
 				poses = new int[] { posR, posN, posNL };
 				// If the incomming TextReader has run out, we have to bail no matter what.
 				if (Incomming.Peek() == -1) break;

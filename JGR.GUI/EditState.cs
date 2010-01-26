@@ -35,7 +35,7 @@ namespace Jgr.Gui {
 			return Control.FromHandle(handle);
 		}
 
-		TextBox GetTextBox() {
+		static TextBox GetTextBox() {
 			var control = GetFocusedControl();
 			var textbox = control as TextBox;
 			if (textbox != null) {

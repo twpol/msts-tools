@@ -13,7 +13,7 @@ namespace Jgr.Grammar
 {
 	public class Bnf
 	{
-		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.bnf", "Trace Bnf and BnfState");
+		internal static TraceSwitch TraceSwitch = new TraceSwitch("jgr.grammar.bnf", "Trace Bnf and BnfState");
 
 		public string FileName { get; private set; }
 
@@ -194,7 +194,7 @@ namespace Jgr.Grammar
 				return new NamedReferenceOperator(nrop.Name, nrop.Reference);
 			}
 			var rop = op as ReferenceOperator;
-			if (op is ReferenceOperator) {
+			if (rop != null) {
 				if (Bnf.Definitions.ContainsKey(rop.Reference)) {
 					return ExpandReferences(Bnf.Definitions[rop.Reference].Expression);
 				}

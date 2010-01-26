@@ -28,7 +28,7 @@ namespace Jgr.IO.Parser
 		bool TextBlockEmpty;
 		Stack<long> BlockStarts;
 		BnfState BnfState;
-		public static readonly string SafeTokenCharacters = "._!/-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		public const string SafeTokenCharacters = "._!/-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		public SimisWriter(Stream stream, SimisProvider provider, SimisFormat simisFormat, SimisStreamFormat format, bool compressed) {
 			if (!stream.CanWrite) throw new InvalidDataException("Stream must support writing.");
@@ -135,7 +135,7 @@ namespace Jgr.IO.Parser
 						} else {
 							BinaryWriter.Write(' ');
 						}
-						if (token.Float.ToString("G6", CultureInfo.InvariantCulture).IndexOf("E") >= 0) {
+						if (token.Float.ToString("G6", CultureInfo.InvariantCulture).IndexOf("E", StringComparison.OrdinalIgnoreCase) >= 0) {
 							BinaryWriter.Write(token.Float.ToString("0.#####e000", CultureInfo.InvariantCulture).ToCharArray());
 						} else {
 							BinaryWriter.Write(token.Float.ToString("G6", CultureInfo.InvariantCulture).ToCharArray());
