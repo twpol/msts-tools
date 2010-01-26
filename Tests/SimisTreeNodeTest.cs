@@ -34,7 +34,7 @@ namespace Tests {
 		///A test for SimisTreeNode Constructor
 		///</summary>
 		[TestMethod]
-		public void _ctorTest1() {
+		public void ConstructorTest1() {
 			SimisTreeNode target = new SimisTreeNode("type", "name", new SimisTreeNode[0]);
 			Assert.AreEqual("type", target.Type);
 			Assert.AreEqual("name", target.Name);
@@ -45,7 +45,7 @@ namespace Tests {
 		///A test for SimisTreeNode Constructor
 		///</summary>
 		[TestMethod]
-		public void _ctorTest() {
+		public void ConstructorTest() {
 			SimisTreeNode target = new SimisTreeNode("type", "name");
 			Assert.AreEqual("type", target.Type);
 			Assert.AreEqual("name", target.Name);

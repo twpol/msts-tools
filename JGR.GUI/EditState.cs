@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -26,7 +27,7 @@ namespace Jgr.Gui {
 		const int WM_PASTE = 0x0302;
 		const int WM_CLEAR = 0x0303;
 
-		Control GetFocusedControl() {
+		static Control GetFocusedControl() {
 			var handle = GetFocus();
 			if (handle == IntPtr.Zero) {
 				return null;
@@ -36,8 +37,9 @@ namespace Jgr.Gui {
 
 		TextBox GetTextBox() {
 			var control = GetFocusedControl();
-			if (control is TextBox) {
-				return control as TextBox;
+			var textbox = control as TextBox;
+			if (textbox != null) {
+				return textbox;
 			}
 			return null;
 		}
@@ -82,7 +84,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			SendMessage(textbox.Handle, WM_CUT, 0, 0);
+			if (SendMessage(textbox.Handle, WM_CUT, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public void DoCopy() {
@@ -90,7 +92,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			SendMessage(textbox.Handle, WM_COPY, 0, 0);
+			if (SendMessage(textbox.Handle, WM_COPY, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public void DoPaste() {
@@ -98,7 +100,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			SendMessage(textbox.Handle, WM_PASTE, 0, 0);
+			if (SendMessage(textbox.Handle, WM_PASTE, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public void DoDelete() {
@@ -106,7 +108,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			SendMessage(textbox.Handle, WM_CLEAR, 0, 0);
+			if (SendMessage(textbox.Handle, WM_CLEAR, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public void DoSelectAll() {

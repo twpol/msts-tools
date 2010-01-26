@@ -33,7 +33,7 @@ namespace Tests {
 		///A test for BufferedInMemoryTextReader Constructor
 		///</summary>
 		[TestMethod]
-		public void _ctorTest() {
+		public void ConstructorTest() {
 			TextReader reader = new StringReader("abcdef");
 			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
 		}

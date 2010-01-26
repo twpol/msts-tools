@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -72,13 +73,13 @@ namespace Jgr
 
 			var xml = XDocument.Load(XmlReader.Create(response.GetResponseStream()));
 
-			var item = xml.Element("rss").Element("channel").Elements("item").Where<XElement>(x => x.Element("title").Value.StartsWith("Released: " + ReleaseName) || x.Element("title").Value.StartsWith("Updated Release: " + ReleaseName)).OrderBy<XElement, long>(x => DateTime.Parse(x.Element("pubDate").Value).Ticks).LastOrDefault();
+			var item = xml.Element("rss").Element("channel").Elements("item").Where(x => x.Element("title").Value.StartsWith("Released: " + ReleaseName, StringComparison.OrdinalIgnoreCase) || x.Element("title").Value.StartsWith("Updated Release: " + ReleaseName, StringComparison.OrdinalIgnoreCase)).OrderBy(x => DateTime.Parse(x.Element("pubDate").Value, CultureInfo.InvariantCulture).Ticks).LastOrDefault();
 			if (null == item) return;
 
 			HasLatestVersion = true;
-			LatestVersionTitle = item.Element("title").Value.Substring(item.Element("title").Value.IndexOf(": ") + 2);
+			LatestVersionTitle = item.Element("title").Value.Substring(item.Element("title").Value.IndexOf(": ", StringComparison.Ordinal) + 2);
 			LatestVersionUri = new Uri(item.Element("link").Value);
-			IsNewVersion = DateTime.Parse(item.Element("pubDate").Value) > CurrentVersionReleaseDate;
+			IsNewVersion = DateTime.Parse(item.Element("pubDate").Value, CultureInfo.InvariantCulture) > CurrentVersionReleaseDate;
 		}
 	}
 }

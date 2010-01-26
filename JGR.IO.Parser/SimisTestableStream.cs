@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -49,8 +50,7 @@ namespace Jgr.IO.Parser
 
 			if (streamCompressed) {
 				// This is a compressed stream. Read in the uncompressed size and DEFLATE the rest.
-				var uncompressedSize = binaryReader.ReadUInt32();
-				var streamLength = binaryReader.BaseStream.Position + uncompressedSize;
+				binaryReader.ReadUInt32();
 				{
 					var signature = String.Join("", binaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
 					if (signature != "@@@@") {
@@ -144,10 +144,10 @@ namespace Jgr.IO.Parser
 							}
 							double value;
 							if (((bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ':') || (bite == ' ') || (bite == ')')) && double.TryParse(numberString, out value)) {
-								if (value.ToString("G6").IndexOf("E") >= 0) {
-									binaryWriter.Write(value.ToString("0.#####e000").ToCharArray());
+								if (value.ToString("G6", CultureInfo.InvariantCulture).IndexOf("E", StringComparison.OrdinalIgnoreCase) >= 0) {
+									binaryWriter.Write(value.ToString("0.#####e000", CultureInfo.InvariantCulture).ToCharArray());
 								} else {
-									binaryWriter.Write(value.ToString("G6").ToCharArray());
+									binaryWriter.Write(value.ToString("G6", CultureInfo.InvariantCulture).ToCharArray());
 								}
 								inWhitespace = false;
 							} else {

@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -77,14 +78,14 @@ namespace Jgr.IO.Parser
 			reader.BaseStream.Position = originalPosition;
 		}
 
-		static string FormatExceptionData(char[] data, bool dataBinary, long dataBase, long offset, long length) {
+		static string FormatExceptionData(char[] data, bool dataBinary, long offset, long length) {
 			var formattedText = "";
 			if (dataBinary) {
 				var formattedHex = "";
 				var formattedChar = "";
 				for (var i = 0; i < length; i++) {
 					formattedHex += (i % 4 == 0 ? "   " : " ");
-					formattedHex += ((int)data[i + offset]).ToString("X2");
+					formattedHex += ((int)data[i + offset]).ToString("X2", CultureInfo.CurrentCulture);
 					formattedChar += (data[i + offset] < 32 || data[i + offset] >= 128 ? '.' : data[i + offset]);
 					if (i % 16 == 15) {
 						formattedText += formattedHex.Substring(1) + "  " + formattedChar + "\r\n";
@@ -94,17 +95,17 @@ namespace Jgr.IO.Parser
 				}
 				if (formattedHex.Length > 0) formattedText += (formattedHex.Substring(1) + "                                                       ").Substring(0, 55) + "  " + formattedChar + "\r\n";
 			} else {
-				formattedText = "  " + String.Join("", data.Select<char, string>(c => c < 32 && c != 9 && c != 10 && c != 13 ? "." : c.ToString()).ToArray<string>(), (int)offset, (int)length).Replace("\t", "    ").Replace("\n", "\n  ") + "\r\n";
+				formattedText = "  " + String.Join("", data.Select(c => c < 32 && c != 9 && c != 10 && c != 13 ? "." : c.ToString()).ToArray(), (int)offset, (int)length).Replace("\t", "    ").Replace("\n", "\n  ") + "\r\n";
 			}
 			return (formattedText.Length > 2 ? formattedText.Substring(0, formattedText.Length - 2) : formattedText);
 		}
 
 		public override string ToString() {
-			return "From 0x" + ExceptionAddressPrefix.ToString("X8") + " - data preceding failure:\r\n" + FormatExceptionData(ExceptionData, ExceptionBinary, ExceptionAddressPrefix, 0, ExceptionLengthPrefix) + "\r\n\r\n"
+			return "From 0x" + ExceptionAddressPrefix.ToString("X8", CultureInfo.CurrentCulture) + " - data preceding failure:\r\n" + FormatExceptionData(ExceptionData, ExceptionBinary, 0, ExceptionLengthPrefix) + "\r\n\r\n"
 				+ (ExceptionLength > 0 ?
-					"From 0x" + ExceptionAddress.ToString("X8")      + " - data at failure:\r\n"        + FormatExceptionData(ExceptionData, ExceptionBinary, ExceptionAddress, ExceptionLengthPrefix, ExceptionLength) + "\r\n\r\n"
+					"From 0x" + ExceptionAddress.ToString("X8", CultureInfo.CurrentCulture) + " - data at failure:\r\n" + FormatExceptionData(ExceptionData, ExceptionBinary, ExceptionLengthPrefix, ExceptionLength) + "\r\n\r\n"
 					: "")
-				+ "From 0x" + ExceptionAddressSuffix.ToString("X8")  + " - data following failure:\r\n" + FormatExceptionData(ExceptionData, ExceptionBinary, ExceptionAddressSuffix, ExceptionLengthPrefix + ExceptionLength, ExceptionLengthSuffix) + "\r\n\r\n"
+				+ "From 0x" + ExceptionAddressSuffix.ToString("X8", CultureInfo.CurrentCulture) + " - data following failure:\r\n" + FormatExceptionData(ExceptionData, ExceptionBinary, ExceptionLengthPrefix + ExceptionLength, ExceptionLengthSuffix) + "\r\n\r\n"
 				+ base.ToString();
 		}
 	}

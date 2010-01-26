@@ -32,7 +32,7 @@ namespace Tests {
 		///A test for ByteEncoding Constructor
 		///</summary>
 		[TestMethod]
-		public void _ctorTest() {
+		public void ConstructorTest() {
 			ByteEncoding target = new ByteEncoding();
 		}
 
