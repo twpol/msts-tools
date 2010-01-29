@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="AutoCenterWindows.cs" />
     <Compile Include="EditState.cs" />
+    <Compile Include="NativeMethods.cs" />
     <Compile Include="ToolStripNativeRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

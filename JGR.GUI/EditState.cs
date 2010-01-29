@@ -5,24 +5,17 @@
 
 using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Jgr.Gui {
 	public static class EditState {
-		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-		internal static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
-
-		[DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.Winapi)]
-		internal static extern IntPtr GetFocus();
-
 		const int WM_CUT = 0x0300;
 		const int WM_COPY = 0x0301;
 		const int WM_PASTE = 0x0302;
 		const int WM_CLEAR = 0x0303;
 
 		static Control GetFocusedControl() {
-			var handle = GetFocus();
+			var handle = NativeMethods.GetFocus();
 			if (handle == IntPtr.Zero) {
 				return null;
 			}
@@ -78,7 +71,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			if (SendMessage(textbox.Handle, WM_CUT, 0, 0) != 0) throw new Win32Exception();
+			if (NativeMethods.SendMessage(textbox.Handle, WM_CUT, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public static void DoCopy() {
@@ -86,7 +79,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			if (SendMessage(textbox.Handle, WM_COPY, 0, 0) != 0) throw new Win32Exception();
+			if (NativeMethods.SendMessage(textbox.Handle, WM_COPY, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public static void DoPaste() {
@@ -94,7 +87,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			if (SendMessage(textbox.Handle, WM_PASTE, 0, 0) != 0) throw new Win32Exception();
+			if (NativeMethods.SendMessage(textbox.Handle, WM_PASTE, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public static void DoDelete() {
@@ -102,7 +95,7 @@ namespace Jgr.Gui {
 			if (textbox == null) {
 				throw new InvalidOperationException("Non-TextBbox control is focused.");
 			}
-			if (SendMessage(textbox.Handle, WM_CLEAR, 0, 0) != 0) throw new Win32Exception();
+			if (NativeMethods.SendMessage(textbox.Handle, WM_CLEAR, 0, 0) != 0) throw new Win32Exception();
 		}
 
 		public static void DoSelectAll() {
