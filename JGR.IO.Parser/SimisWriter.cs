@@ -146,8 +146,8 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.String:
-						// Special-case Skip(...) and Comment(...) blocks which are not parsed.
-						if (token.String.Replace(" ", "").StartsWith("Skip(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("Comment(", StringComparison.OrdinalIgnoreCase)) {
+						// Special-case SKIP(...), _SKIP(...), _INFO(...) and COMMENT(...) blocks which are not parsed.
+						if (token.String.Replace(" ", "").StartsWith("SKIP(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("_SKIP(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("_INFO(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("COMMENT(", StringComparison.OrdinalIgnoreCase)) {
 							if (!TextBlocked) {
 								BinaryWriter.Write("\r\n".ToCharArray());
 							}
