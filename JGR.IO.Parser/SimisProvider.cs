@@ -98,11 +98,20 @@ namespace Jgr.IO.Parser {
 		string Extension;
 
 		public SimisProviderForFile(SimisProvider baseProvider, string fileName) : base() {
-			Extension = Path.GetExtension(fileName);
+			var inputFileName = Path.GetFileName(fileName);
+			var inputExtension = Path.GetExtension(fileName);
 
 			TokenNames = baseProvider.TokenNames;
 			TokenIds = baseProvider.TokenIds;
-			Formats = new List<SimisFormat>(baseProvider.Formats.Where(f => Extension.Equals("." + f.Extension, StringComparison.OrdinalIgnoreCase)));
+			// We allow extensions (e.g. "trk") and filenames (e.g. "tsection.dat") in SimisFormat.Extension. If there is a filename match, we should
+			// use that and only that; otherwise, any extension matches are in.
+			if (baseProvider.Formats.Any(f => inputFileName.Equals(f.Extension, StringComparison.OrdinalIgnoreCase))) {
+				Formats = new List<SimisFormat>(baseProvider.Formats.Where(f => inputFileName.Equals(f.Extension, StringComparison.OrdinalIgnoreCase)));
+				Extension = inputFileName;
+			} else {
+				Formats = new List<SimisFormat>(baseProvider.Formats.Where(f => inputExtension.Equals("." + f.Extension, StringComparison.OrdinalIgnoreCase)));
+				Extension = inputExtension;
+			}
 		}
 
 		public override string ToString() {

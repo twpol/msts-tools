@@ -151,7 +151,7 @@ namespace Normalize
 				return;
 			}
 			var outFormat = "{0,-40:S}  {1,-15:S}  {2,-15:S}";
-			Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, "Format Name", "File Extension", "Internal Type"));
+			Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, "Format Name", "File Type", "Internal Type"));
 			Console.WriteLine(String.Empty.PadLeft(40 + 2 + 15 + 2 + 15 + 2, '='));
 			foreach (var format in provider.Formats) {
 				Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, format.Name, format.Extension, format.Format));
@@ -221,30 +221,38 @@ namespace Normalize
 			var totalCount = new TestFormatCount();
 			var supportedCount = new TestFormatCount();
 			var formatCounts = new Dictionary<string, TestFormatCount>();
-			//var messageLog = new BufferedMessageSource();
 			var timeStart = DateTime.Now;
 
 			foreach (var file in files) {
-				totalCount.Total++;
-
-				var extension = Path.GetExtension(file).ToUpperInvariant();
-				if (!formatCounts.ContainsKey(extension)) {
-					var fileProvider = provider.GetForPath(file);
-					if (fileProvider.Formats.Count == 0) {
-						continue;
+				var formatCount = new TestFormatCount();
+				Func<SimisFormat, TestFormatCount> GetFormatFor = (simisFormat) => {
+					var formatName = simisFormat.Name;
+					if (!formatCounts.ContainsKey(formatName)) {
+						formatCounts[formatName] = new TestFormatCount() { FormatName = formatName, SortKey = formatName };
 					}
-					formatCounts[extension] = new TestFormatCount() { FormatName = fileProvider.Formats[0].Name };
-					formatCounts[extension].SortKey = formatCounts[extension].FormatName;
-				}
-				var formatCount = formatCounts[extension];
-
-				supportedCount.Total++;
-				formatCount.Total++;
+					return formatCounts[formatName];
+				};
 
 				var success = true;
 				var newFile = new SimisFile(file, provider);
 				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
 				Stream saveStream = new MemoryStream();
+
+				{
+					totalCount.Total++;
+					var reader = new SimisReader(readStream, provider.GetForPath(file));
+					try {
+						reader.ReadToken();
+					} catch (ReaderException) {
+					}
+					if (reader.SimisFormat == null) {
+						continue;
+					}
+					readStream.Position = 0;
+					formatCount = GetFormatFor(reader.SimisFormat);
+					supportedCount.Total++;
+					formatCount.Total++;
+				}
 
 				// First, read the file in.
 				if (success) {
