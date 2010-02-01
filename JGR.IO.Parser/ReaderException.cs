@@ -32,50 +32,52 @@ namespace Jgr.IO.Parser
 
 		ReaderException(BinaryReader reader, bool binary, int exceptionOffset, int exceptionLength, string message, Exception innerException)
 			: base(message, innerException) {
-			// Record the original address and exception address for later.
-			var originalPosition = reader.BaseStream.Position;
-			ExceptionAddress = originalPosition + exceptionOffset;
-			ExceptionBinary = binary;
-			// Read 1 character in so we can measure its length. Remember to reset the stream position.
-			reader.BaseStream.Position = 0;
-			reader.ReadChar();
-			var charLength = reader.BaseStream.Position;
-			reader.BaseStream.Position = ExceptionAddress;
-			// The prefix and suffix should be 64 characters long.
-			var ffixLength = 64 * charLength;
-			// Position stream at the prefix start, or the start of the stream if it would underflow.
-			if (reader.BaseStream.Position > ffixLength) {
-				reader.BaseStream.Position -= ffixLength;
-			} else {
+			if (reader.BaseStream.Length > 0) {
+				// Record the original address and exception address for later.
+				var originalPosition = reader.BaseStream.Position;
+				ExceptionAddress = originalPosition + exceptionOffset;
+				ExceptionBinary = binary;
+				// Read 1 character in so we can measure its length. Remember to reset the stream position.
 				reader.BaseStream.Position = 0;
+				reader.ReadChar();
+				var charLength = reader.BaseStream.Position;
+				reader.BaseStream.Position = ExceptionAddress;
+				// The prefix and suffix should be 64 characters long.
+				var ffixLength = 64 * charLength;
+				// Position stream at the prefix start, or the start of the stream if it would underflow.
+				if (reader.BaseStream.Position > ffixLength) {
+					reader.BaseStream.Position -= ffixLength;
+				} else {
+					reader.BaseStream.Position = 0;
+				}
+				List<char> data = new List<char>();
+				// Record the addresses of the prefix and suffix.
+				ExceptionAddressPrefix = reader.BaseStream.Position;
+				ExceptionAddressSuffix = ExceptionAddress + exceptionLength;
+				// Read in prefix data until we reach the exception address, recording the prefix length as the number of characters.
+				while (reader.BaseStream.Position < ExceptionAddress) {
+					data.Add(reader.ReadChar());
+					ExceptionLengthPrefix++;
+				}
+				// Reset position to exception address, in case we've got <1 character over.
+				reader.BaseStream.Position = ExceptionAddress;
+				// Read in exception data until we reach address + length, recording the exception length as the number of characters.
+				while (reader.BaseStream.Position < ExceptionAddress + exceptionLength) {
+					data.Add(reader.ReadChar());
+					ExceptionLength++;
+				}
+				// Reset position to exception suffix address.
+				reader.BaseStream.Position = ExceptionAddressSuffix;
+				// Read in suffix data until we run out of stream or reach address + length + suffx length, recording the suffix length as the number of characters.
+				while ((reader.PeekChar() != -1) && (reader.BaseStream.Position < ExceptionAddress + exceptionLength + ffixLength)) {
+					data.Add(reader.ReadChar());
+					ExceptionLengthSuffix++;
+				}
+				// Convert the character list into an array for use in ToString();
+				ExceptionData = data.ToArray();
+				// Reset reader in case anything else wants to play with it.
+				reader.BaseStream.Position = originalPosition;
 			}
-			List<char> data = new List<char>();
-			// Record the addresses of the prefix and suffix.
-			ExceptionAddressPrefix = reader.BaseStream.Position;
-			ExceptionAddressSuffix = ExceptionAddress + exceptionLength;
-			// Read in prefix data until we reach the exception address, recording the prefix length as the number of characters.
-			while (reader.BaseStream.Position < ExceptionAddress) {
-				data.Add(reader.ReadChar());
-				ExceptionLengthPrefix++;
-			}
-			// Reset position to exception address, in case we've got <1 character over.
-			reader.BaseStream.Position = ExceptionAddress;
-			// Read in exception data until we reach address + length, recording the exception length as the number of characters.
-			while (reader.BaseStream.Position < ExceptionAddress + exceptionLength) {
-				data.Add(reader.ReadChar());
-				ExceptionLength++;
-			}
-			// Reset position to exception suffix address.
-			reader.BaseStream.Position = ExceptionAddressSuffix;
-			// Read in suffix data until we run out of stream or reach address + length + suffx length, recording the suffix length as the number of characters.
-			while ((reader.PeekChar() != -1) && (reader.BaseStream.Position < ExceptionAddress + exceptionLength + ffixLength)) {
-				data.Add(reader.ReadChar());
-				ExceptionLengthSuffix++;
-			}
-			// Convert the character list into an array for use in ToString();
-			ExceptionData = data.ToArray();
-			// Reset reader in case anything else wants to play with it.
-			reader.BaseStream.Position = originalPosition;
 		}
 
 		static string FormatExceptionData(char[] data, bool dataBinary, long offset, long length) {
