@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Jgr.Gui {
+	/// <summary>
+	/// Specifies when <see cref="AutoCenterWindows"/> should stop operations.
+	/// </summary>
 	public enum AutoCenterWindowsMode {
 		AllWindows,
 		FirstWindowOnly

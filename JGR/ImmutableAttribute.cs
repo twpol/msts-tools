@@ -6,6 +6,9 @@
 using System;
 
 namespace Jgr {
+	/// <summary>
+	/// Indicates that the class is intended to be immutable.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Class)]
 	public sealed class ImmutableAttribute : Attribute {
 	}

@@ -8,6 +8,9 @@ using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace Jgr.Gui {
+	/// <summary>
+	/// Static class to determin and perform the available editing operations (cut, copy, paste, delete, select all) on the focused control.
+	/// </summary>
 	public static class EditState {
 		const int WM_CUT = 0x0300;
 		const int WM_COPY = 0x0301;

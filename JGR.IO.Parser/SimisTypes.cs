@@ -5,6 +5,9 @@
 
 namespace Jgr.IO.Parser
 {
+	/// <summary>
+	/// Specifies whether the Simis stream is binary or text, with the option for auto-detection in certain cases.
+	/// </summary>
 	public enum SimisStreamFormat
 	{
 		AutoDetect,
@@ -12,6 +15,9 @@ namespace Jgr.IO.Parser
 		Text
 	}
 
+	/// <summary>
+	/// Defines all the possible tokens found in a Simis stream.
+	/// </summary>
 	public enum SimisTokenKind
 	{
 		None,
@@ -27,6 +33,24 @@ namespace Jgr.IO.Parser
 		Float
 	}
 
+	/// <summary>
+	/// Represents a single token found in a Simis stream.
+	/// </summary>
+	/// <remarks>
+	/// <para>A token always has a <see cref="Kind"/>, but the other properties vary by <see cref="SimisTokenKind"/>:</para>
+	/// <list type="unordered">
+	/// <item>For <see cref="SimisTokenKind.Block"/>, a <see cref="Type"/> is always set, and a <see cref="Name"/> might be set.</item>
+	/// <item>For <see cref="SimisTokenKind.BlockBegin"/>, no other properties will be set.</item>
+	/// <item>For <see cref="SimisTokenKind.BlockEnd"/>, no other properties will be set.</item>
+	/// <item>For <see cref="SimisTokenKind.String"/>, <see cref="Type"/> is set to <code>"string"</code> and <see cref="String"/> contains the string literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// <item>For <see cref="SimisTokenKind.IntegerUnsigned"/>, <see cref="Type"/> is set to <code>"uint"</code> and <see cref="IntegerUnsigned"/> contains the numeric literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// <item>For <see cref="SimisTokenKind.IntegerSigned"/>, <see cref="Type"/> is set to <code>"sint"</code> and <see cref="IntegerSigned"/> contains the numeric literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// <item>For <see cref="SimisTokenKind.IntegerDWord"/>, <see cref="Type"/> is set to <code>"dword"</code> and <see cref="IntegerDWord"/> contains the numeric literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// <item>For <see cref="SimisTokenKind.IntegerWord"/>, <see cref="Type"/> is set to <code>"word"</code> and <see cref="IntegerDWord"/> contains the numeric literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// <item>For <see cref="SimisTokenKind.IntegerByte"/>, <see cref="Type"/> is set to <code>"byte"</code> and <see cref="IntegerDWord"/> contains the numeric literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// <item>For <see cref="SimisTokenKind.Float"/>, <see cref="Type"/> is set to <code>"float"</code> and <see cref="Float"/> contains the numeric literal found. If the token is named in the BNF, <see cref="Name"/> will be set to that name.</item>
+	/// </list>
+	/// </remarks>
 	public class SimisToken
 	{
 		public SimisToken() {

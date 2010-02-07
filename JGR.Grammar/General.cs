@@ -15,6 +15,9 @@ namespace Jgr.Grammar {
 		LogicalAnd
 	}
 
+	/// <summary>
+	/// Base class for all operators within an expression.
+	/// </summary>
 	[Immutable]
 	public abstract class Operator : ICloneable {
 		public OperatorType Op { get; private set; }
@@ -32,6 +35,9 @@ namespace Jgr.Grammar {
 		#endregion
 	}
 
+	/// <summary>
+	/// Operator which represents a reference to an object, as defined by the caller.
+	/// </summary>
 	[Immutable]
 	public class ReferenceOperator : Operator {
 		public string Reference { get; private set; }
@@ -54,6 +60,9 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents a reference to an object, with its own name, as defined by the caller.
+	/// </summary>
 	[Immutable]
 	public class NamedReferenceOperator : ReferenceOperator {
 		public string Name { get; private set; }
@@ -72,6 +81,9 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents a literal string.
+	/// </summary>
 	[Immutable]
 	public class StringOperator : Operator {
 		public string Value { get; private set; }
@@ -90,6 +102,9 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents all unary operations (operations on a single expression).
+	/// </summary>
 	[Immutable]
 	public abstract class UnaryOperator : Operator {
 		public Operator Right { get; private set; }
@@ -104,6 +119,9 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents an optional expression.
+	/// </summary>
 	[Immutable]
 	public class OptionalOperator : UnaryOperator {
 		public OptionalOperator(Operator right)
@@ -119,6 +137,9 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents a repeating (one or more times) expression.
+	/// </summary>
 	[Immutable]
 	public class RepeatOperator : UnaryOperator {
 		public RepeatOperator(Operator right)
@@ -134,12 +155,15 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents all binary operations (operations on two expressions).
+	/// </summary>
 	[Immutable]
-	public abstract class LogicalOperator : Operator {
+	public abstract class BinaryOperator : Operator {
 		public Operator Left { get; private set; }
 		public Operator Right { get; private set; }
 
-		protected LogicalOperator(OperatorType op, Operator left, Operator right)
+		protected BinaryOperator(OperatorType op, Operator left, Operator right)
 			: base(op) {
 			Left = left;
 			Right = right;
@@ -150,8 +174,11 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents a logical "and" operation.
+	/// </summary>
 	[Immutable]
-	public class LogicalAndOperator : LogicalOperator {
+	public class LogicalAndOperator : BinaryOperator {
 		public LogicalAndOperator(Operator left, Operator right)
 			: base(OperatorType.LogicalAnd, left, right) {
 		}
@@ -165,8 +192,11 @@ namespace Jgr.Grammar {
 		}
 	}
 
+	/// <summary>
+	/// Operator which represents a logical "or" operation.
+	/// </summary>
 	[Immutable]
-	public class LogicalOrOperator : LogicalOperator {
+	public class LogicalOrOperator : BinaryOperator {
 		public LogicalOrOperator(Operator left, Operator right)
 			: base(OperatorType.LogicalOr, left, right) {
 		}
