@@ -9,6 +9,9 @@ using System.IO;
 
 namespace Jgr.IO.Parser
 {
+	/// <summary>
+	/// A support class for using <see cref="SimisReader"/> and <see cref="SimisWriter"/> with on-disk files and editing capabilities.
+	/// </summary>
 	public class SimisFile
 	{
 		public string FileName { get; set; }
@@ -29,6 +32,12 @@ namespace Jgr.IO.Parser
 			SimisProvider = provider.GetForPath(fileName);
 		}
 
+		/// <summary>
+		/// Gets or sets the root <see cref="SimisTreeNode"/> for the tree read or written by this class.
+		/// </summary>
+		/// <remarks>
+		/// <para>Setting the <see cref="Tree"/> will add to the available undo buffers and reset the redo buffers.</para>
+		/// </remarks>
 		public SimisTreeNode Tree {
 			get {
 				return _Tree;
@@ -46,28 +55,46 @@ namespace Jgr.IO.Parser
 			_Tree = newTree;
 		}
 
+		/// <summary>
+		/// Switches to the previous <see cref="SimisTreeNode"/> root.
+		/// </summary>
 		public void Undo() {
 			RedoBuffer.Push(_Tree);
 			_Tree = UndoBuffer.Pop();
 		}
 
+		/// <summary>
+		/// Switches to the next <see cref="SimisTreeNode"/> root.
+		/// </summary>
 		public void Redo() {
 			UndoBuffer.Push(_Tree);
 			_Tree = RedoBuffer.Pop();
 		}
 
+		/// <summary>
+		/// Gets a <see cref="bool"/> indicating whether undo is available.
+		/// </summary>
 		public bool CanUndo {
 			get {
 				return UndoBuffer.Count > 0;
 			}
 		}
 
+		/// <summary>
+		/// Gets a <see cref="bool"/> indicating whether redo is available.
+		/// </summary>
 		public bool CanRedo {
 			get {
 				return RedoBuffer.Count > 0;
 			}
 		}
 
+		/// <summary>
+		/// Reads the file specified in <see cref="FileName"/> into the <see cref="Tree"/>.
+		/// </summary>
+		/// <remarks>
+		/// <para>This operation will reset the undo and redo buffers if it succeeds.</para>
+		/// </remarks>
 		public void ReadFile() {
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
@@ -78,6 +105,13 @@ namespace Jgr.IO.Parser
 			}
 		}
 
+		/// <summary>
+		/// Reads any readable <see cref="Stream"/> into the <see cref="Tree"/>.
+		/// </summary>
+		/// <param name="stream">The <see cref="Stream"/> to read from.</param>
+		/// <remarks>
+		/// <para>This operation will reset the undo and redo buffers if it succeeds.</para>
+		/// </remarks>
 		public void ReadStream(Stream stream) {
 			var reader = new SimisReader(new BufferedInMemoryStream(stream), SimisProvider, SimisFormat);
 
@@ -131,6 +165,9 @@ namespace Jgr.IO.Parser
 			ResetUndo(tree);
 		}
 
+		/// <summary>
+		/// Writes the <see cref="Tree"/> out to the file specified in <see cref="FileName"/>.
+		/// </summary>
 		public void WriteFile() {
 			try {
 				using (var fileStream = File.Create(FileName)) {
@@ -141,6 +178,10 @@ namespace Jgr.IO.Parser
 			}
 		}
 
+		/// <summary>
+		/// Writes the <see cref="Tree"/> to any writable <see cref="Stream"/>.
+		/// </summary>
+		/// <param name="stream">The <see cref="Stream"/> to write to.</param>
 		public void WriteStream(Stream stream) {
 			var writer = new SimisWriter(stream, SimisProvider, SimisFormat, StreamFormat, StreamCompressed);
 			foreach (var child in Tree) {
