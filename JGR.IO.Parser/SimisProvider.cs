@@ -22,9 +22,21 @@ namespace Jgr.IO.Parser {
 		}
 	}
 
+	/// <summary>
+	/// Loads and stores data necessary for processing Simis files: token name-id mappings and all the <see cref="SimisFormat"/>s.
+	/// </summary>
 	public class SimisProvider {
+		/// <summary>
+		/// Provides a mapping of token IDs (as <see cref="uint"/>) to token names (as <see cref="string"/>).
+		/// </summary>
 		public Dictionary<uint, string> TokenNames { get; protected set; }
+		/// <summary>
+		/// Provides a mapping of token names (as <see cref="string"/>) to token IDs (as <see cref="uint"/>).
+		/// </summary>
 		public Dictionary<string, uint> TokenIds { get; protected set; }
+		/// <summary>
+		/// Provides a collection of <see cref="SimisFormat"/>s which have been loaded.
+		/// </summary>
 		public List<SimisFormat> Formats { get; protected set; }
 		Thread BackgroundLoader;
 		Exception LoadError;
@@ -45,6 +57,11 @@ namespace Jgr.IO.Parser {
 			if (LoadError != null) throw LoadError;
 		}
 
+		/// <summary>
+		/// Gets the subset of <see cref="SimisFormat"/>s appropriate for a given filename.
+		/// </summary>
+		/// <param name="fileName">The filename with which to restrict the formats. Does not need the path.</param>
+		/// <returns>A <see cref="SimisProvider"/> which only has <see cref="SimisFormat"/>s appropriate for the given filename.</returns>
 		public SimisProvider GetForPath(string fileName) {
 			return new SimisProviderForFile(this, fileName);
 		}
@@ -94,10 +111,13 @@ namespace Jgr.IO.Parser {
 		}
 	}
 
+	/// <summary>
+	/// A <see cref="SimisProvider"/> which contains only the subset of Simis formats appropriate for a given filename.
+	/// </summary>
 	public class SimisProviderForFile : SimisProvider {
 		string Extension;
 
-		public SimisProviderForFile(SimisProvider baseProvider, string fileName) : base() {
+		internal SimisProviderForFile(SimisProvider baseProvider, string fileName) : base() {
 			var inputFileName = Path.GetFileName(fileName);
 			var inputExtension = Path.GetExtension(fileName);
 

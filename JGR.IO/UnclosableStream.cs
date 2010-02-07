@@ -7,6 +7,15 @@ using System.IO;
 
 namespace Jgr.IO
 {
+	/// <summary>
+	/// A <see cref="Stream"/> which ignores calls to <see cref="Close"/> for stuations where a consumer of a stream assumes control which is undesired.
+	/// </summary>
+	/// <remarks>
+	/// <para>All methods and properties pass straight through to the underlying <see cref="Stream"/>, with just one exception: <see cref="Close"/>. This
+	/// method will do absolutely nothing. <see cref="UnclosableStream"/> should be used when a target accepting a <see cref="Stream"/> will close it but
+	/// this isn't desired; a common example is a <c>Reader</c>, e.g. <see cref="BinaryReader"/>, which often close the underlying <see cref="Stream"/>
+	/// when they are closed.</para>
+	/// </remarks>
 	public class UnclosableStream : Stream
 	{
 		Stream BaseStream;
@@ -15,12 +24,6 @@ namespace Jgr.IO
 		/// Initializes a new instance of the <see cref="UnclosableStream"/> class with a given underlying <see cref="Stream"/>.
 		/// </summary>
 		/// <param name="baseStream">The underlying <see cref="Stream"/> to wrap.</param>
-		/// <remarks>
-		/// <para>All methods and properties pass straight through to the underlying <see cref="Stream"/>, with just one exception: <see cref="Close"/>. This
-		/// method will do absolutely nothing. <see cref="UnclosableStream"/> should be used when a target accepting a <see cref="Stream"/> will close it but
-		/// this isn't desired; a common example is a <c>Reader</c>, e.g. <see cref="BinaryReader"/> - they often close the underlying <see cref="Stream"/>
-		/// when they are closed.</para>
-		/// </remarks>
 		public UnclosableStream(Stream baseStream) {
 			BaseStream = baseStream;
 		}

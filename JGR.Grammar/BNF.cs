@@ -211,7 +211,7 @@ namespace Jgr.Grammar
 			if (op is RepeatOperator) {
 				return new RepeatOperator(ExpandReferences(uop.Right));
 			}
-			var lop = op as LogicalOperator;
+			var lop = op as BinaryOperator;
 			if (op is LogicalOrOperator) {
 				return new LogicalOrOperator(ExpandReferences(lop.Left), ExpandReferences(lop.Right));
 			}

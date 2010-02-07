@@ -99,7 +99,7 @@ namespace Jgr.IO.Parser
 										if (uop != null) {
 											return scan(uop.Right, finder);
 										}
-										var lop = op as LogicalOperator;
+										var lop = op as BinaryOperator;
 										if (lop != null) {
 											return scan(lop.Left, finder).Concat(scan(lop.Right, finder));
 										}
