@@ -13,7 +13,7 @@ namespace Tests {
 	///This is a test class for SimisTreeNodeTest and is intended
 	///to contain all SimisTreeNodeTest Unit Tests
 	///</summary>
-	[TestClass()]
+	[TestClass]
 	public class SimisTreeNodeTest {
 		private TestContext testContextInstance;
 

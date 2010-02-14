@@ -12,7 +12,7 @@ namespace Tests {
 	///This is a test class for BufferedInMemoryTextReaderTest and is intended
 	///to contain all BufferedInMemoryTextReaderTest Unit Tests
 	///</summary>
-	[TestClass()]
+	[TestClass]
 	public class BufferedInMemoryTextReaderTest {
 		private TestContext testContextInstance;
 

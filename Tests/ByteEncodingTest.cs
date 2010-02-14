@@ -11,7 +11,7 @@ namespace Tests {
 	///This is a test class for ByteEncodingTest and is intended
 	///to contain all ByteEncodingTest Unit Tests
 	///</summary>
-	[TestClass()]
+	[TestClass]
 	public class ByteEncodingTest {
 		private TestContext testContextInstance;
 
