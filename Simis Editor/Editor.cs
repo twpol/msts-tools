@@ -149,8 +149,8 @@ namespace SimisEditor
 			UpdateMenu();
 		}
 
-		void OpenFile(string filename) {
-			if (!WaitForSimisProvider()) return;
+		bool OpenFile(string filename) {
+			if (!WaitForSimisProvider()) return false;
 			var newFile = new SimisFile(filename, SimisProvider);
 			try {
 				newFile.ReadFile();
@@ -158,13 +158,13 @@ namespace SimisEditor
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
 					ShowMessageBox(ex.ToString(), "Open File", MessageBoxIcon.Error);
 				}
-				return;
+				return false;
 			}
 
 			Filename = filename;
 			File = newFile;
 			SavedFileTree = File.Tree;
-			SelectNode(null);
+			SimisTree.SelectedNode = null;
 			ResyncSimisNodes();
 			SimisTree.ExpandAll();
 			if (SimisTree.Nodes.Count > 0) {
@@ -172,9 +172,10 @@ namespace SimisEditor
 			}
 			UpdateTitle();
 			UpdateMenu();
+			return true;
 		}
 
-		void SaveFile() {
+		bool SaveFile() {
 			if (File.FileName != Filename) {
 				File.FileName = Filename;
 			}
@@ -188,12 +189,13 @@ namespace SimisEditor
 						ShowMessageBox(ex.ToString(), "Save File", MessageBoxIcon.Error);
 					}
 				}
-				return;
+				return false;
 			}
 
 			SavedFileTree = File.Tree;
 			UpdateTitle();
 			UpdateMenu();
+			return true;
 		}
 
 		bool SaveFileIfModified() {
@@ -201,7 +203,9 @@ namespace SimisEditor
 				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
 					switch (ShowMessageBox("Do you want to save changes to '" + FilenameTitle + "'?", "", MessageBoxButtons.YesNoCancel)) {
 						case DialogResult.Yes:
-							SaveFile();
+							if (!SaveFile()) {
+								return false;
+							}
 							break;
 						case DialogResult.Cancel:
 							return false;
