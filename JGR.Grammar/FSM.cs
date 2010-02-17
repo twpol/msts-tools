@@ -99,7 +99,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmState {
 		public Operator Operator { get; private set; }
-		public Collection<FsmState> Next { get; private set; }
+		public List<FsmState> Next { get; private set; }
 		public readonly bool IsReference;
 		public readonly bool IsStructure;
 		public int Index { get; internal set; }
@@ -114,7 +114,7 @@ namespace Jgr.Grammar {
 
 		internal FsmState(Operator op, bool isReference, bool isStructure) {
 			Operator = op;
-			Next = new Collection<FsmState>();
+			Next = new List<FsmState>();
 			IsReference = isReference;
 			IsStructure = isStructure;
 
