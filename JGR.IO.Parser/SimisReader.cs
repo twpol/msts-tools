@@ -129,8 +129,8 @@ namespace Jgr.IO.Parser
 						} else if (rv.Kind != SimisTokenKind.None) {
 							if (rv.Type.Length > 0) {
 								BnfState.MoveTo(rv.Type);
-								if (BnfState.State.Op is NamedReferenceOperator) {
-									rv.Name = ((NamedReferenceOperator)BnfState.State.Op).Name;
+								if (BnfState.State.Operator is NamedReferenceOperator) {
+									rv.Name = ((NamedReferenceOperator)BnfState.State.Operator).Name;
 								}
 							}
 						} else {
@@ -151,8 +151,8 @@ namespace Jgr.IO.Parser
 					try {
 						if ((rv.Kind != SimisTokenKind.BlockBegin) && (rv.Kind != SimisTokenKind.BlockEnd)) {
 							BnfState.MoveTo(rv.Type);
-							if (BnfState.State.Op is NamedReferenceOperator) {
-								rv.Name = ((NamedReferenceOperator)BnfState.State.Op).Name;
+							if (BnfState.State.Operator is NamedReferenceOperator) {
+								rv.Name = ((NamedReferenceOperator)BnfState.State.Operator).Name;
 							}
 						} else {
 							throw new ReaderException(BinaryReader, true, PinReaderChanged(), "ReadTokenAsBinary returned invalid token type: " + rv.Type);

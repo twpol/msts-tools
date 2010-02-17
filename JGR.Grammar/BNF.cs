@@ -125,10 +125,10 @@ namespace Jgr.Grammar
 				IsEnterBlockTime = true;
 			} else {
 				var targets = ValidReferences;
-				var target = targets.FirstOrDefault(s => ((ReferenceOperator)s.Op).Reference == reference);
+				var target = targets.FirstOrDefault(s => ((ReferenceOperator)s.Operator).Reference == reference);
 				if (target == null) throw new BnfStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
 
-				var rop = (ReferenceOperator)target.Op;
+				var rop = (ReferenceOperator)target.Operator;
 				var old = Rules.Pop();
 				Rules.Push(new KeyValuePair<BnfProduction, FsmState>(old.Key, target));
 				if (Bnf.Productions.ContainsKey(rop.Reference)) {
