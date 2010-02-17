@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 
@@ -97,28 +98,60 @@ namespace Jgr.Grammar {
 
 	[Immutable]
 	public class FsmState {
-		public Operator Op { get; private set; }
-		public List<FsmState> Next { get; private set; }
+		public Operator Operator { get; private set; }
+		public Collection<FsmState> Next { get; private set; }
 		public readonly bool IsReference;
 		public readonly bool IsStructure;
 		public int Index { get; internal set; }
+		public readonly bool NextStateHasFinish = false;
+		public ReadOnlyCollection<FsmState> NextStates { get; private set; }
+		public ReadOnlyCollection<FsmState> NextReferences { get; private set; }
+		public ReadOnlyCollection<string> NextReferenceNames { get; private set; }
 
 		internal FsmState(Operator op)
 			: this(op, op is ReferenceOperator, !(op is ReferenceOperator)) {
 		}
 
 		internal FsmState(Operator op, bool isReference, bool isStructure) {
-			Op = op;
-			Next = new List<FsmState>();
+			Operator = op;
+			Next = new Collection<FsmState>();
 			IsReference = isReference;
 			IsStructure = isStructure;
+
+			var nextStates = new List<FsmState>();
+			var nextReferences = new List<FsmState>();
+			var nextReferenceNames = new List<string>();
+			foreach (var next in Next) {
+				if (next is FsmStateUnlink) {
+					nextStates.Add(next.Next[0]);
+					if (next.Next[0] is FsmStateFinish) {
+						NextStateHasFinish = true;
+					}
+					if (next.Next[0].IsReference) {
+						nextReferences.Add(next.Next[0]);
+						nextReferenceNames.Add(((ReferenceOperator)(next.Next[0].Operator)).Reference);
+					}
+				} else {
+					nextStates.Add(next);
+					if (next is FsmStateFinish) {
+						NextStateHasFinish = true;
+					}
+					if (next.IsReference) {
+						nextReferences.Add(next);
+						nextReferenceNames.Add(((ReferenceOperator)(next.Operator)).Reference);
+					}
+				}
+			}
+			NextStates = new ReadOnlyCollection<FsmState>(nextStates);
+			NextReferences = new ReadOnlyCollection<FsmState>(nextReferences);
+			NextReferenceNames = new ReadOnlyCollection<string>(nextReferenceNames);
 		}
 
 		internal virtual string OpString() {
 			if (IsReference) {
-				return ((ReferenceOperator)Op).Reference;
+				return ((ReferenceOperator)Operator).Reference;
 			}
-			return "(" + (Op != null ? Op.Op.ToString().ToUpperInvariant() : "null") + ")";
+			return "(" + (Operator != null ? Operator.Op.ToString().ToUpperInvariant() : "null") + ")";
 		}
 
 		public virtual bool HasNext {
@@ -135,68 +168,6 @@ namespace Jgr.Grammar {
 				rv += " -> {" + String.Join(", ", Next.Select<FsmState, string>(s => s.ToString()).ToArray<string>()) + "}";
 			}
 			return rv;
-		}
-
-		bool FilledCache = false;
-		List<FsmState> _NextStates;
-		bool _NextStateHasFinish = false;
-		List<FsmState> _NextReferences;
-		List<string> _NextReferenceNames;
-		void FillCache() {
-			if (FilledCache) return;
-			_NextStates = new List<FsmState>();
-			_NextReferences = new List<FsmState>();
-			_NextReferenceNames = new List<string>();
-			foreach (var next in Next) {
-				if (next is FsmStateUnlink) {
-					_NextStates.Add(next.Next[0]);
-					if (next.Next[0] is FsmStateFinish) {
-						_NextStateHasFinish = true;
-					}
-					if (next.Next[0].IsReference) {
-						_NextReferences.Add(next.Next[0]);
-						_NextReferenceNames.Add(((ReferenceOperator)(next.Next[0].Op)).Reference);
-					}
-				} else {
-					_NextStates.Add(next);
-					if (next is FsmStateFinish) {
-						_NextStateHasFinish = true;
-					}
-					if (next.IsReference) {
-						_NextReferences.Add(next);
-						_NextReferenceNames.Add(((ReferenceOperator)(next.Op)).Reference);
-					}
-				}
-			}
-			FilledCache = true;
-		}
-
-		public IEnumerable<FsmState> NextStates {
-			get {
-				FillCache();
-				return _NextStates;
-			}
-		}
-
-		public bool NextStateHasFinish {
-			get {
-				FillCache();
-				return _NextStateHasFinish;
-			}
-		}
-
-		public IEnumerable<FsmState> NextReferences {
-			get {
-				FillCache();
-				return _NextReferences;
-			}
-		}
-
-		public IEnumerable<string> NextReferenceNames {
-			get {
-				FillCache();
-				return _NextReferenceNames;
-			}
 		}
 	}
 
