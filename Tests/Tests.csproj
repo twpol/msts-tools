@@ -49,6 +49,7 @@
     <Compile Include="BufferedInMemoryStreamTest.cs" />
     <Compile Include="BufferedInMemoryTextReaderTest.cs" />
     <Compile Include="ByteEncodingTest.cs" />
+    <Compile Include="FsmTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimisTreeNodeTest.cs" />
     <Compile Include="TileTest.cs" />
