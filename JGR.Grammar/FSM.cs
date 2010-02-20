@@ -19,8 +19,8 @@ namespace Jgr.Grammar {
 			if (Fsm.TraceSwitch.TraceVerbose) {
 				Trace.WriteLine("BNF: " + expression);
 			}
-			Root = new FsmStateStart(CreateState(expression));
-			IndexUnlinks(Root);
+			Root = new FsmStateStart(ExpressionToFsm(expression));
+			IndexFsmUnlinks(Root);
 			if (Fsm.TraceSwitch.TraceVerbose) {
 				Trace.WriteLine("FSM: " + Root);
 			}
@@ -30,94 +30,117 @@ namespace Jgr.Grammar {
 			return Root.ToString();
 		}
 
-		List<FsmState> CreateState(Operator op) {
-			var states = new List<FsmState>();
+		IList<FsmState> ExpressionToFsm(Operator op) {
+			// Null operator -> <finish>
 			if (op == null) {
+				return new FsmState[] { new FsmStateFinish() };
+			}
+			// Optional operator -> {<op.right>, <finish>}
+			var oop = op as OptionalOperator;
+			if (oop != null) {
+				var states = new List<FsmState>(ExpressionToFsm(oop.Right));
 				states.Add(new FsmStateFinish());
 				return states;
 			}
-			var oop = op as OptionalOperator;
+			// Repeat operator -> {1:<op.right> -> {^1, <finish>}}
 			var rop = op as RepeatOperator;
-			var loop = op as LogicalOrOperator;
-			var laop = op as LogicalAndOperator;
-			if (oop != null) {
-				states.AddRange(CreateState(oop.Right));
-				states.Add(new FsmStateFinish());
-			} else if (rop != null) {
-				states.AddRange(CreateState(rop.Right));
-				LinkFinishes(states, () => {
-					var l = new List<FsmState>(states.Select<FsmState, FsmState>(s => new FsmStateUnlink(s)));
-					l.Add(new FsmStateFinish());
-					return l;
-				});
-			} else if (loop != null) {
-				states.AddRange(CreateState(loop.Left));
-				states.AddRange(CreateState(loop.Right));
-			} else if (laop != null) {
-				states.AddRange(CreateState(laop.Left));
-				LinkFinishes(states, () => CreateState(laop.Right));
-				// TODO: This can duplicate some branches of the FSM. We should CreateState for one branch and link the rest.
-			} else {
-				var state = new FsmState(op);
-				states.Add(state);
-				state.Next.Add(new FsmStateFinish());
+			if (rop != null) {
+				var states = new List<FsmState>(ExpressionToFsm(rop.Right));
+				return LinkFsmFinishes(states, states.Select<FsmState, FsmState>(s => new FsmStateUnlink(s)).Union(new FsmState[] { new FsmStateFinish() }).ToArray());
 			}
-			return states;
+			// Or operator -> {<op.left> -> <finish>, <op.right> -> <finish>}
+			var loop = op as LogicalOrOperator;
+			if (loop != null) {
+			    var states = new List<FsmState>(ExpressionToFsm(loop.Left));
+			    states.AddRange(ExpressionToFsm(loop.Right));
+			    return states;
+			}
+			// And operator -> <op.left> -> <op.right> -> <finish>
+			var laop = op as LogicalAndOperator;
+			if (laop != null) {
+				return LinkFsmFinishes(ExpressionToFsm(laop.Left), ExpressionToFsm(laop.Right));
+			}
+			// Any other operators -> op -> <finish>
+			return new FsmState[] { new FsmState(op, new FsmState[] { new FsmStateFinish() }) };
 		}
 
-		void LinkFinishes(List<FsmState> states, Func<List<FsmState>> makeNewStates) {
-			for (var i = 0; i < states.Count; i++) {
-				if (states[i] is FsmStateFinish) {
-					var newStates = makeNewStates();
-					states.RemoveAt(i);
-					states.InsertRange(i, newStates);
-					i += newStates.Count - 1;
-				} else if (states[i].HasNext) {
-					LinkFinishes(states[i].Next, makeNewStates);
+		IList<FsmState> LinkFsmFinishes(IList<FsmState> states, IList<FsmState> finishes) {
+			var rv = new List<FsmState>();
+			foreach (var state in states) {
+				if (state is FsmStateFinish) {
+					rv.AddRange(finishes);
+					for (var i = 0; i < finishes.Count; i++) {
+						if (!(finishes[i] is FsmStateUnlink) && !(finishes[i] is FsmStateFinish)) {
+							finishes[i] = new FsmStateUnlink(finishes[i]);
+						}
+					}
+				} else {
+					if (!(state is FsmStateUnlink)) {
+						// XXX Only place FsmState is not immutable, bah!
+						state.Next = LinkFsmFinishes(state.Next, finishes);
+						state.UpdateNextCache();
+					}
+					rv.Add(state);
 				}
 			}
+			return rv;
 		}
 
-		void IndexUnlinks(FsmState state) {
+		void IndexFsmUnlinks(FsmState state) {
 			var index = 0;
-			IndexUnlinks(ref index, state);
+			IndexFsmUnlinks(ref index, state);
 		}
 
-		void IndexUnlinks(ref int index, FsmState state) {
+		void IndexFsmUnlinks(ref int index, FsmState state) {
 			if (state is FsmStateUnlink) {
 				if (state.Next[0].Index == 0) {
 					state.Next[0].Index = ++index;
 				}
 			} else {
 				foreach (var next in state.Next) {
-					IndexUnlinks(ref index, next);
+					IndexFsmUnlinks(ref index, next);
 				}
 			}
 		}
 	}
 
-	[Immutable]
+	//[Immutable]
 	public class FsmState {
 		public Operator Operator { get; private set; }
-		public List<FsmState> Next { get; private set; }
+		// Uses ReadOnlyCollection<FsmState> so it's not mutable that way, but property can be assigned to.
+		public IList<FsmState> Next { get; set; }
 		public readonly bool IsReference;
 		public readonly bool IsStructure;
+		// Mutable by IndexFsmUnlinks for display linking.
 		public int Index { get; internal set; }
-		public readonly bool NextStateHasFinish = false;
-		public ReadOnlyCollection<FsmState> NextStates { get; private set; }
-		public ReadOnlyCollection<FsmState> NextReferences { get; private set; }
-		public ReadOnlyCollection<string> NextReferenceNames { get; private set; }
+		// Mutates when Next property assigned to.
+		public bool NextStateHasFinish { get; private set; }
+		// Mutates when Next property assigned to.
+		public IEnumerable<FsmState> NextStates { get; private set; }
+		// Mutates when Next property assigned to.
+		public IEnumerable<FsmState> NextReferences { get; private set; }
+		// Mutates when Next property assigned to.
+		public IEnumerable<string> NextReferenceNames { get; private set; }
 
-		internal FsmState(Operator op)
-			: this(op, op is ReferenceOperator, !(op is ReferenceOperator)) {
+		public FsmState(Operator op)
+			: this(op, new FsmState[0]) {
+			Debug.Assert(op != null);
 		}
 
-		internal FsmState(Operator op, bool isReference, bool isStructure) {
+		public FsmState(Operator op, IEnumerable<FsmState> nexts)
+			: this(op, op is ReferenceOperator, !(op is ReferenceOperator), nexts) {
+			Debug.Assert(op != null);
+		}
+
+		internal FsmState(Operator op, bool isReference, bool isStructure, IEnumerable<FsmState> nexts) {
 			Operator = op;
-			Next = new List<FsmState>();
 			IsReference = isReference;
 			IsStructure = isStructure;
+			Next = new ReadOnlyCollection<FsmState>(new List<FsmState>(nexts));
+			UpdateNextCache();
+		}
 
+		internal void UpdateNextCache() {
 			var nextStates = new List<FsmState>();
 			var nextReferences = new List<FsmState>();
 			var nextReferenceNames = new List<string>();
@@ -165,7 +188,7 @@ namespace Jgr.Grammar {
 			if (Next.Count == 1) {
 				rv += " -> " + Next[0].ToString();
 			} else if (Next.Count > 1) {
-				rv += " -> {" + String.Join(", ", Next.Select<FsmState, string>(s => s.ToString()).ToArray<string>()) + "}";
+				rv += " -> {" + String.Join(", ", Next.Select(s => s.ToString()).ToArray()) + "}";
 			}
 			return rv;
 		}
@@ -173,13 +196,8 @@ namespace Jgr.Grammar {
 
 	[Immutable]
 	public class FsmStateStart : FsmState {
-		internal FsmStateStart()
-			: base(null, false, false) {
-		}
-
-		internal FsmStateStart(IEnumerable<FsmState> state)
-			: this() {
-			Next.AddRange(state);
+		internal FsmStateStart(IEnumerable<FsmState> nexts)
+			: base(null, false, false, nexts) {
 		}
 
 		internal override string OpString() {
@@ -190,7 +208,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateFinish : FsmState {
 		internal FsmStateFinish()
-			: base(null, false, false) {
+			: base(null, false, false, new FsmState[0]) {
 		}
 
 		internal override string OpString() {
@@ -201,12 +219,11 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateUnlink : FsmState {
 		internal FsmStateUnlink(FsmState state)
-			: base(null, false, false) {
-			Next.Add(state);
+			: base(null, false, false, new FsmState[] { state }) {
 		}
 
 		internal override string OpString() {
-			return (Next.Count == 0 ? "^???" : "^" + Next[0].Index);
+			return "^" + Next[0].Index;
 		}
 
 		public override bool HasNext {
@@ -216,7 +233,7 @@ namespace Jgr.Grammar {
 		}
 
 		public override string ToString() {
-			return (Index > 0 ? Index + ":" : "") + OpString();
+			return OpString();
 		}
 	}
 }

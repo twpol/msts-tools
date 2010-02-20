@@ -1,14 +1,12 @@
 ﻿//------------------------------------------------------------------------------
-// Jgr.IO.Parser library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// Jgr.Msts library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Jgr.IO.Parser;
 using System.IO;
+using System.Linq;
+using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
 	public class Route {
