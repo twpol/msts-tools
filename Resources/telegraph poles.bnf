@@ -1,0 +1,18 @@
+/* File format information */
+FILE                          = :TPoleConfigData .
+FILE_NAME                     = "Telegraph Poles" .
+FILE_EXT                      = "telepole.dat" .
+FILE_TYPE                     = "r" .
+FILE_TYPE_VER                 = "1" .
+
+/* Base types */
+Filename                      ==> :string .
+Separation                    ==> :uint .
+Shadow                        ==> :string .
+Wire                          ==> :float :float :float .
+
+/* Format types */
+TPoleConfigData               ==> :uint,Count {:TPoleConfig} .
+TPoleConfig                   ==> :uint,WireCount :Filename :Shadow :Separation {:Wire} .
+
+EOF                           /* End of file */

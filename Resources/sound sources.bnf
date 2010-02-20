@@ -1,0 +1,15 @@
+/* File format information */
+FILE                          = {:Sound} .
+FILE_NAME                     = "Sound Sources" .
+FILE_EXT                      = "ssource.dat" .
+FILE_TYPE                     = "Z" .
+FILE_TYPE_VER                 = "1" .
+
+/* Base types */
+FileName                      ==> :string .
+Name                          ==> :string .
+
+/* Format types */
+Sound                         ==> :Name :FileName .
+
+EOF                           /* End of file */
