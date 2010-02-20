@@ -58,7 +58,7 @@ namespace Normalize
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /F[ORMATS]");
 			Console.WriteLine();
-			Console.WriteLine("  SIMISFILE /D[DUMP] [/V[ERBOSE]] [file ...]");
+			Console.WriteLine("  SIMISFILE /D[UMP] [/V[ERBOSE]] [file ...]");
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /N[ORMALIZE] [file ...]");
 			Console.WriteLine();

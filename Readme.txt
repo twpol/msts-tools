@@ -20,34 +20,20 @@ Getting Started
 Tools - Simis Editor v0.3
 =========================
 
+Graphical editor for individual Simis files.
+
 * What Works:
-  * File > Open... - opening supported file types:
-     * Activity (.act)
-     * Activity Save (.asv)    [New] [Uses :buffer type]
-     * Environment (.env)      [New]
-     * Hazard (.haz)           [New]
-     * IOM (.iom)              [New]
-     * Material Palette (.pal) [New]
-     * Path (.pat)
-     * Service (.srv)
-     * Shape (.s)              [Updated]
-     * Shape Detail (.sd)      [New]
-     * Sound Management (.sms)
-     * Terrain (.t)            [Updated] [Uses :buffer type]
-     * Traffic Pattern (.trf)
-     * World (.w)              [Updated]
-     * World Sound (.ws)
-     * Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
-  * File > Save, File > Save As... - saving files in Unicode text, binary or compressed binary. [New]
-  * Help > Reload Simis Resources - reloads all files from the "Resources" subdirectory (useful for testing). [New]
+  * File > Open... - opening supported file types (see below).
+  * File > Save, File > Save As... - saving files in Unicode text, binary or compressed binary.
+  * Edit > Undo, Edit > Redo, Edit > Cut, Edit > Copy, Edit > Paste, Edit > Delete, Edit > Select All - standard editing functions.
+  * Help > Reload Simis Resources - reloads all files from the "Resources" subdirectory (useful for testing).
   * All blocks and values in a file can be seen in the main tree view. 
-  * Values can be edited by selecting the block or value in the tree and using the Property Grid on the right. [New]
-  * Indirect file opening - dropping a supported file on "Simis Editor.exe" or the application window will open it. [New]
+  * Values can be edited by selecting the block or value in the tree and using the Property Grid on the right.
+  * Indirect file opening - dropping a supported file on "SimisEditor.exe" or the application window will open it.
 * What Doesn't Work (Yet):
   * Creating new files.
   * Opening other similar game files. More will be supported in future releases.
   * Editing the tree structure of files.
-  * Edit menu functions: undo, redo, cut, copy, paste, delete.
 
 
 Tools - Simis File
@@ -57,7 +43,7 @@ Performs operations on individual or collections of Simis files.
 
   SIMISFILE /F[ORMATS]
 
-  SIMISFILE /D[DUMP] [/V[ERBOSE]] [file ...]
+  SIMISFILE /D[UMP] [/V[ERBOSE]] [file ...]
 
   SIMISFILE /N[ORMALIZE] [file ...]
 
@@ -80,6 +66,43 @@ Performs operations on individual or collections of Simis files.
   file      One or more Simis files to process.
   dir       One or more directories containing Simis files. These will be
             scanned recursively.
+
+
+Support File Types
+==================
+
+* Activity (.act)                        [Updated]
+* Activity Save (.asv)                   [Updated] [Uses :buffer type]
+* Environment (.env)
+* Hazard (.haz)
+* IOM (.iom)
+* Material Palette (.pal)
+* Path (.pat)                            [Updated]
+* Route (.trk)                           [New]
+* Route Database (.rdb)                  [New]
+* Route Items (.rit)                     [New]
+* Route Markers (.mkr)                   [New]
+* Route REF (.ref)                       [New]
+* Service (.srv)                         [Updated]
+* Shape (.s)                             [Updated]
+* Shape Detail (.sd)                     [Updated]
+* Sound Management (.sms)                [Updated]
+* Sound Sources (ssource.dat)            [New]
+* Telegraph Poles (telepole.dat)         [New]
+* Terrain (.t)                           [Uses :buffer type]
+* Track Database (.tdb)                  [New]
+* Track Items (.tit)                     [New]
+* Track Sections (Global) (tsection.dat) [New]
+* Track Sections (Route) (tsection.dat)  [New]
+* Traffic Pattern (.trf)
+* Train (Consist) (.con)                 [New]
+* Train (Consist) Cab View (.cvf)        [New]
+* Train (Consist) Engine (.eng)          [New]
+* Train (Consist) Wagon (.wag)           [New]
+* World (.w)
+* World Sound (.ws)
+
+Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
 
 
 Version History
