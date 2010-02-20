@@ -1,0 +1,31 @@
+/* File format information */
+FILE                          = :TrackSections :TrackShapes .
+FILE_NAME                     = "Track Sections (Global)" .
+FILE_EXT                      = "tsection.dat" .
+FILE_TYPE                     = "F" .
+FILE_TYPE_VER                 = "0" .
+
+/* Base types */
+ClearanceDist                 ==> :float .
+CrossoverShape                ==> .
+FileName                      ==> :string .
+MainRoute                     ==> :uint .
+ManualJunctionShape           ==> .
+NumPaths                      ==> :uint .
+RoadShape                     ==> .
+SectionCurve                  ==> :float,Guage :float,Length .
+SectionIdx                    ==> :uint,SectionCount :float,OffsetX :float,offsetY :float,OffsetX :float,RotateY {:uint} .
+SectionSize                   ==> :float,Radius :float,Angle .
+SectionSkew                   ==> :float .
+TunnelShape                   ==> .
+WaterScoop                    ==> .
+
+/* Format types */
+TrackSections                 ==> :uint,NextIndex {:TrackSection} .
+TrackSection                  ==> :uint,Index [:SectionSize [:SectionCurve|:SectionSkew] [:WaterScoop]] .
+TrackShapes                   ==> :uint,NextIndex {:TrackShape} .
+TrackShape                    ==> :uint,Index [:FileName :NumPaths [:MainRoute [:ClearanceDist]] {:SectionIdx} [:CrossoverShape :XoverPts] [:ManualJunctionShape] [:RoadShape] [:TunnelShape]] .
+XoverPts                      ==> :uint,Count {:XoverPt} .
+XoverPt                       ==> :uint :uint :uint .
+
+EOF                           /* End of file */
