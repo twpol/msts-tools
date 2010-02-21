@@ -108,7 +108,7 @@ Note: Formats which use the :buffer type can be loaded but are not completely pa
 Version History
 ===============
 
---- ??? February 2010 ---
+--- 21st February 2010 ---
 * Simis Editor v0.3
   * Enabled Edit>Undo and Edit>Redo.
   * Undoing/redoing back to last saved state is identified as saved (no prompt on exit, etc.).
@@ -119,7 +119,7 @@ Version History
   * Added /DUMP option which prints out the node tree.
   * /NORMALIZE can normalize ACE files.
 * Libraries
-  * BNFs for Route (.trk), Route Database (.rdb), Route Items (.rit), Route Markers (.mkr), Route REF??? (.ref), Track Database (.tdb), Track Items (.tit), Train (Consist) (.con), Train (Consist) Cab View (.cvf), Train (Consist) Engine (.eng), Train (Consist) Wagon (.wag) added.
+  * BNFs for Route (.trk), Route Database (.rdb), Route Items (.rit), Route Markers (.mkr), Route REF (.ref), Sound Sources (ssource.dat), Telegraph Poles (telepole.dat), Track Database (.tdb), Track Items (.tit), Track Sections (Global) (tsection.dat), Track Sections (Route) (tsection.dat), Train (Consist) (.con), Train (Consist) Cab View (.cvf), Train (Consist) Engine (.eng), Train (Consist) Wagon (.wag) added.
   * Added new BNF types :word and :byte for exploratory work.
   * comment() and skip() blocks now count parentheses.
   * "-" and "/" no longer quoted in written files.
