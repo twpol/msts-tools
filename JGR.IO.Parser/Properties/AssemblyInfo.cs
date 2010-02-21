@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("JGR IO Parser library")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("JGR")]
-[assembly: AssemblyProduct("JGR IO Parser library")]
-[assembly: AssemblyCopyright("Copyright © JGR 2009")]
+[assembly: AssemblyCompany("James Ross")]
+[assembly: AssemblyProduct("MSTS Editors & Tools")]
+[assembly: AssemblyCopyright("© James Ross 2009, 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

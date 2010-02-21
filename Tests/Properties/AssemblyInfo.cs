@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("JS MSTS Editor Tests")]
+[assembly: AssemblyTitle("MSTS Editors & Tools Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("JGR")]
-[assembly: AssemblyProduct("JS MSTS Editor Tests")]
-[assembly: AssemblyCopyright("Copyright © JGR 2010")]
+[assembly: AssemblyCompany("James Ross")]
+[assembly: AssemblyProduct("MSTS Editors & Tools")]
+[assembly: AssemblyCopyright("© James Ross 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
