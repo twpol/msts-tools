@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("James Ross")]
-[assembly: AssemblyProduct("MSTS Editors & Tools")]
+[assembly: AssemblyProduct("Simis File")]
 [assembly: AssemblyCopyright("© James Ross 2009, 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
