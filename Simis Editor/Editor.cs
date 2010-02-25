@@ -112,8 +112,9 @@ namespace SimisEditor
 			var simisFormats = new List<List<string>>();
 			simisFormats.Add(new List<string>(new string[] { "All " + generalName }));
 			foreach (var format in SimisProvider.Formats) {
-				simisFormats[0].Add("*." + format.Extension);
-				simisFormats.Add(new List<string>(new string[] { format.Name + " files", "*." + format.Extension }));
+				var mask = format.Extension.Contains(".") ? format.Extension : "*." + format.Extension;
+				simisFormats[0].Add(mask);
+				simisFormats.Add(new List<string>(new string[] { format.Name + " files", mask }));
 			}
 			simisFormats.Add(new List<string>(new string[] { "All files", "*.*" }));
 			openFileDialog.Filter = String.Join("|", simisFormats.Select(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray());
