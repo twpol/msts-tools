@@ -46,14 +46,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Coordinates.cs" />
     <Compile Include="Route.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tile.cs" />
+    <Compile Include="RouteService.cs" />
+    <Compile Include="TrackService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JGR.IO.Parser\JGR.IO.Parser.csproj">
       <Project>{C0430CE2-1634-4E34-9170-5CF954E00965}</Project>
       <Name>JGR.IO.Parser</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\JGR.IO\JGR.IO.csproj">
+      <Project>{774CA6A0-E350-4A54-B74A-21FEF0361198}</Project>
+      <Name>JGR.IO</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\JGR\JGR.csproj">
+      <Project>{8A4E6830-F84F-4938-B261-F732B7C97C4F}</Project>
+      <Name>JGR</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

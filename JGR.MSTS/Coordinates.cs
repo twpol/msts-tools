@@ -7,18 +7,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 
 namespace Jgr.Msts {
-	public class MstsTile {
+	public class TileCoordinate {
 		public readonly int X;
 		public readonly int Y;
 		public readonly int Size;
-		public MstsTile(int x, int y)
+		public TileCoordinate(int x, int y)
 			: this(x, y, 1) {
 		}
-		public MstsTile(int x, int y, int size) {
+		public TileCoordinate(int x, int y, int size) {
 			X = x;
 			Y = y;
 			Size = size;
@@ -28,10 +26,10 @@ namespace Jgr.Msts {
 		}
 	}
 
-	public class Igh {
+	public class IghCoordinate {
 		public readonly double Line;
 		public readonly double Sample;
-		public Igh(double line, double sample) {
+		public IghCoordinate(double line, double sample) {
 			Line = line;
 			Sample = sample;
 		}
@@ -40,21 +38,21 @@ namespace Jgr.Msts {
 		}
 	}
 
-	public class LatLon {
-		public readonly double Lat;
-		public readonly double Lon;
-		public LatLon(double lat, double lon) {
-			Lat = lat;
-			Lon = lon;
+	public class LatitudeLongitudeCoordinate {
+		public readonly double Latitude;
+		public readonly double Longitude;
+		public LatitudeLongitudeCoordinate(double lat, double lon) {
+			Latitude = lat;
+			Longitude = lon;
 		}
 		public override string ToString() {
-			return "LL{" + Lat + " " + Lon + "}";
+			return "LL{" + Latitude + " " + Longitude + "}";
 		}
 	}
 
-	public class Tile {
+	public class Coordinates {
 		// Tile Name -> MSTS Tile.
-		public static MstsTile ConvertToTile(string tileName) {
+		public static TileCoordinate ConvertToTile(string tileName) {
 			var depthRight = new List<bool>();
 			var depthDown = new List<bool>();
 			// 0 1   4 5
@@ -85,11 +83,11 @@ namespace Jgr.Msts {
 				}
 			}
 
-			return new MstsTile(sample - 16384, 16384 - line - 1, (int)Math.Pow(2, 15 - depthDown.Count));
+			return new TileCoordinate(sample - 16384, 16384 - line - 1, (int)Math.Pow(2, 15 - depthDown.Count));
 		}
 
 		// MSTS Tile -> Tile Name.
-		public static string ConvertToTileName(MstsTile coordinates) {
+		public static string ConvertToTileName(TileCoordinate coordinates) {
 			var sample = coordinates.X + 16384;
 			var line = 16384 - coordinates.Y - 1;
 			var depthRight = new List<bool>();
@@ -115,16 +113,16 @@ namespace Jgr.Msts {
 		}
 
 		// MSTS Tile -> IGH
-		public static Igh ConvertToIgh(MstsTile coordinates, double tileX, double tileY) {
+		public static IghCoordinate ConvertToIgh(TileCoordinate coordinates, double tileX, double tileY) {
 			Debug.Assert(tileY >= 0, "tileY is off the top");
 			Debug.Assert(tileY <= 1, "tileY is off the bottom");
 			Debug.Assert(tileX >= 0, "tileX is off the left");
 			Debug.Assert(tileX <= 1, "tileX is off the right");
-			return new Igh(2048 * (16384 - coordinates.Y - 1 + tileY), 2048 * (coordinates.X + 16384 + tileX));
+			return new IghCoordinate(2048 * (16384 - coordinates.Y - 1 + tileY), 2048 * (coordinates.X + 16384 + tileX));
 		}
 
 		// IGH -> MSTS Tile
-		public static MstsTile ConvertToTile(Igh coordinates, out double tileX, out double tileY) {
+		public static TileCoordinate ConvertToTile(IghCoordinate coordinates, out double tileX, out double tileY) {
 			var x = coordinates.Sample / 2048;
 			var y = coordinates.Line / 2048;
 			tileX = x - Math.Floor(x);
@@ -133,17 +131,17 @@ namespace Jgr.Msts {
 			Debug.Assert(tileY <= 1, "tileY is off the bottom");
 			Debug.Assert(tileX >= 0, "tileX is off the left");
 			Debug.Assert(tileX <= 1, "tileX is off the right");
-			return new MstsTile((int)Math.Floor(x) - 16384, 16384 - (int)Math.Floor(y) - 1);
+			return new TileCoordinate((int)Math.Floor(x) - 16384, 16384 - (int)Math.Floor(y) - 1);
 		}
 
-		public static MstsTile ConvertToTile(Igh coordinates) {
+		public static TileCoordinate ConvertToTile(IghCoordinate coordinates) {
 			double tileX;
 			double tileY;
 			return ConvertToTile(coordinates, out tileX, out tileY);
 		}
 
 		// IGH -> Lat/Lon
-		public static LatLon ConvertToLatLon(Igh coordinates) {
+		public static LatitudeLongitudeCoordinate ConvertToLatLon(IghCoordinate coordinates) {
 			// Line/Sample -> Latitude/Longitude Algorithm
 			// Based on C code provided by the USGS, available at ftp://edcftp.cr.usgs.gov/pub/software/misc/gihll2ls.c.
 			// By D. Steinwand, HSTX/EROS Data Center, June, 1993.
@@ -257,11 +255,11 @@ namespace Jgr.Msts {
 
 			///////////////////////////////////////////////////////////////////
 
-			return new LatLon(lat * 180 / Math.PI, lon * 180 / Math.PI);
+			return new LatitudeLongitudeCoordinate(lat * 180 / Math.PI, lon * 180 / Math.PI);
 		}
 
 		// Lat/Lon -> MSTS IGH
-		public static Igh ConvertToIgh(LatLon coordinates) {
+		public static IghCoordinate ConvertToIgh(LatitudeLongitudeCoordinate coordinates) {
 			// Latitude/Longitude -> Line/Sample Algorithm
 			// Based on C code provided by the USGS, available at ftp://edcftp.cr.usgs.gov/pub/software/misc/gihll2ls.c.
 			// By D. Steinwand, HSTX/EROS Data Center, June, 1993.
@@ -287,13 +285,13 @@ namespace Jgr.Msts {
 				+(double)140 / 180 * Math.PI, /*  140.0 degrees */
 			};
 
-			Debug.Assert(coordinates.Lat >= -90, "latitude is off the bottom");
-			Debug.Assert(coordinates.Lat <= 90, "latitude is off the top");
-			Debug.Assert(coordinates.Lon >= -180, "longitude is off the left");
-			Debug.Assert(coordinates.Lon <= 180, "longitude is off the right");
+			Debug.Assert(coordinates.Latitude >= -90, "latitude is off the bottom");
+			Debug.Assert(coordinates.Latitude <= 90, "latitude is off the top");
+			Debug.Assert(coordinates.Longitude >= -180, "longitude is off the left");
+			Debug.Assert(coordinates.Longitude <= 180, "longitude is off the right");
 
-			double lat = coordinates.Lat * Math.PI / 180;
-			double lon = coordinates.Lon * Math.PI / 180;
+			double lat = coordinates.Latitude * Math.PI / 180;
+			double lon = coordinates.Longitude * Math.PI / 180;
 
 			const double parallel41 = ((double)40 + (44 / 60) + (11.8 / 3600)) / 180 * Math.PI; // 40deg 44' 11.8"
 			const double meridian20 = (double)20 / 180 * Math.PI;  // 20deg
@@ -367,7 +365,7 @@ namespace Jgr.Msts {
 			Debug.Assert(x >= -Math.PI, "x is off the left");
 			Debug.Assert(x <= +Math.PI, "x is off the right");
 
-			var igh = new Igh(imageTop - y * radius, x * radius - imageLeft);
+			var igh = new IghCoordinate(imageTop - y * radius, x * radius - imageLeft);
 
 			Debug.Assert(igh.Line >= 0, "line is off the top");
 			Debug.Assert(igh.Line <= imageHeight, "line is off the bottom");

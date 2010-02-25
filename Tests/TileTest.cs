@@ -37,8 +37,8 @@ namespace Tests {
 			var tileName = testContextInstance.DataRow["Tile"].ToString();
 			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
-			var expected = new MstsTile(x, y);
-			var actual = Tile.ConvertToTile(tileName);
+			var expected = new TileCoordinate(x, y);
+			var actual = Coordinates.ConvertToTile(tileName);
 			Assert.AreEqual(expected.X, actual.X);
 			Assert.AreEqual(expected.Y, actual.Y);
 		}
@@ -52,7 +52,7 @@ namespace Tests {
 			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
 			var expected = tileName;
-			var actual = Tile.ConvertToTileName(new MstsTile(x, y));
+			var actual = Coordinates.ConvertToTileName(new TileCoordinate(x, y));
 			Assert.AreEqual(expected, actual);
 		}
 
@@ -63,8 +63,8 @@ namespace Tests {
 		public void ConvertTileToIghRoundTripTest() {
 			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
-			var expected = new MstsTile(x, y);
-			var actual = Tile.ConvertToTile(Tile.ConvertToIgh(new MstsTile(x, y), 0, 0));
+			var expected = new TileCoordinate(x, y);
+			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new TileCoordinate(x, y), 0, 0));
 			Assert.AreEqual(expected.X, actual.X);
 			Assert.AreEqual(expected.Y, actual.Y);
 		}
@@ -78,10 +78,10 @@ namespace Tests {
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
 			var lat = double.Parse(testContextInstance.DataRow["Lat"].ToString());
 			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString());
-			var expected = new LatLon(lat, lon);
-			var actual = Tile.ConvertToLatLon(Tile.ConvertToIgh(new MstsTile(x, y), 0.5, 0.5));
-			Assert.AreEqual(expected.Lat, actual.Lat, 0.01);
-			Assert.AreEqual(expected.Lon, actual.Lon, 0.01);
+			var expected = new LatitudeLongitudeCoordinate(lat, lon);
+			var actual = Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(new TileCoordinate(x, y), 0.5, 0.5));
+			Assert.AreEqual(expected.Latitude, actual.Latitude, 0.01);
+			Assert.AreEqual(expected.Longitude, actual.Longitude, 0.01);
 		}
 
 		/// <summary>
@@ -93,8 +93,8 @@ namespace Tests {
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
 			var lat = double.Parse(testContextInstance.DataRow["Lat"].ToString());
 			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString());
-			var expected = new MstsTile(x, y);
-			var actual = Tile.ConvertToTile(Tile.ConvertToIgh(new LatLon(lat, lon)));
+			var expected = new TileCoordinate(x, y);
+			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(lat, lon)));
 			Assert.AreEqual(expected.X, actual.X);
 			Assert.AreEqual(expected.Y, actual.Y);
 		}
