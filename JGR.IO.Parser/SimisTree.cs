@@ -50,7 +50,7 @@ namespace Jgr.IO.Parser
 		/// Compares two nodes using only their <see cref="Type"/> and <see cref="Name"/>.
 		/// </summary>
 		/// <param name="value">Another <see cref="SimisTreeNode"/> to compare with.</param>
-		/// <returns><code>true</code> for matching nodes, <code>false</code> otherwise.</returns>
+		/// <returns><c>true</c> for matching nodes, <c>false</c> otherwise.</returns>
 		public bool EqualsByValue(object value) {
 			if ((value == null) || (GetType() != value.GetType())) return false;
 			var stn = value as SimisTreeNode;
@@ -74,6 +74,17 @@ namespace Jgr.IO.Parser
 				}
 				throw new ArgumentException("No children of the given type (or name for values) were found.", "type");
 			}
+		}
+
+		public bool Contains(string type) {
+			foreach (var child in this) {
+				if (child is SimisTreeNodeValue) {
+					if (child.Name == type) return true;
+				} else {
+					if (child.Type == type) return true;
+				}
+			}
+			return false;
 		}
 
 		int LastIndexOf(SimisTreeNode node) {
@@ -172,7 +183,7 @@ namespace Jgr.IO.Parser
 		/// <summary>
 		/// Gets the value from value nodes.
 		/// </summary>
-		/// <typeparam name="T">The expected <see cref="Type"/> (e.g. <code>uint</code>, <code>string</code>) of the value.</typeparam>
+		/// <typeparam name="T">The expected <see cref="Type"/> (e.g. <c>uint</c>, <c>string</c>) of the value.</typeparam>
 		/// <returns>The value of the node, cast to <see cref="T"/>.</returns>
 		public virtual T ToValue<T>() {
 			throw new NotImplementedException();
@@ -202,7 +213,7 @@ namespace Jgr.IO.Parser
 	}
 
 	/// <summary>
-	/// Represents all integer values (<code>uint</code>, <code>sint</code>, etc.) in a <see cref="SimisTreeNode"/> tree.
+	/// Represents all integer values (<c>uint</c>, <c>sint</c>, etc.) in a <see cref="SimisTreeNode"/> tree.
 	/// </summary>
 	[Immutable]
 	public abstract class SimisTreeNodeValueInteger : SimisTreeNodeValue
