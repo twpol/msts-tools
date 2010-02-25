@@ -51,6 +51,7 @@
     <Compile Include="BufferedInMemoryStream.cs" />
     <Compile Include="BufferedInMemoryTextReader.cs" />
     <Compile Include="ByteEncoding.cs" />
+    <Compile Include="FileFinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UnclosableStream.cs" />
   </ItemGroup>

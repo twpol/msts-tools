@@ -238,15 +238,12 @@ namespace Jgr.IO.Parser
 			}
 
 			var validStates = BnfState.ValidStates;
-			if (validStates.Contains(token)) {
+			if (validStates.Contains(token, StringComparer.InvariantCultureIgnoreCase)) {
 				// Token exactly matches a valid state transition, so let's use it.
-				rv.Type = token;
+				rv.Type = validStates.First(s => s.Equals(token, StringComparison.InvariantCultureIgnoreCase));
 				rv.Kind = SimisTokenKind.Block;
 
-				// Do lookahead for block name. Since we've moved BNFState already, it'll
-				// fall into the special BNFState.IsEnterBlockTime code if we have a
-				// possible string token. The only possible Kind values are thus
-				// BlockBegin, BlockEnd and Block. BlockEnd would be weird (and wrong).
+				// Do lookahead for block name.
 				PinReader();
 				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains((char)BinaryReader.PeekChar())) {
 					BinaryReader.ReadChar();

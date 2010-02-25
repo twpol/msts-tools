@@ -4,23 +4,39 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Jgr.IO.Parser;
+using Jgr.IO;
 
 namespace Jgr.Msts {
 	public class Route {
-		public string RootPath { get; private set; }
-		SimisProvider SimisProvider;
-		SimisFile TrackFile;
+		public readonly string RoutePath;
+		public readonly SimisProvider SimisProvider;
+		public readonly FileFinder Files;
+		public readonly TrackService TrackService;
+		readonly SimisFile TrackFile;
 
-		public Route(string path, SimisProvider simisProvider) {
-			RootPath = path;
+		public Route(string trackFile, SimisProvider simisProvider) {
+			RoutePath = Path.GetDirectoryName(trackFile);
 			SimisProvider = simisProvider;
+			// We can find things relative to the following:
+			// +-<msts>   <-- here
+			//   +-Global   <-- here
+			//   +-Routes
+			//     +-<route>   <-- here
+			//       +-Global   <-- here*
+			// * Allowed for route-specific global files; this is a feature for Open Rails Train Simulator (ORTS).
+			// Paths used to access files will usually contain 1 directory above, e.g. "activities\foo.act", to avoid
+			// unexpected and undesired collisions between files in <msts>, <msts>\Global and <msts>\Routes\<route>.
+			var mstsPath = Path.GetDirectoryName(Path.GetDirectoryName(RoutePath));
+			Files = new FileFinder(new string[] { RoutePath, Path.Combine(RoutePath, "Global"), mstsPath, Path.Combine(mstsPath, "Global") });
+			TrackService = new TrackService(Files, SimisProvider);
 
-			var tracks = Directory.GetFiles(path, "*.trk", SearchOption.TopDirectoryOnly).Where(n => n.EndsWith(".trk", StringComparison.OrdinalIgnoreCase));
-			if (tracks.Count() != 1) throw new ArgumentException("Path contains " + tracks.Count() + " .trk files; must be exactly 1.", "path");
-			TrackFile = new SimisFile(tracks.First(), SimisProvider);
+			TrackFile = new SimisFile(trackFile, SimisProvider);
 			TrackFile.ReadFile();
 		}
 
@@ -33,6 +49,13 @@ namespace Jgr.Msts {
 		public string Description {
 			get {
 				return TrackFile.Tree["Tr_RouteFile"]["Description"][0].ToValue<string>().Replace("\n", "\r\n");
+			}
+		}
+
+		public IEnumerable<string> Tiles {
+			get {
+				return from t in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
+					   select t.Substring(t.LastIndexOf('\\') + 1).TrimEnd('.', 't');
 			}
 		}
 	}
