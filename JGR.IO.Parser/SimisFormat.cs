@@ -18,11 +18,11 @@ namespace Jgr.IO.Parser
 		/// </summary>
 		public string Name { get; private set; }
 		/// <summary>
-		/// The file extension (e.g. <code>"dat"</code>) or filename (e.g. <code>"tsection.dat"</code>) to which this format applies.
+		/// The file extension (e.g. <c>"dat"</c>) or filename (e.g. <c>"tsection.dat"</c>) to which this format applies.
 		/// </summary>
 		public string Extension { get; private set; }
 		/// <summary>
-		/// The Simis stream format (e.g. <code>"a1"</code>) for this Simis format.
+		/// The Simis stream format (e.g. <c>"a1"</c>) for this Simis format.
 		/// </summary>
 		public string Format { get; private set; }
 		/// <summary>

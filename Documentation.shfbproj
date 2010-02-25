@@ -52,8 +52,9 @@
       </ComponentConfig>
     </ComponentConfigurations>
     <ApiFilter>
-      <Filter entryType="Namespace" fullName="SimisEditor" isExposed="False" xmlns="" />
-    </ApiFilter>
+      <Filter entryType="Namespace" fullName="MSTS_Route_Editor" isExposed="False" />
+<Filter entryType="Namespace" fullName="SimisEditor" isExposed="False" />
+<Filter entryType="Namespace" fullName="Tests" isExposed="False" /></ApiFilter>
     <FeedbackEMailAddress>silver%40warwickcompsoc.co.uk</FeedbackEMailAddress>
     <FeedbackEMailLinkText>James Ross</FeedbackEMailLinkText>
     <Preliminary>True</Preliminary>
