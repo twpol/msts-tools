@@ -14,18 +14,18 @@ ManualJunctionShape           ==> .
 NumPaths                      ==> :uint .
 RoadShape                     ==> .
 SectionCurve                  ==> :float,Guage :float,Length .
-SectionIdx                    ==> :uint,SectionCount :float,OffsetX :float,offsetY :float,OffsetX :float,RotateY {:uint} .
+SectionIdx                    ==> :uint,SectionCount :float,OffsetX :float,OffsetY :float,OffsetX :float,RotateY {:uint} .
 SectionSize                   ==> :float,Radius :float,Angle .
 SectionSkew                   ==> :float .
 TunnelShape                   ==> .
 WaterScoop                    ==> .
+XoverPt                       ==> :float :uint :float .
 
 /* Format types */
 TrackSections                 ==> :uint,NextIndex {:TrackSection} .
 TrackSection                  ==> :uint,Index [:SectionSize [:SectionCurve|:SectionSkew] [:WaterScoop]] .
 TrackShapes                   ==> :uint,NextIndex {:TrackShape} .
-TrackShape                    ==> :uint,Index [:FileName :NumPaths [:MainRoute [:ClearanceDist]] {:SectionIdx} [:CrossoverShape :XoverPts] [:ManualJunctionShape] [:RoadShape] [:TunnelShape]] .
+TrackShape                    ==> :uint,Index [:FileName {:ClearanceDist|:CrossoverShape|:MainRoute|:ManualJunctionShape|:NumPaths|:RoadShape|:SectionIdx|:TunnelShape|:XoverPts}] .
 XoverPts                      ==> :uint,Count {:XoverPt} .
-XoverPt                       ==> :uint :uint :uint .
 
 EOF                           /* End of file */
