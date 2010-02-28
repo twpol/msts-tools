@@ -34,8 +34,13 @@ namespace Jgr.Msts {
 						yield break;
 					}
 				}
-				foreach (var directory in Directory.GetDirectories(BasePath)) {
-					var filesLevel2 = Directory.GetFiles(Path.Combine(BasePath, directory), "*.trk", SearchOption.TopDirectoryOnly).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase));
+				var path = BasePath;
+				if (Directory.Exists(Path.Combine(path, "Routes"))) {
+					path = Path.Combine(path, "Routes");
+				}
+				var found = false;
+				foreach (var directory in Directory.GetDirectories(path)) {
+					var filesLevel2 = Directory.GetFiles(directory, "*.trk", SearchOption.TopDirectoryOnly).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase));
 					if (filesLevel2.Count() == 1) {
 						Route route = null;
 						try {
@@ -43,9 +48,13 @@ namespace Jgr.Msts {
 						} catch (FileException) {
 						}
 						if (route != null) {
+							found = true;
 							yield return route;
 						}
 					}
+				}
+				if (found) {
+					yield break;
 				}
 				foreach (var trackFile in Directory.GetFiles(BasePath, "*.trk", SearchOption.AllDirectories).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase))) {
 					Route route = null;

@@ -55,6 +55,31 @@ namespace SimisEditor
 
 		void InitializeEditor() {
 			ToolStripManager.Renderer = new ToolStripNativeRenderer();
+			foreach (ToolStripMenuItem item in menuStrip.Items) {
+				InitializeMenu(item);
+			}
+		}
+
+		void InitializeMenu(ToolStripItem toolStripItem) {
+			var menuItem = toolStripItem as ToolStripMenuItem;
+			if (menuItem == null) {
+				return;
+			}
+			if (!String.IsNullOrEmpty(menuItem.ToolTipText)) {
+				menuItem.MouseEnter += new EventHandler(toolStrip_Enter);
+				menuItem.MouseLeave += new EventHandler(toolStrip_Leave);
+			}
+			foreach (ToolStripItem item in menuItem.DropDown.Items) {
+				InitializeMenu(item);
+			}
+		}
+
+		void toolStrip_Enter(object sender, EventArgs e) {
+			statusBarLabel.Text = ((ToolStripMenuItem)sender).ToolTipText;
+		}
+
+		void toolStrip_Leave(object sender, EventArgs e) {
+			statusBarLabel.Text = "";
 		}
 
 		void InitializeNewVersionCheck() {

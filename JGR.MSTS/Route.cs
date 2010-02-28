@@ -3,21 +3,18 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Jgr.IO.Parser;
 using Jgr.IO;
+using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
 	public class Route {
-		public readonly string RoutePath;
 		public readonly SimisProvider SimisProvider;
+		public readonly string RoutePath;
 		public readonly FileFinder Files;
-		public readonly TrackService TrackService;
+		TrackService _TrackService;
 		readonly SimisFile TrackFile;
 
 		public Route(string trackFile, SimisProvider simisProvider) {
@@ -34,7 +31,6 @@ namespace Jgr.Msts {
 			// unexpected and undesired collisions between files in <msts>, <msts>\Global and <msts>\Routes\<route>.
 			var mstsPath = Path.GetDirectoryName(Path.GetDirectoryName(RoutePath));
 			Files = new FileFinder(new string[] { RoutePath, Path.Combine(RoutePath, "Global"), mstsPath, Path.Combine(mstsPath, "Global") });
-			TrackService = new TrackService(Files, SimisProvider);
 
 			TrackFile = new SimisFile(trackFile, SimisProvider);
 			TrackFile.ReadFile();
@@ -52,10 +48,21 @@ namespace Jgr.Msts {
 			}
 		}
 
-		public IEnumerable<string> Tiles {
+		public TrackService TrackService {
 			get {
-				return from t in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
-					   select t.Substring(t.LastIndexOf('\\') + 1).TrimEnd('.', 't');
+				if (_TrackService != null) {
+					return _TrackService;
+				}
+				_TrackService = new TrackService(Files, SimisProvider);
+				return _TrackService;
+			}
+		}
+
+		public IEnumerable<Tile> Tiles {
+			get {
+				// TODO: Cache the tiles by name or something. We should not be creating a new set every time!
+				return from tile in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
+					   select new Tile(Path.GetFileNameWithoutExtension(tile), this, SimisProvider);
 			}
 		}
 	}
