@@ -18,11 +18,17 @@ namespace Jgr.Msts {
 		public string Label;
 		public double X;
 		public double Z;
+		public double DW;
 		public double DX;
 		public double DY;
 		public double DZ;
-		public double DW;
 		public TrackShape Track;
+	}
+
+	class TileMarker {
+		public string Label;
+		public double X;
+		public double Z;
 	}
 
 	public class Tile {
@@ -33,6 +39,7 @@ namespace Jgr.Msts {
 		Image TerrainImage;
 		Image ObjectImage;
 		List<TileTrackSection> TrackSections;
+		List<TileMarker> Markers;
 
 		public Tile(string tileName, Route route, SimisProvider simisProvider) {
 			TileName = tileName;
@@ -40,9 +47,10 @@ namespace Jgr.Msts {
 			SimisProvider = simisProvider;
 			TileCoordinate = Coordinates.ConvertToTile(TileName);
 			TrackSections = new List<TileTrackSection>();
+			Markers = new List<TileMarker>();
 		}
 
-		public void RenderTerrainImage() {
+		public void RenderTerrain() {
 			string tileElevation = String.Format(@"{0}\Tiles\{1}_y.raw", Route.RoutePath, TileName);
 			string tileShadow = String.Format(@"{0}\Tiles\{1}_n.raw", Route.RoutePath, TileName);
 			string tileUnknown = String.Format(@"{0}\Tiles\{1}_e.raw", Route.RoutePath, TileName);
@@ -101,26 +109,28 @@ namespace Jgr.Msts {
 			return;
 		}
 
-		public void RenderObjectImage() {
+		public void RenderObjects() {
 			string worldFile = String.Format(@"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
 
-			var image = new Bitmap(256, 256);
+			var image = new Bitmap(2048, 2048);
 			using (var g = Graphics.FromImage(image)) {
 				if (File.Exists(worldFile)) {
+					var world = new SimisFile(worldFile, SimisProvider);
 					try {
-						var world = new SimisFile(worldFile, SimisProvider);
 						world.ReadFile();
-						foreach (var item in world.Tree["Tr_Worldfile"]) {
-							if ((item.Type != "TrackObj") && (item.Type != "Dyntrack")) {
-								try {
-									var position = item["Position"];
-									g.FillRectangle(Brushes.Yellow, image.Width * (position[0].ToValue<float>() + 1024) / 2048, image.Height * (-position[2].ToValue<float>() + 1024) / 2048, 1, 1);
-								} catch (ArgumentException) {
-								}
-							}
-						}
-					} catch (Exception e) {
-						g.DrawString(e.ToString(), SystemFonts.CaptionFont, Brushes.White, 0, 0);
+					} catch (FileException) {
+						return;
+					}
+					foreach (var item in world.Tree["Tr_Worldfile"].Where(n => n.Type != "TrackObj" && n.Type != "Dyntrack" && n.Contains("Position"))) {
+						var position = item["Position"];
+						g.FillRectangle(
+							item.Type == "Forrest" ? Brushes.Green :
+							item.Type == "LevelCr" ? Brushes.White :
+							item.Type == "Platform" ? Brushes.Blue :
+							item.Type == "Signal" ? Brushes.Red :
+							Brushes.Yellow,
+							(1024 + position[0].ToValue<float>()) / 2048 * image.Width,
+							(1024 - position[2].ToValue<float>()) / 2048 * image.Height, 1, 1);
 					}
 				}
 			}
@@ -129,158 +139,235 @@ namespace Jgr.Msts {
 			return;
 		}
 
-		public void RenderTrackImage() {
+		public void RenderTracksAndRoads() {
 			string worldFile = String.Format(@"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
 
 			if (File.Exists(worldFile)) {
+				var world = new SimisFile(worldFile, SimisProvider);
 				try {
-					var world = new SimisFile(worldFile, SimisProvider);
 					world.ReadFile();
-					foreach (var item in world.Tree["Tr_Worldfile"]) {
-						try {
-							if ((item.Type == "TrackObj") || (item.Type == "Dyntrack")) {
-								var position = item["Position"];
-								var direction = item["QDirection"];
-								var tts = new TileTrackSection() {
-									X = position[0].ToValue<float>(),
-									Z = position[2].ToValue<float>(),
-									DX = direction[0].ToValue<float>(),
-									DY = direction[1].ToValue<float>(),
-									DZ = direction[2].ToValue<float>(),
-									DW = direction[3].ToValue<float>(),
-								};
-								if (item.Type == "TrackObj") {
-									var filename = item["FileName"][0].ToValue<string>().ToLowerInvariant();
-									if (Route.TrackService.TrackShapesByFileName.ContainsKey(filename)) {
-										tts.Track = Route.TrackService.TrackShapesByFileName[filename];
-									} else {
-										tts.Label = filename;
-									}
-								} else {
-									var tpaths = new List<TrackPath>();
-									var tsections = new List<TrackSection>();
-									foreach (var section in item["TrackSections"].Where(n => n.Type == "TrackSection")) {
-										if (section[1].ToValue<int>() > 0) {
-											if (section["SectionCurve"][0].ToValue<uint>() != 0) {
-												// Curve.
-												tsections.Add(new TrackSection(0, 0, 0, true, section[3].ToValue<float>(), section[2].ToValue<float>()));
-											} else {
-												// Straight.
-												tsections.Add(new TrackSection(0, 0, section[2].ToValue<int>()));
-											}
-										}
-									}
-									tpaths.Add(new TrackPath(0, 0, 0, 0, tsections));
-									tts.Track = new TrackShape(0, "", 0, false, false, tpaths);
-								}
-								TrackSections.Add(tts);
-							}
-						} catch (ArgumentException) {
-						}
+				} catch (FileException) {
+					return;
+				}
+				foreach (var item in world.Tree["Tr_Worldfile"].Where(n => n.Type == "TrackObj" || n.Type == "Dyntrack")) {
+					// TODO: Make this work with Direction as well as QDirection.
+					if (!item.Contains("QDirection")) {
+						continue;
 					}
-				} catch (Exception) {
+					var position = item["Position"];
+					var direction = item["QDirection"];
+					var tts = new TileTrackSection() {
+						X = position[0].ToValue<float>(),
+						Z = position[2].ToValue<float>(),
+						DW = direction[0].ToValue<float>(),
+						DX = direction[1].ToValue<float>(),
+						DY = direction[2].ToValue<float>(),
+						DZ = direction[3].ToValue<float>(),
+					};
+					if (item.Type == "TrackObj") {
+						//var filename = item["FileName"][0].ToValue<string>().ToLowerInvariant();
+						//if (Route.TrackService.TrackShapesByFileName.ContainsKey(filename)) {
+						//    tts.Track = Route.TrackService.TrackShapesByFileName[filename];
+						//} else {
+						//    tts.Label = filename;
+						//}
+						var sectionIdx = item["SectionIdx"][0].ToValue<uint>();
+						if (Route.TrackService.TrackShapes.ContainsKey(sectionIdx)) {
+							tts.Track = Route.TrackService.TrackShapes[sectionIdx];
+						} else {
+							tts.Label = sectionIdx.ToString();
+						}
+					} else {
+						var tpaths = new List<TrackPath>();
+						var tsections = new List<TrackSection>();
+						foreach (var section in item["TrackSections"].Where(n => n.Type == "TrackSection")) {
+							if (section[1].ToValue<int>() > 0) {
+								if (section["SectionCurve"][0].ToValue<uint>() != 0) {
+									tsections.Add(new TrackSection(0, 0, 0, true, section[3].ToValue<float>(), section[2].ToValue<float>() * 180 / Math.PI));
+								} else {
+									tsections.Add(new TrackSection(0, 0, section[2].ToValue<float>()));
+								}
+							}
+						}
+						tpaths.Add(new TrackPath(0, 0, 0, 0, tsections));
+						tts.Track = new TrackShape(0, "", 0, false, false, tpaths, -1);
+					}
+					TrackSections.Add(tts);
 				}
 			}
 
 			return;
 		}
 
-		public void Render(Graphics g, int x, int y, int w, int h) {
-			if (TerrainImage != null) {
-				g.DrawImage(TerrainImage, x, y, w, h);
-			} else {
-				g.DrawLine(Pens.Black, x, y, x + w, y + h);
-				g.DrawLine(Pens.Black, x + w, y, x, y + h);
-			}
-			if (ObjectImage != null) {
-				g.DrawImage(ObjectImage, x, y, w, h);
-			}
-			foreach (var trackSection in TrackSections) {
-				if (!String.IsNullOrEmpty(trackSection.Label)) {
-					g.DrawString(trackSection.Label, SystemFonts.CaptionFont, Brushes.Black,
-						(int)(x + w * (0 + (trackSection.X + 1024) / 2048)),
-						(int)(y + h * (1 - (trackSection.Z + 1024) / 2048)));
+		public void RenderMarkers() {
+			string markersFile = String.Format(@"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
+
+			if (File.Exists(markersFile)) {
+				var markers = new SimisFile(markersFile, SimisProvider);
+				try {
+					markers.ReadFile();
+				} catch (FileException) {
+					return;
 				}
-				if (trackSection.Track != null) {
-					// Rotation matrix for quaternion (a, b, c, d).
-					//   [a^2+b^2-c^2-d^2  2bc-2ad          2bd+2ac        ]
-					//   [2bc+2ad          a^2-b^2+c^2-d^2  2cd-2ab        ]
-					//   [2bd-2ac          2cd+2ab          a^2-b^2-c^2+d^2]
-					// Rotation of 90 degrees right about the vector (0, 1, 0).
-					//   [0                0                -1             ]
-					//   [0                1                0              ]
-					//   [1                0                0              ]
-					var rx = 2 * trackSection.DY * trackSection.DW - 2 * trackSection.DX * trackSection.DZ;
-					var rz = trackSection.DX * trackSection.DX + trackSection.DY * trackSection.DY - trackSection.DZ * trackSection.DZ - trackSection.DW * trackSection.DW;
+				foreach (var marker in markers.Tree.Where(n => n.Type == "Marker")) {
+					var tileX = 0d;
+					var tileY = 0d;
+					var tileCoordinate = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(marker[1].ToValue<float>(), marker[0].ToValue<float>())), out tileX, out tileY);
+					if ((tileCoordinate.X == TileCoordinate.X) && (tileCoordinate.Y == TileCoordinate.Y)) {
+						Markers.Add(new TileMarker() { X = tileX, Z = tileY, Label = marker[2].ToValue<string>() });
+					}
+				}
+			}
 
-					//g.DrawLine(Pens.Yellow,
-					//    (float)(x + w * (1024 + trackSection.X) / 2048),
-					//    (float)(y + h * (1024 - trackSection.Z) / 2048),
-					//    x,
-					//    y);
+			return;
+		}
 
-					foreach (var path in trackSection.Track.Paths) {
-						var startX = trackSection.X - rx * path.X;
-						var startZ = trackSection.Z - rz * path.Z;
+		public void Render(Graphics g, uint layer, float x, float y, float w, float h) {
+			switch (layer) {
+				case 0:
+					g.DrawRectangle(Pens.LightGray, x, y, w, h);
+					break;
+				case 1:
+					if (TerrainImage != null) {
+						g.DrawImage(TerrainImage, x, y, w, h);
+					}
+					break;
+				case 2:
+					if (ObjectImage != null) {
+						g.DrawImage(ObjectImage, x, y, w, h);
+					}
+					break;
+				case 3:
+				case 4:
+					foreach (var trackSection in TrackSections) {
+						if (!String.IsNullOrEmpty(trackSection.Label)) {
+							g.DrawString(trackSection.Label, SystemFonts.CaptionFont, Brushes.Black,
+								(int)(x + w * (0 + (trackSection.X + 1024) / 2048)),
+								(int)(y + h * (1 - (trackSection.Z + 1024) / 2048)));
+						}
+						if (trackSection.Track == null) {
+							continue;
+						}
+						if (layer != (trackSection.Track.IsRoadShape ? 3 : 4)) {
+							continue;
+						}
 
-						foreach (var section in path.Sections) {
-							if (section.IsCurve) {
-								// Rotate 90 degrees left or right base ioon +ve or -ve angle (-ve angle = left).
-								var curveCenterX = startX - rz * section.Radius * Math.Sign(section.Angle);
-								var curveCenterZ = startZ + rx * section.Radius * Math.Sign(section.Angle);
-								// Rotate the center->start vector by the curve's angle.
-								var curveEndX = curveCenterX + (startX - curveCenterX) * Math.Cos(-section.Angle * Math.PI / 180) - (startZ - curveCenterZ) * Math.Sin(-section.Angle * Math.PI / 180);
-								var curveEndZ = curveCenterZ + (startX - curveCenterX) * Math.Sin(-section.Angle * Math.PI / 180) + (startZ - curveCenterZ) * Math.Cos(-section.Angle * Math.PI / 180);
-								// Work out the display angle.
-								var angleStart = (float)(Math.Asin((curveCenterX - startX) / section.Radius) * 180 / Math.PI);
-								//g.DrawLine(Pens.LightGray,
-								//    (float)(x + w * (1024 + startX) / 2048),
-								//    (float)(y + h * (1024 - startZ) / 2048),
-								//    (float)(x + w * (1024 + curveCenterX) / 2048),
-								//    (float)(y + h * (1024 - curveCenterZ) / 2048));
-								//g.DrawLine(Pens.LightGray,
-								//    (float)(x + w * (1024 + curveEndX) / 2048),
-								//    (float)(y + h * (1024 - curveEndZ) / 2048),
-								//    (float)(x + w * (1024 + curveCenterX) / 2048),
-								//    (float)(y + h * (1024 - curveCenterZ) / 2048));
-								//g.DrawLine(Pens.Blue,
-								//    (float)(x + w * (1024 + startX) / 2048),
-								//    (float)(y + h * (1024 - startZ) / 2048),
-								//    (float)(x + w * (1024 + curveEndX) / 2048),
-								//    (float)(y + h * (1024 - curveEndZ) / 2048));
-								g.DrawArc(Pens.Black,
-									(float)(x + w * (1024 + curveCenterX - section.Radius) / 2048),
-									(float)(y + h * (1024 - curveCenterZ - section.Radius) / 2048),
-									(float)(w * section.Radius / 1024),
-									(float)(h * section.Radius / 1024),
-									(startZ < curveCenterZ ? 90 + angleStart : 270 - angleStart),
-									(float)section.Angle);
-								startX = curveEndX;
-								startZ = curveEndZ;
-							} else {
-								var straightEndX = startX - rx * section.Length;
-								var straightEndZ = startZ - rz * section.Length;
-								//g.DrawLine(Pens.LightGray,
-								//    (float)(x + w * (1024 + startX) / 2048),
-								//    (float)(y + h * (1024 - startZ) / 2048),
-								//    x,
-								//    y);
-								//g.DrawLine(Pens.LightGray,
-								//    (float)(x + w * (1024 + straightEndX) / 2048),
-								//    (float)(y + h * (1024 - straightEndZ) / 2048),
-								//    x,
-								//    y);
-								g.DrawLine(Pens.Black,
-									(float)(x + w * (1024 + startX) / 2048),
-									(float)(y + h * (1024 - startZ) / 2048),
-									(float)(x + w * (1024 + straightEndX) / 2048),
-									(float)(y + h * (1024 - straightEndZ) / 2048));
-								startX = straightEndX;
-								startZ = straightEndZ;
+						//g.DrawLine(Pens.Yellow,
+						//    (float)(x + w * (1024 + trackSection.X) / 2048),
+						//    (float)(y + h * (1024 - trackSection.Z) / 2048),
+						//    x,
+						//    y);
+						var needPoints = trackSection.Track.MainRoute > -1;
+
+						foreach (var path in trackSection.Track.Paths) {
+							// Rotation matrix for quaternion (a, b, c, d).
+							//   [a^2+b^2-c^2-d^2  2bc-2ad          2bd+2ac        ]
+							//   [2bc+2ad          a^2-b^2+c^2-d^2  2cd-2ab        ]
+							//   [2bd-2ac          2cd+2ab          a^2-b^2-c^2+d^2]
+							var rxx = trackSection.DX * trackSection.DX + trackSection.DY * trackSection.DY - trackSection.DZ * trackSection.DZ - trackSection.DW * trackSection.DW;
+							var rxz = 2 * trackSection.DY * trackSection.DW - 2 * trackSection.DX * trackSection.DZ;
+							var rzx = 2 * trackSection.DY * trackSection.DW + 2 * trackSection.DX * trackSection.DZ;
+							var rzz = trackSection.DX * trackSection.DX - trackSection.DY * trackSection.DY - trackSection.DZ * trackSection.DZ + trackSection.DW * trackSection.DW;
+
+							var startX = trackSection.X - rxx * path.X - rzx * path.Z;
+							var startZ = trackSection.Z - rxz * path.X - rzz * path.Z;
+
+							if (needPoints) {
+								g.FillEllipse(Brushes.Black,
+									(float)(x + w * (1024 + startX) / 2048) - 2,
+									(float)(y + h * (1024 - startZ) / 2048) - 2,
+									4,
+									4);
+								needPoints = false;
+							}
+
+							//var index = 1;
+							foreach (var section in path.Sections) {
+								//g.DrawString(String.Format("{0:X8}:{1:X8}:{2}{3}", trackSection.GetHashCode(), path.GetHashCode(), index, section.IsCurve ? "c" : "s"), SystemFonts.SmallCaptionFont, Brushes.Blue, (float)(x + w * (1024 + startX) / 2048), (float)(y + h * (1024 - startZ) / 2048));
+								//index++;
+								if (section.IsCurve) {
+									var angle = section.Angle * Math.PI / 180;
+									// Rotate 90 degrees left or right base ioon +ve or -ve angle (-ve angle = left).
+									var curveCenterX = startX - rxx * section.Radius * Math.Sign(section.Angle);
+									var curveCenterZ = startZ - rxz * section.Radius * Math.Sign(section.Angle);
+									// Rotate the center->start vector by the curve's angle.
+									var curveEndX = curveCenterX + (startX - curveCenterX) * Math.Cos(-angle) - (startZ - curveCenterZ) * Math.Sin(-angle);
+									var curveEndZ = curveCenterZ + (startX - curveCenterX) * Math.Sin(-angle) + (startZ - curveCenterZ) * Math.Cos(-angle);
+									// Work out the display angle.
+									var angleStart = (float)(Math.Asin((curveCenterX - startX) / section.Radius) * 180 / Math.PI);
+									//g.DrawLine(Pens.Yellow,
+									//    (float)(x + w * (1024 + startX) / 2048),
+									//    (float)(y + h * (1024 - startZ) / 2048),
+									//    (float)(x + w * (1024 + curveCenterX) / 2048),
+									//    (float)(y + h * (1024 - curveCenterZ) / 2048));
+									//g.DrawLine(Pens.Yellow,
+									//    (float)(x + w * (1024 + curveEndX) / 2048),
+									//    (float)(y + h * (1024 - curveEndZ) / 2048),
+									//    (float)(x + w * (1024 + curveCenterX) / 2048),
+									//    (float)(y + h * (1024 - curveCenterZ) / 2048));
+									//g.DrawLine(Pens.Blue,
+									//    (float)(x + w * (1024 + startX) / 2048),
+									//    (float)(y + h * (1024 - startZ) / 2048),
+									//    (float)(x + w * (1024 + curveEndX) / 2048),
+									//    (float)(y + h * (1024 - curveEndZ) / 2048));
+									g.DrawArc(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
+										(float)(x + w * (1024 + curveCenterX - section.Radius) / 2048),
+										(float)(y + h * (1024 - curveCenterZ - section.Radius) / 2048),
+										(float)(w * section.Radius / 1024),
+										(float)(h * section.Radius / 1024),
+										(startZ < curveCenterZ ? 90 + angleStart : 270 - angleStart),
+										(float)section.Angle);
+									// [xx yx zx] [ C  0  S] [xxC-zxS yx xxS+zxC]
+									// [xy yy zy].[ 0  1  0]=[xyC-zyS yy xyS+zyC]
+									// [xz yz zz] [-S  0  C] [xzC-zzS yz xzS+zzC]
+									//var rxx2 = rxx * Math.Cos(angle) + rzx * Math.Sin(angle);
+									//var rxz2 = rxz * Math.Cos(angle) + rzz * Math.Sin(angle);
+									//var rzx2 = rzx * Math.Cos(angle) - rxx * Math.Sin(angle);
+									//var rzz2 = rzz * Math.Cos(angle) - rxz * Math.Sin(angle);
+									// [ C  0  S] [xx yx zx] [ xxC+xzS  yxC+yzS  zxC+zzS]
+									// [ 0  1  0].[xy yy zy]=[ xy       yy       zy     ]
+									// [-S  0  C] [xz yz zz] [-xxS+xzC -yxS+yzC -zxS+zzC]
+									var rxx2 = rxx * Math.Cos(angle) + rxz * Math.Sin(angle);
+									var rxz2 = rxz * Math.Cos(angle) - rxx * Math.Sin(angle);
+									var rzx2 = rzx * Math.Cos(angle) + rzz * Math.Sin(angle);
+									var rzz2 = rzz * Math.Cos(angle) - rzx * Math.Sin(angle);
+									rxx = rxx2; rxz = rxz2; rzx = rzx2; rzz = rzz2;
+									startX = curveEndX;
+									startZ = curveEndZ;
+								} else {
+									var straightEndX = startX - rzx * section.Length;
+									var straightEndZ = startZ - rzz * section.Length;
+									//g.DrawLine(Pens.LightGray,
+									//    (float)(x + w * (1024 + startX) / 2048),
+									//    (float)(y + h * (1024 - startZ) / 2048),
+									//    x,
+									//    y + h);
+									//g.DrawLine(Pens.LightGray,
+									//    (float)(x + w * (1024 + straightEndX) / 2048),
+									//    (float)(y + h * (1024 - straightEndZ) / 2048),
+									//    x,
+									//    y + h);
+									g.DrawLine(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
+										(float)(x + w * (1024 + startX) / 2048),
+										(float)(y + h * (1024 - startZ) / 2048),
+										(float)(x + w * (1024 + straightEndX) / 2048),
+										(float)(y + h * (1024 - straightEndZ) / 2048));
+									startX = straightEndX;
+									startZ = straightEndZ;
+								}
 							}
 						}
 					}
-				}
+					break;
+				case 10:
+					foreach (var marker in Markers) {
+						var mx = (int)(x + w * marker.X);
+						var my = (int)(y + h * marker.Z);
+						g.DrawRectangle(Pens.Blue, mx - 1, my - 1, 2, 2);
+						g.DrawLine(Pens.Blue, mx, my, mx, my - 16);
+						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.Blue, mx + 2, my - 20);
+					}
+					break;
 			}
 		}
 	}

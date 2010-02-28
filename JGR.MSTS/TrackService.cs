@@ -57,7 +57,7 @@ namespace Jgr.Msts {
 					}
 					tpaths.Add(new TrackPath(path[1].ToValue<float>(), path[2].ToValue<float>(), path[3].ToValue<float>(), path[4].ToValue<float>(), tsections));
 				}
-				var ts = new TrackShape(shape[0].ToValue<uint>(), shape["FileName"][0].ToValue<string>().ToLowerInvariant(), shape.Contains("ClearanceDist") ? shape["ClearanceDist"][0].ToValue<float>() : 0, shape.Contains("TunnelShape"), shape.Contains("RoadShape"), tpaths);
+				var ts = new TrackShape(shape[0].ToValue<uint>(), shape["FileName"][0].ToValue<string>().ToLowerInvariant(), shape.Contains("ClearanceDist") ? shape["ClearanceDist"][0].ToValue<float>() : 0, shape.Contains("TunnelShape"), shape.Contains("RoadShape"), tpaths, shape.Contains("MainRoute") ? (int)shape["MainRoute"][0].ToValue<uint>() : -1);
 				TrackShapes.Add(ts.ID, ts);
 				if (TrackShapesByFileName.ContainsKey(ts.FileName)) {
 					TrackShapesByFileName[ts.FileName] = ts;
@@ -76,14 +76,16 @@ namespace Jgr.Msts {
 		public readonly bool IsTunnelShape;
 		public readonly bool IsRoadShape;
 		public readonly IEnumerable<TrackPath> Paths;
+		public readonly int MainRoute;
 
-		public TrackShape(uint id, string fileName, double clearanceDistance, bool isTunnelShape, bool isRoadShape, IEnumerable<TrackPath> paths) {
+		public TrackShape(uint id, string fileName, double clearanceDistance, bool isTunnelShape, bool isRoadShape, IEnumerable<TrackPath> paths, int mainRoute) {
 			ID = id;
 			FileName = fileName;
 			ClearanceDistance = clearanceDistance;
 			IsTunnelShape = isTunnelShape;
 			IsRoadShape = isRoadShape;
 			Paths = paths;
+			MainRoute = mainRoute;
 		}
 	}
 

@@ -67,9 +67,9 @@ namespace Jgr.IO.Parser
 			get {
 				foreach (var child in this) {
 					if (child is SimisTreeNodeValue) {
-						if (child.Name == type) return child;
+						if (child.Name.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return child;
 					} else {
-						if (child.Type == type) return child;
+						if (child.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return child;
 					}
 				}
 				throw new ArgumentException("No children of the given type (or name for values) were found.", "type");
@@ -79,9 +79,9 @@ namespace Jgr.IO.Parser
 		public bool Contains(string type) {
 			foreach (var child in this) {
 				if (child is SimisTreeNodeValue) {
-					if (child.Name == type) return true;
+					if (child.Name.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return true;
 				} else {
-					if (child.Type == type) return true;
+					if (child.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return true;
 				}
 			}
 			return false;

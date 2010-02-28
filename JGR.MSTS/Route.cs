@@ -48,6 +48,12 @@ namespace Jgr.Msts {
 			}
 		}
 
+		public string FileName {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["FileName"][0].ToValue<string>();
+			}
+		}
+
 		public TrackService TrackService {
 			get {
 				if (_TrackService != null) {
