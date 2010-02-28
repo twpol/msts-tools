@@ -13,9 +13,9 @@ MainRoute                     ==> :uint .
 ManualJunctionShape           ==> .
 NumPaths                      ==> :uint .
 RoadShape                     ==> .
-SectionCurve                  ==> :float,Guage :float,Length .
-SectionIdx                    ==> :uint,SectionCount :float,OffsetX :float,OffsetY :float,OffsetX :float,RotateY {:uint} .
-SectionSize                   ==> :float,Radius :float,Angle .
+SectionCurve                  ==> :float,Radius :float,Angle .
+SectionIdx                    ==> :uint,SectionCount :float,OffsetX :float,OffsetY :float,OffsetZ :float,RotateY {:uint} .
+SectionSize                   ==> :float,Guage :float,Length .
 SectionSkew                   ==> :float .
 TunnelShape                   ==> .
 WaterScoop                    ==> .

@@ -233,6 +233,7 @@ namespace Jgr.IO.Parser
 				if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected ')'; got EOF.");
 				token += BinaryReader.ReadChar();
 				rv.String = token;
+				rv.Name = "Comment";
 				rv.Kind = SimisTokenKind.String;
 				return rv;
 			}
