@@ -349,7 +349,7 @@ namespace Jgr.Msts {
 				for (var i = 0; ; i++) {
 					var delta_theta = -(theta + Math.Sin(theta) - constant) / (1.0 + Math.Cos(theta));
 					theta += delta_theta;
-					if (Math.Abs(delta_theta) < double.Epsilon) break;
+					if (Math.Abs(delta_theta) < 0.00000000001) break;
 					if (i >= 30) {
 						//giherror("Iteration failed to converge", "Goode-forward");
 						return null;
