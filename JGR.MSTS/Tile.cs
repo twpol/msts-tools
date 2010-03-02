@@ -14,10 +14,17 @@ using System.Text;
 using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
-	class TileTrackSection {
-		public string Label;
+	class TileObject {
 		public double X;
+		public double Y;
 		public double Z;
+	}
+
+	class TileLabeledObject : TileObject {
+		public string Label;
+	}
+
+	class TileTrackSection : TileLabeledObject {
 		public double DW;
 		public double DX;
 		public double DY;
@@ -25,10 +32,32 @@ namespace Jgr.Msts {
 		public TrackShape Track;
 	}
 
-	class TileMarker {
-		public string Label;
-		public double X;
-		public double Z;
+	class TilePlatform : TileLabeledObject {
+	}
+
+	class TileSiding : TileLabeledObject {
+	}
+
+	class TileSignal : TileLabeledObject {
+		// TODO: Need an orientation for a signal!
+	}
+
+	class TileMarker : TileLabeledObject {
+	}
+
+	public enum TileLayer {
+		Tiles,
+		Terrain,
+		Roads,
+		Track,
+		Markers,
+		Platforms,
+		PlatformNames,
+		Sidings,
+		SidingNames,
+		Signals,
+		Mileposts,
+		FuelPoints,
 	}
 
 	public class Tile {
@@ -39,6 +68,9 @@ namespace Jgr.Msts {
 		Image TerrainImage;
 		Image ObjectImage;
 		List<TileTrackSection> TrackSections;
+		List<TilePlatform> Platforms;
+		List<TileSiding> Sidings;
+		List<TileSignal> Signals;
 		List<TileMarker> Markers;
 
 		public Tile(string tileName, Route route, SimisProvider simisProvider) {
@@ -47,198 +79,192 @@ namespace Jgr.Msts {
 			SimisProvider = simisProvider;
 			TileCoordinate = Coordinates.ConvertToTile(TileName);
 			TrackSections = new List<TileTrackSection>();
+			Platforms = new List<TilePlatform>();
+			Sidings = new List<TileSiding>();
+			Signals = new List<TileSignal>();
 			Markers = new List<TileMarker>();
 		}
 
-		public void RenderTerrain() {
-			string tileElevation = String.Format(@"{0}\Tiles\{1}_y.raw", Route.RoutePath, TileName);
-			string tileShadow = String.Format(@"{0}\Tiles\{1}_n.raw", Route.RoutePath, TileName);
-			string tileUnknown = String.Format(@"{0}\Tiles\{1}_e.raw", Route.RoutePath, TileName);
-			string tileFile = String.Format(@"{0}\Tiles\{1}.t", Route.RoutePath, TileName);
+		public void PrepareLayer(TileLayer layer) {
+			switch (layer) {
+				case TileLayer.Tiles:
+					break;
+				case TileLayer.Terrain:
+					string tileElevation = String.Format(@"{0}\Tiles\{1}_y.raw", Route.RoutePath, TileName);
+					string tileShadow = String.Format(@"{0}\Tiles\{1}_n.raw", Route.RoutePath, TileName);
+					string tileUnknown = String.Format(@"{0}\Tiles\{1}_e.raw", Route.RoutePath, TileName);
+					string tileFile = String.Format(@"{0}\Tiles\{1}.t", Route.RoutePath, TileName);
 
-			var image = new Bitmap(256, 256);
-			using (var g = Graphics.FromImage(image)) {
-				var terrainWidth = 256;
-				var terrainHeight = 256;
-				var terrainFloor = 0f;
-				var terrainScale = 1f;
-				try {
-					var tile = new SimisFile(tileFile, SimisProvider);
-					tile.ReadFile();
-					terrainWidth = terrainHeight = (int)tile.Tree["terrain"]["terrain_samples"]["terrain_nsamples"][0].ToValue<uint>();
-					Debug.Assert(terrainWidth == 256);
-					Debug.Assert(terrainHeight == 256);
-					if (tile.Tree["terrain"]["terrain_samples"].Contains("terrain_sample_rotation")) {
-						Debug.Assert(tile.Tree["terrain"]["terrain_samples"]["terrain_sample_rotation"][0].ToValue<float>() == 0);
-					}
-					terrainFloor = tile.Tree["terrain"]["terrain_samples"]["terrain_sample_floor"][0].ToValue<float>();
-					terrainScale = tile.Tree["terrain"]["terrain_samples"]["terrain_sample_scale"][0].ToValue<float>();
-					var terrain_sample_size = tile.Tree["terrain"]["terrain_samples"]["terrain_sample_size"][0].ToValue<float>();
-					Debug.Assert(terrain_sample_size == 8 || terrain_sample_size == 16 || terrain_sample_size == 32);
-				} catch (Exception e) {
-					g.DrawString(e.ToString(), SystemFonts.CaptionFont, Brushes.Black, 0, 0);
-					TerrainImage = image;
-					return;
-				}
-
-				var terrainData = new uint[terrainWidth * terrainHeight];
-				using (var streamElevation = new FileStream(tileElevation, FileMode.Open, FileAccess.Read)) {
-					var readerElevation = new BinaryReader(streamElevation);
-					try {
-						for (var i = 0; i < terrainWidth * terrainHeight; i++) {
-							var value = (int)(1024 + 32 + (terrainFloor + (double)readerElevation.ReadUInt16() * terrainScale) / 4) % 512;
-							terrainData[i] = (uint)(value < 256 ? value * 0x00000100 : (value - 256) * 0x00010001 + 0x0000FF00);
+					var image = new Bitmap(256, 256);
+					using (var g = Graphics.FromImage(image)) {
+						var terrainWidth = 256;
+						var terrainHeight = 256;
+						var terrainFloor = 0f;
+						var terrainScale = 1f;
+						try {
+							var tile = new SimisFile(tileFile, SimisProvider);
+							tile.ReadFile();
+							terrainWidth = terrainHeight = (int)tile.Tree["terrain"]["terrain_samples"]["terrain_nsamples"][0].ToValue<uint>();
+							Debug.Assert(terrainWidth == 256);
+							Debug.Assert(terrainHeight == 256);
+							if (tile.Tree["terrain"]["terrain_samples"].Contains("terrain_sample_rotation")) {
+								Debug.Assert(tile.Tree["terrain"]["terrain_samples"]["terrain_sample_rotation"][0].ToValue<float>() == 0);
+							}
+							terrainFloor = tile.Tree["terrain"]["terrain_samples"]["terrain_sample_floor"][0].ToValue<float>();
+							terrainScale = tile.Tree["terrain"]["terrain_samples"]["terrain_sample_scale"][0].ToValue<float>();
+							var terrain_sample_size = tile.Tree["terrain"]["terrain_samples"]["terrain_sample_size"][0].ToValue<float>();
+							Debug.Assert(terrain_sample_size == 8 || terrain_sample_size == 16 || terrain_sample_size == 32);
+						} catch (Exception e) {
+							g.DrawString(e.ToString(), SystemFonts.CaptionFont, Brushes.Black, 0, 0);
+							TerrainImage = image;
+							return;
 						}
-					} catch (EndOfStreamException) {
-					}
-				}
-				unsafe {
-					fixed (uint* ptr = terrainData) {
-						var terrainImage = new Bitmap(terrainWidth, terrainHeight, 4 * terrainWidth, PixelFormat.Format32bppRgb, new IntPtr(ptr));
-						g.DrawImage(terrainImage, 0, 0, image.Width, image.Height);
-					}
-				}
 
-				//g.DrawString(File, SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 3 * 15);
-				//g.DrawString(Location.ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 2 * 15);
-				//g.DrawString(Coordinates.ConvertToIgh(Location, 0, 1).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 1 * 15);
-				//g.DrawString(Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(Location, 0, 1)).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 0 * 15);
-			}
-
-			TerrainImage = image;
-			return;
-		}
-
-		public void RenderObjects() {
-			string worldFile = String.Format(@"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
-
-			var image = new Bitmap(2048, 2048);
-			using (var g = Graphics.FromImage(image)) {
-				if (File.Exists(worldFile)) {
-					var world = new SimisFile(worldFile, SimisProvider);
-					try {
-						world.ReadFile();
-					} catch (FileException) {
-						return;
-					}
-					foreach (var item in world.Tree["Tr_Worldfile"].Where(n => n.Type != "TrackObj" && n.Type != "Dyntrack" && n.Contains("Position"))) {
-						var position = item["Position"];
-						g.FillRectangle(
-							item.Type == "Forrest" ? Brushes.Green :
-							item.Type == "LevelCr" ? Brushes.White :
-							item.Type == "Platform" ? Brushes.Blue :
-							item.Type == "Signal" ? Brushes.Red :
-							Brushes.Yellow,
-							(1024 + position[0].ToValue<float>()) / 2048 * image.Width,
-							(1024 - position[2].ToValue<float>()) / 2048 * image.Height, 1, 1);
-					}
-				}
-			}
-
-			ObjectImage = image;
-			return;
-		}
-
-		public void RenderTracksAndRoads() {
-			string worldFile = String.Format(@"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
-
-			if (File.Exists(worldFile)) {
-				var world = new SimisFile(worldFile, SimisProvider);
-				try {
-					world.ReadFile();
-				} catch (FileException) {
-					return;
-				}
-				foreach (var item in world.Tree["Tr_Worldfile"].Where(n => n.Type == "TrackObj" || n.Type == "Dyntrack")) {
-					// TODO: Make this work with Direction as well as QDirection.
-					if (!item.Contains("QDirection")) {
-						continue;
-					}
-					var position = item["Position"];
-					var direction = item["QDirection"];
-					var tts = new TileTrackSection() {
-						X = position[0].ToValue<float>(),
-						Z = position[2].ToValue<float>(),
-						DW = direction[0].ToValue<float>(),
-						DX = direction[1].ToValue<float>(),
-						DY = direction[2].ToValue<float>(),
-						DZ = direction[3].ToValue<float>(),
-					};
-					if (item.Type == "TrackObj") {
-						//var filename = item["FileName"][0].ToValue<string>().ToLowerInvariant();
-						//if (Route.TrackService.TrackShapesByFileName.ContainsKey(filename)) {
-						//    tts.Track = Route.TrackService.TrackShapesByFileName[filename];
-						//} else {
-						//    tts.Label = filename;
-						//}
-						var sectionIdx = item["SectionIdx"][0].ToValue<uint>();
-						if (Route.TrackService.TrackShapes.ContainsKey(sectionIdx)) {
-							tts.Track = Route.TrackService.TrackShapes[sectionIdx];
-						} else {
-							tts.Label = sectionIdx.ToString();
-						}
-					} else {
-						var tpaths = new List<TrackPath>();
-						var tsections = new List<TrackSection>();
-						foreach (var section in item["TrackSections"].Where(n => n.Type == "TrackSection")) {
-							if (section[1].ToValue<int>() > 0) {
-								if (section["SectionCurve"][0].ToValue<uint>() != 0) {
-									tsections.Add(new TrackSection(0, 0, 0, true, section[3].ToValue<float>(), section[2].ToValue<float>() * 180 / Math.PI));
-								} else {
-									tsections.Add(new TrackSection(0, 0, section[2].ToValue<float>()));
+						var terrainData = new uint[terrainWidth * terrainHeight];
+						using (var streamElevation = new FileStream(tileElevation, FileMode.Open, FileAccess.Read)) {
+							var readerElevation = new BinaryReader(streamElevation);
+							try {
+								for (var i = 0; i < terrainWidth * terrainHeight; i++) {
+									var value = (int)(1024 + 32 + (terrainFloor + (double)readerElevation.ReadUInt16() * terrainScale) / 4) % 512;
+									terrainData[i] = (uint)(value < 256 ? value * 0x00000100 : (value - 256) * 0x00010001 + 0x0000FF00);
 								}
+							} catch (EndOfStreamException) {
 							}
 						}
-						tpaths.Add(new TrackPath(0, 0, 0, 0, tsections));
-						tts.Track = new TrackShape(0, "", 0, false, false, tpaths, -1);
-					}
-					TrackSections.Add(tts);
-				}
-			}
+						unsafe {
+							fixed (uint* ptr = terrainData) {
+								var terrainImage = new Bitmap(terrainWidth, terrainHeight, 4 * terrainWidth, PixelFormat.Format32bppRgb, new IntPtr(ptr));
+								g.DrawImage(terrainImage, 0, 0, image.Width, image.Height);
+							}
+						}
 
-			return;
+						//g.DrawString(File, SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 3 * 15);
+						//g.DrawString(Location.ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 2 * 15);
+						//g.DrawString(Coordinates.ConvertToIgh(Location, 0, 1).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 1 * 15);
+						//g.DrawString(Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(Location, 0, 1)).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 0 * 15);
+					}
+
+					TerrainImage = image;
+					break;
+				case TileLayer.Roads:
+					// TODO: Roads and track use the same basic data, can we split anything out here?
+					break;
+				case TileLayer.Track:
+					string worldFile = String.Format(@"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
+
+					if (File.Exists(worldFile)) {
+						var world = new SimisFile(worldFile, SimisProvider);
+						try {
+							world.ReadFile();
+						} catch (FileException) {
+							return;
+						}
+						foreach (var item in world.Tree["Tr_Worldfile"]) {
+							// TODO: Make this work with Matrix3x3 as well as QDirection.
+							if (!item.Contains("QDirection")) {
+								continue;
+							}
+							var position = item["Position"];
+							var direction = item["QDirection"];
+
+							switch (item.Type) {
+								case "TrackObj":
+								case "Dyntrack":
+									var tts = new TileTrackSection() {
+										X = position[0].ToValue<float>(),
+										Y = position[1].ToValue<float>(),
+										Z = position[2].ToValue<float>(),
+										DW = direction[0].ToValue<float>(),
+										DX = direction[1].ToValue<float>(),
+										DY = direction[2].ToValue<float>(),
+										DZ = direction[3].ToValue<float>(),
+									};
+									if (item.Type == "TrackObj") {
+										var sectionIdx = item["SectionIdx"][0].ToValue<uint>();
+										if (Route.TrackService.TrackShapes.ContainsKey(sectionIdx)) {
+											tts.Track = Route.TrackService.TrackShapes[sectionIdx];
+										} else {
+											tts.Label = sectionIdx.ToString();
+										}
+									} else {
+										var tpaths = new List<TrackPath>();
+										var tsections = new List<TrackSection>();
+										foreach (var section in item["TrackSections"].Where(n => n.Type == "TrackSection")) {
+											if (section[1].ToValue<int>() > 0) {
+												if (section["SectionCurve"][0].ToValue<uint>() != 0) {
+													tsections.Add(new TrackSection(0, 0, 0, true, section[3].ToValue<float>(), section[2].ToValue<float>() * 180 / Math.PI));
+												} else {
+													tsections.Add(new TrackSection(0, 0, section[2].ToValue<float>()));
+												}
+											}
+										}
+										tpaths.Add(new TrackPath(0, 0, 0, 0, tsections));
+										tts.Track = new TrackShape(0, "", 0, false, false, tpaths, -1);
+									}
+									TrackSections.Add(tts);
+									break;
+								case "Platform":
+									Platforms.Add(new TilePlatform() { X = position[0].ToValue<float>(), Y = position[1].ToValue<float>(), Z = position[2].ToValue<float>(), Label = "" });
+									break;
+								case "Siding":
+									Sidings.Add(new TileSiding() { X = position[0].ToValue<float>(), Y = position[1].ToValue<float>(), Z = position[2].ToValue<float>(), Label = "" });
+									break;
+								case "Signal":
+									Signals.Add(new TileSignal() { X = position[0].ToValue<float>(), Y = position[1].ToValue<float>(), Z = position[2].ToValue<float>(), Label = "" });
+									break;
+							}
+						}
+					}
+					break;
+				case TileLayer.Markers:
+					string markersFile = String.Format(@"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
+
+					if (File.Exists(markersFile)) {
+						var markers = new SimisFile(markersFile, SimisProvider);
+						try {
+							markers.ReadFile();
+						} catch (FileException) {
+							return;
+						}
+						foreach (var marker in markers.Tree.Where(n => n.Type == "Marker")) {
+							var tileX = 0d;
+							var tileY = 0d;
+							var tileCoordinate = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(marker[1].ToValue<float>(), marker[0].ToValue<float>())), out tileX, out tileY);
+							if ((tileCoordinate.X == TileCoordinate.X) && (tileCoordinate.Y == TileCoordinate.Y)) {
+								Markers.Add(new TileMarker() { X = tileX, Z = tileY, Label = marker[2].ToValue<string>() });
+							}
+						}
+					}
+					break;
+				case TileLayer.Platforms:
+					break;
+				case TileLayer.PlatformNames:
+					break;
+				case TileLayer.Sidings:
+					break;
+				case TileLayer.SidingNames:
+					break;
+				case TileLayer.Signals:
+					break;
+				case TileLayer.Mileposts:
+					break;
+				case TileLayer.FuelPoints:
+					break;
+			}
 		}
 
-		public void RenderMarkers() {
-			string markersFile = String.Format(@"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
-
-			if (File.Exists(markersFile)) {
-				var markers = new SimisFile(markersFile, SimisProvider);
-				try {
-					markers.ReadFile();
-				} catch (FileException) {
-					return;
-				}
-				foreach (var marker in markers.Tree.Where(n => n.Type == "Marker")) {
-					var tileX = 0d;
-					var tileY = 0d;
-					var tileCoordinate = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(marker[1].ToValue<float>(), marker[0].ToValue<float>())), out tileX, out tileY);
-					if ((tileCoordinate.X == TileCoordinate.X) && (tileCoordinate.Y == TileCoordinate.Y)) {
-						Markers.Add(new TileMarker() { X = tileX, Z = tileY, Label = marker[2].ToValue<string>() });
-					}
-				}
-			}
-
-			return;
-		}
-
-		public void Render(Graphics g, uint layer, float x, float y, float w, float h) {
+		public void DrawLayer(TileLayer layer, Graphics g, float x, float y, float w, float h) {
 			switch (layer) {
-				case 0:
+				case TileLayer.Tiles:
 					g.DrawRectangle(Pens.LightGray, x, y, w, h);
 					break;
-				case 1:
+				case TileLayer.Terrain:
 					if (TerrainImage != null) {
 						g.DrawImage(TerrainImage, x, y, w, h);
 					}
 					break;
-				case 2:
-					if (ObjectImage != null) {
-						g.DrawImage(ObjectImage, x, y, w, h);
-					}
-					break;
-				case 3:
-				case 4:
+				case TileLayer.Roads:
+				case TileLayer.Track:
 					foreach (var trackSection in TrackSections) {
 						if (!String.IsNullOrEmpty(trackSection.Label)) {
 							g.DrawString(trackSection.Label, SystemFonts.CaptionFont, Brushes.Black,
@@ -248,7 +274,7 @@ namespace Jgr.Msts {
 						if (trackSection.Track == null) {
 							continue;
 						}
-						if (layer != (trackSection.Track.IsRoadShape ? 3 : 4)) {
+						if (layer != (trackSection.Track.IsRoadShape ? TileLayer.Roads : TileLayer.Track)) {
 							continue;
 						}
 
@@ -274,10 +300,10 @@ namespace Jgr.Msts {
 
 							if (needPoints) {
 								g.FillEllipse(Brushes.Black,
-									(float)(x + w * (1024 + startX) / 2048) - 2,
-									(float)(y + h * (1024 - startZ) / 2048) - 2,
-									4,
-									4);
+									(float)(x + w * (1024 + startX) / 2048) - 3,
+									(float)(y + h * (1024 - startZ) / 2048) - 3,
+									6,
+									6);
 								needPoints = false;
 							}
 
@@ -359,7 +385,7 @@ namespace Jgr.Msts {
 						}
 					}
 					break;
-				case 10:
+				case TileLayer.Markers:
 					foreach (var marker in Markers) {
 						var mx = (int)(x + w * marker.X);
 						var my = (int)(y + h * marker.Z);
@@ -367,6 +393,50 @@ namespace Jgr.Msts {
 						g.DrawLine(Pens.Blue, mx, my, mx, my - 16);
 						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.Blue, mx + 2, my - 20);
 					}
+					break;
+				case TileLayer.Platforms:
+					foreach (var platform in Platforms) {
+						var mx = (int)(x + w * (1024 + platform.X) / 2048);
+						var my = (int)(y + h * (1024 - platform.Z) / 2048);
+						g.FillPolygon(Brushes.DarkBlue, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
+						g.DrawLine(Pens.Blue, mx - 8, my + 6, mx + 6, my - 8);
+					}
+					break;
+				case TileLayer.PlatformNames:
+					break;
+				case TileLayer.Sidings:
+					break;
+				case TileLayer.SidingNames:
+					break;
+				case TileLayer.Signals:
+					foreach (var signal in Signals) {
+						var mx = (int)(x + w * (1024 + signal.X) / 2048);
+						var my = (int)(y + h * (1024 - signal.Z) / 2048);
+						g.FillEllipse(Brushes.DarkRed, mx - 3, my - 3, 6, 6);
+					}
+					break;
+				case TileLayer.Mileposts:
+					break;
+				case TileLayer.FuelPoints:
+					break;
+			}
+		}
+
+		void Render(Graphics g, uint layer, float x, float y, float w, float h) {
+			switch (layer) {
+				case 0:
+					break;
+				case 1:
+					break;
+				case 2:
+					if (ObjectImage != null) {
+						g.DrawImage(ObjectImage, x, y, w, h);
+					}
+					break;
+				case 3:
+				case 4:
+					break;
+				case 10:
 					break;
 			}
 		}
