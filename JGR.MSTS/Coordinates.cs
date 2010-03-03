@@ -140,19 +140,16 @@ namespace Jgr.Msts {
 			return ConvertToTile(coordinates, out tileX, out tileY);
 		}
 
-		// IGH -> Lat/Lon
-		public static LatitudeLongitudeCoordinate ConvertToLatLon(IghCoordinate coordinates) {
-			// Line/Sample -> Latitude/Longitude Algorithm
-			// Based on C code provided by the USGS, available at ftp://edcftp.cr.usgs.gov/pub/software/misc/gihll2ls.c.
-			// By D. Steinwand, HSTX/EROS Data Center, June, 1993.
-
-			const double radius = 6370997;
-			const double imageLeft = -20015499.5;
-			const double imageTop = 8673455.5;
-			const double imageWidth = 40031000;
-			const double imageHeight = 17347000;
-
-			var lon_center = new double[] {
+		// Original calculations:
+		//   r =   6370997
+		//   l = -20015500   w = 40031000
+		//   t =   8673500   h = 17347000
+		const double IghRadius = 6370997;
+		const double IghImageLeft = -20015000;
+		const double IghImageTop = 8673000;
+		const double IghImageWidth = -2 * IghImageLeft;
+		const double IghImageHeight = 2 * IghImageTop;
+		static readonly double[] IghLongitudeCenter = new double[] {
 				-(double)100 / 180 * Math.PI, /* -100.0 degrees */
 				-(double)100 / 180 * Math.PI, /* -100.0 degrees */
 				+(double) 30 / 180 * Math.PI, /*   30.0 degrees */
@@ -166,60 +163,66 @@ namespace Jgr.Msts {
 				+(double) 20 / 180 * Math.PI, /*   20.0 degrees */
 				+(double)140 / 180 * Math.PI, /*  140.0 degrees */
 			};
+		const double IghParallel41 = (40d + (44d / 60) + (11.8d / 3600)) / 180 * Math.PI; // 40deg 44' 11.8"
+		const double IghMeridian20 = 20d / 180 * Math.PI;  // 20deg
+		const double IghMeridian40 = 40d / 180 * Math.PI;  // 40deg
+		const double IghMeridian80 = 80d / 180 * Math.PI;  // 80deg
+		const double IghMeridian100 = 100d / 180 * Math.PI; // 100deg
+
+		// IGH -> Lat/Lon
+		public static LatitudeLongitudeCoordinate ConvertToLatLon(IghCoordinate coordinates) {
+			// Line/Sample -> Latitude/Longitude Algorithm
+			// Based on C code provided by the USGS, available at ftp://edcftp.cr.usgs.gov/pub/software/misc/gihll2ls.c.
+			// By D. Steinwand, HSTX/EROS Data Center, June, 1993.
 
 			Debug.Assert(coordinates.Line >= 0, "line is off the top");
-			Debug.Assert(coordinates.Line <= imageHeight, "line is off the bottom");
+			Debug.Assert(coordinates.Line <= IghImageHeight, "line is off the bottom");
 			Debug.Assert(coordinates.Sample >= 0, "line is off the left");
-			Debug.Assert(coordinates.Sample <= imageWidth, "line is off the right");
+			Debug.Assert(coordinates.Sample <= IghImageWidth, "line is off the right");
 
-			double y = (imageTop - coordinates.Line) / radius;
-			double x = (imageLeft + coordinates.Sample) / radius;
+			double y = (IghImageTop - coordinates.Line) / IghRadius;
+			double x = (IghImageLeft + coordinates.Sample) / IghRadius;
 
 			Debug.Assert(y >= -Math.PI / 2, "y is off the bottom");
 			Debug.Assert(y <= +Math.PI / 2, "y is off the top");
 			Debug.Assert(x >= -Math.PI, "x is off the left");
 			Debug.Assert(x <= +Math.PI, "x is off the right");
 
-			const double parallel41 = ((double)40 + (44 / 60) + (11.8 / 3600)) / 180 * Math.PI; // 40deg 44' 11.8"
-			const double meridian20 = (double)20 / 180 * Math.PI;  // 20deg
-			const double meridian40 = (double)40 / 180 * Math.PI;  // 40deg
-			const double meridian80 = (double)80 / 180 * Math.PI;  // 80deg
-			const double meridian100 = (double)100 / 180 * Math.PI; // 100deg
 			int region = -1;
-			if (y >= parallel41) {                 /* If on or above 40 44' 11.8" */
-				if (x <= -meridian40) {            /* If to the left of -40 */
+			if (y >= IghParallel41) {                 /* If on or above 40 44' 11.8" */
+				if (x <= -IghMeridian40) {            /* If to the left of -40 */
 					region = 0;
 				} else {
 					region = 2;
 				}
 			} else if (y >= 0.0) {                 /* Between 0.0 and 40 44' 11.8" */
-				if (x <= -meridian40) {            /* If to the left of -40 */
+				if (x <= -IghMeridian40) {            /* If to the left of -40 */
 					region = 1;
 				} else {
 					region = 3;
 				}
-			} else if (y >= -parallel41) {         /* Between 0.0 & -40 44' 11.8" */
-				if (x <= -meridian100) {           /* If between -180 and -100 */
+			} else if (y >= -IghParallel41) {         /* Between 0.0 & -40 44' 11.8" */
+				if (x <= -IghMeridian100) {           /* If between -180 and -100 */
 					region = 4;
-				} else if (x <= -meridian20) {     /* If between -100 and -20 */
+				} else if (x <= -IghMeridian20) {     /* If between -100 and -20 */
 					region = 5;
-				} else if (x <= meridian80) {      /* If between -20 and 80 */
+				} else if (x <= IghMeridian80) {      /* If between -20 and 80 */
 					region = 8;
 				} else {                           /* If between 80 and 180 */
 					region = 9;
 				}
 			} else {                               /* Below -40 44' 11.8" */
-				if (x <= -meridian100) {           /* If between -180 and -100 */
+				if (x <= -IghMeridian100) {           /* If between -180 and -100 */
 					region = 6;
-				} else if (x <= -meridian20) {     /* If between -100 and -20 */
+				} else if (x <= -IghMeridian20) {     /* If between -100 and -20 */
 					region = 7;
-				} else if (x <= meridian80) {      /* If between -20 and 80 */
+				} else if (x <= IghMeridian80) {      /* If between -20 and 80 */
 					region = 10;
 				} else {                           /* If between 80 and 180 */
 					region = 11;
 				}
 			}
-			x = x - lon_center[region];
+			x = x - IghLongitudeCenter[region];
 
 			double lat = 0;
 			double lon = 0;
@@ -231,10 +234,10 @@ namespace Jgr.Msts {
 				}
 				double temp = Math.Abs(lat) - Math.PI / 2;
 				if (Math.Abs(temp) > double.Epsilon) {
-					temp = lon_center[region] + x / Math.Cos(lat);
+					temp = IghLongitudeCenter[region] + x / Math.Cos(lat);
 					lon = adjust_lon(temp);
 				} else {
-					lon = lon_center[region];
+					lon = IghLongitudeCenter[region];
 				}
 			} else {
 				double arg = (y + 0.0528035274542 * Math.Sign(y)) / 1.4142135623731;
@@ -242,7 +245,7 @@ namespace Jgr.Msts {
 					return null;
 				}
 				double theta = Math.Asin(arg);
-				lon = lon_center[region] + (x / (0.900316316158 * Math.Cos(theta)));
+				lon = IghLongitudeCenter[region] + (x / (0.900316316158 * Math.Cos(theta)));
 				if (lon < -Math.PI) {
 					return null;
 				}
@@ -264,27 +267,6 @@ namespace Jgr.Msts {
 			// Based on C code provided by the USGS, available at ftp://edcftp.cr.usgs.gov/pub/software/misc/gihll2ls.c.
 			// By D. Steinwand, HSTX/EROS Data Center, June, 1993.
 
-			const double radius = 6370997;
-			const double imageLeft = -20015499.5;
-			const double imageTop = 8673455.5;
-			const double imageWidth = 40031000;
-			const double imageHeight = 17347000;
-
-			var lon_center = new double[] {
-				-(double)100 / 180 * Math.PI, /* -100.0 degrees */
-				-(double)100 / 180 * Math.PI, /* -100.0 degrees */
-				+(double) 30 / 180 * Math.PI, /*   30.0 degrees */
-				+(double) 30 / 180 * Math.PI, /*   30.0 degrees */
-				-(double)160 / 180 * Math.PI, /* -160.0 degrees */
-				-(double) 60 / 180 * Math.PI, /*  -60.0 degrees */
-				-(double)160 / 180 * Math.PI, /* -160.0 degrees */
-				-(double) 60 / 180 * Math.PI, /*  -60.0 degrees */
-				+(double) 20 / 180 * Math.PI, /*   20.0 degrees */
-				+(double)140 / 180 * Math.PI, /*  140.0 degrees */
-				+(double) 20 / 180 * Math.PI, /*   20.0 degrees */
-				+(double)140 / 180 * Math.PI, /*  140.0 degrees */
-			};
-
 			Debug.Assert(coordinates.Latitude >= -90, "latitude is off the bottom");
 			Debug.Assert(coordinates.Latitude <= 90, "latitude is off the top");
 			Debug.Assert(coordinates.Longitude >= -180, "longitude is off the left");
@@ -293,40 +275,35 @@ namespace Jgr.Msts {
 			double lat = coordinates.Latitude * Math.PI / 180;
 			double lon = coordinates.Longitude * Math.PI / 180;
 
-			const double parallel41 = ((double)40 + (44 / 60) + (11.8 / 3600)) / 180 * Math.PI; // 40deg 44' 11.8"
-			const double meridian20 = (double)20 / 180 * Math.PI;  // 20deg
-			const double meridian40 = (double)40 / 180 * Math.PI;  // 40deg
-			const double meridian80 = (double)80 / 180 * Math.PI;  // 80deg
-			const double meridian100 = (double)100 / 180 * Math.PI; // 100deg
 			int region = -1;
-			if (lat >= parallel41) {               /* If on or above 40 44' 11.8" */
-				if (lon <= -meridian40) {          /* If to the left of -40 */
+			if (lat >= IghParallel41) {               /* If on or above 40 44' 11.8" */
+				if (lon <= -IghMeridian40) {          /* If to the left of -40 */
 					region = 0;
 				} else {
 					region = 2;
 				}
 			} else if (lat >= 0.0) {               /* Between 0.0 and 40 44' 11.8" */
-				if (lon <= -meridian40) {          /* If to the left of -40 */
+				if (lon <= -IghMeridian40) {          /* If to the left of -40 */
 					region = 1;
 				} else {
 					region = 3;
 				}
-			} else if (lat >= -parallel41) {       /* Between 0.0 & -40 44' 11.8" */
-				if (lon <= -meridian100) {         /* If between -180 and -100 */
+			} else if (lat >= -IghParallel41) {       /* Between 0.0 & -40 44' 11.8" */
+				if (lon <= -IghMeridian100) {         /* If between -180 and -100 */
 					region = 4;
-				} else if (lon <= -meridian20) {   /* If between -100 and -20 */
+				} else if (lon <= -IghMeridian20) {   /* If between -100 and -20 */
 					region = 5;
-				} else if (lon <= meridian80) {    /* If between -20 and 80 */
+				} else if (lon <= IghMeridian80) {    /* If between -20 and 80 */
 					region = 8;
 				} else {                           /* If between 80 and 180 */
 					region = 9;
 				}
 			} else {                               /* Below -40 44' 11.8" */
-				if (lon <= -meridian100) {         /* If between -180 and -100 */
+				if (lon <= -IghMeridian100) {         /* If between -180 and -100 */
 					region = 6;
-				} else if (lon <= -meridian20) {   /* If between -100 and -20 */
+				} else if (lon <= -IghMeridian20) {   /* If between -100 and -20 */
 					region = 7;
-				} else if (lon <= meridian80) {    /* If between -20 and 80 */
+				} else if (lon <= IghMeridian80) {    /* If between -20 and 80 */
 					region = 10;
 				} else {                           /* If between 80 and 180 */
 					region = 11;
@@ -336,11 +313,11 @@ namespace Jgr.Msts {
 			double y = 0;
 			double x = 0;
 			if ((region == 1) || (region == 3) || (region == 4) || (region == 5) || (region == 8) || (region == 9)) {
-				var delta_lon = adjust_lon(lon - lon_center[region]);
+				var delta_lon = adjust_lon(lon - IghLongitudeCenter[region]);
 				y = lat;
-				x = lon_center[region] + delta_lon * Math.Cos(lat);
+				x = IghLongitudeCenter[region] + delta_lon * Math.Cos(lat);
 			} else {
-				var delta_lon = adjust_lon(lon - lon_center[region]);
+				var delta_lon = adjust_lon(lon - IghLongitudeCenter[region]);
 				var theta = lat;
 				var constant = Math.PI * Math.Sin(lat);
 
@@ -357,7 +334,7 @@ namespace Jgr.Msts {
 				}
 				theta /= 2.0;
 				y = 1.4142135623731 * Math.Sin(theta) - 0.0528035274542 * Math.Sign(lat);
-				x = lon_center[region] + 0.900316316158 * delta_lon * Math.Cos(theta);
+				x = IghLongitudeCenter[region] + 0.900316316158 * delta_lon * Math.Cos(theta);
 			}
 
 			Debug.Assert(y >= -Math.PI / 2, "y is off the bottom");
@@ -365,12 +342,12 @@ namespace Jgr.Msts {
 			Debug.Assert(x >= -Math.PI, "x is off the left");
 			Debug.Assert(x <= +Math.PI, "x is off the right");
 
-			var igh = new IghCoordinate(imageTop - y * radius, x * radius - imageLeft);
+			var igh = new IghCoordinate(IghImageTop - y * IghRadius, x * IghRadius - IghImageLeft);
 
 			Debug.Assert(igh.Line >= 0, "line is off the top");
-			Debug.Assert(igh.Line <= imageHeight, "line is off the bottom");
+			Debug.Assert(igh.Line <= IghImageHeight, "line is off the bottom");
 			Debug.Assert(igh.Sample >= 0, "line is off the left");
-			Debug.Assert(igh.Sample <= imageWidth, "line is off the right");
+			Debug.Assert(igh.Sample <= IghImageWidth, "line is off the right");
 
 			return igh;
 		}
