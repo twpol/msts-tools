@@ -138,10 +138,10 @@ namespace Jgr.Msts {
 							}
 						}
 
-						//g.DrawString(File, SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 3 * 15);
-						//g.DrawString(Location.ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 2 * 15);
-						//g.DrawString(Coordinates.ConvertToIgh(Location, 0, 1).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 1 * 15);
-						//g.DrawString(Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(Location, 0, 1)).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, Image.Height - 0 * 15);
+						//g.DrawString(TileName, SystemFonts.CaptionFont, Brushes.White, 0, image.Height - 4 * 15);
+						//g.DrawString(TileCoordinate.ToString(), SystemFonts.CaptionFont, Brushes.White, 0, image.Height - 3 * 15);
+						//g.DrawString(Coordinates.ConvertToIgh(TileCoordinate, 0, 1).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, image.Height - 2 * 15);
+						//g.DrawString(Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(TileCoordinate, 0, 1)).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, image.Height - 1 * 15);
 					}
 
 					TerrainImage = image;
@@ -389,9 +389,11 @@ namespace Jgr.Msts {
 					foreach (var marker in Markers) {
 						var mx = (int)(x + w * marker.X);
 						var my = (int)(y + h * marker.Z);
-						g.DrawRectangle(Pens.Blue, mx - 1, my - 1, 2, 2);
-						g.DrawLine(Pens.Blue, mx, my, mx, my - 16);
-						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.Blue, mx + 2, my - 20);
+						var fm = g.MeasureString(marker.Label, SystemFonts.CaptionFont);
+						g.FillEllipse(Brushes.DarkBlue, mx - 2, my - 2, 4, 4);
+						g.DrawLine(Pens.DarkBlue, mx, my, mx, my - 5 * fm.Height);
+						g.FillRectangle(Brushes.DarkBlue, mx, my - 5 * fm.Height, fm.Width - 1, fm.Height - 1);
+						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.White, mx, my - 5 * fm.Height);
 					}
 					break;
 				case TileLayer.Platforms:
