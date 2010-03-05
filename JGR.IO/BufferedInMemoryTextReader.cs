@@ -98,7 +98,7 @@ namespace Jgr.IO
 			if (poses.Any(p => p >= 0)) {
 				var first = poses.Where(p => p >= 0).OrderBy(p => p).First();
 				var rv = Memory.Substring((int)MemoryPosition, first - (int)MemoryPosition);
-				if (Memory.Substring(first, Environment.NewLine.Length) == Environment.NewLine) {
+				if ((first + Environment.NewLine.Length <= Memory.Length) && (Memory.Substring(first, Environment.NewLine.Length) == Environment.NewLine)) {
 					MemoryPosition = first + Environment.NewLine.Length;
 					return rv;
 				}
