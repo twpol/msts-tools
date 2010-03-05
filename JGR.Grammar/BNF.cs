@@ -82,8 +82,14 @@ namespace Jgr.Grammar
 			}
 		}
 
+		/// <summary>
+		/// Returns a <see cref="bool"/> indicating whether the <see cref="BnfState"/> instance is expecting a call to <see cref="EnterBlock"/> next.
+		/// </summary>
 		public bool IsEnterBlockTime { get; private set;  }
 
+		/// <summary>
+		/// Returns a <see cref="bool"/> indicating whether the <see cref="BnfState"/> instance will accept a call to <see cref="LeaveBlock"/> next.
+		/// </summary>
 		public bool IsEndBlockTime {
 			get {
 				if (Rules.Count == 0) return false;
@@ -116,6 +122,11 @@ namespace Jgr.Grammar
 			}
 		}
 
+		/// <summary>
+		/// Moves the <see cref="BnfState"/> instance on to the given reference or throws a <see cref="BnfStateException"/> if it is not valid.
+		/// </summary>
+		/// <param name="reference">The reference to move to.</param>
+		/// <exception cref="BnfStateException">Thrown if the given reference is not found or moving to a new reference is not valid at this time.</exception>
 		public void MoveTo(string reference) {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state '" + reference + "'.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
@@ -139,6 +150,9 @@ namespace Jgr.Grammar
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
 		}
 
+		/// <summary>
+		/// Completes a move to a reference which represents a separate subexpression.
+		/// </summary>
 		public void EnterBlock() {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state <begin-block>.");
 			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
@@ -146,6 +160,9 @@ namespace Jgr.Grammar
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
 		}
 
+		/// <summary>
+		/// Leaves the existing subexpression and returns to the parent.
+		/// </summary>
 		public void LeaveBlock() {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state <end-block>.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got end-block.");
