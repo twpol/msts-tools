@@ -34,8 +34,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ConstructorTest() {
-			TextReader reader = new StringReader("abcdef");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
 		}
 
 		/// <summary>
@@ -43,8 +42,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void LengthTest() {
-			TextReader reader = new StringReader("abcdef");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
 			Assert.AreEqual(6, target.Length, "Must pre-buffer reader.");
 		}
 
@@ -53,8 +51,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void PeekTest() {
-			TextReader reader = new StringReader("abcdef");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
 			Assert.AreEqual('a', target.Peek());
 			Assert.AreEqual('a', target.Peek());
 			Assert.AreEqual('a', target.Read());
@@ -67,8 +64,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void PositionTest() {
-			TextReader reader = new StringReader("abcdef");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
 			Assert.AreEqual(0, target.Position, "Must start from the beginning.");
 			target.Read();
 			Assert.AreEqual(1, target.Position, "Must advance 1 charatcer.");
@@ -79,8 +75,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadTest1() {
-			TextReader reader = new StringReader("abcdef");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
 			Assert.AreEqual('a', target.Read());
 			Assert.AreEqual('b', target.Read());
 			Assert.AreEqual('c', target.Read());
@@ -96,16 +91,15 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadTest() {
-			TextReader reader = null; // TODO: Initialize to an appropriate value
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader); // TODO: Initialize to an appropriate value
-			char[] buffer = null; // TODO: Initialize to an appropriate value
-			int index = 0; // TODO: Initialize to an appropriate value
-			int count = 0; // TODO: Initialize to an appropriate value
-			int expected = 0; // TODO: Initialize to an appropriate value
-			int actual;
-			actual = target.Read(buffer, index, count);
-			Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
+			char[] buffer = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
+			int actual = target.Read(buffer, 0, 4);
+			Assert.AreEqual('a', buffer[0]);
+			Assert.AreEqual('b', buffer[1]);
+			Assert.AreEqual('c', buffer[2]);
+			Assert.AreEqual('d', buffer[3]);
+			Assert.AreEqual('5', buffer[4]);
+			Assert.AreEqual('6', buffer[5]);
 		}
 
 		/// <summary>
@@ -113,16 +107,15 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadBlockTest() {
-			TextReader reader = null; // TODO: Initialize to an appropriate value
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader); // TODO: Initialize to an appropriate value
-			char[] buffer = null; // TODO: Initialize to an appropriate value
-			int index = 0; // TODO: Initialize to an appropriate value
-			int count = 0; // TODO: Initialize to an appropriate value
-			int expected = 0; // TODO: Initialize to an appropriate value
-			int actual;
-			actual = target.ReadBlock(buffer, index, count);
-			Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("abcdef"));
+			char[] buffer = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
+			int actual = target.ReadBlock(buffer, 0, 4);
+			Assert.AreEqual('a', buffer[0]);
+			Assert.AreEqual('b', buffer[1]);
+			Assert.AreEqual('c', buffer[2]);
+			Assert.AreEqual('d', buffer[3]);
+			Assert.AreEqual('5', buffer[4]);
+			Assert.AreEqual('6', buffer[5]);
 		}
 
 		/// <summary>
@@ -130,19 +123,16 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadLineTest() {
-			TextReader reader = new StringReader("Hello 1\nWorld 1!\n");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("Hello 1\nWorld 1!\n"));
 			Assert.AreEqual("Hello 1", target.ReadLine());
 			Assert.AreEqual("World 1!", target.ReadLine());
 			Assert.AreEqual(null, target.ReadLine());
-			reader = new StringReader("Hello 2\r\nWorld 2!\r\n");
-			target = new BufferedInMemoryTextReader(reader);
+			target = new BufferedInMemoryTextReader(new StringReader("Hello 2\r\nWorld 2!\r\n"));
 			Assert.AreEqual("Hello 2", target.ReadLine());
 			Assert.AreEqual("World 2!", target.ReadLine());
 			Assert.AreEqual(null, target.ReadLine());
 			// FIXME: Is this right? Shouldn't we get the last line here?
-			reader = new StringReader("Hello 3\nWorld 3!");
-			target = new BufferedInMemoryTextReader(reader);
+			target = new BufferedInMemoryTextReader(new StringReader("Hello 3\nWorld 3!"));
 			Assert.AreEqual("Hello 3", target.ReadLine());
 			Assert.AreEqual(null, target.ReadLine());
 		}
@@ -152,12 +142,10 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadToEndTest() {
-			TextReader reader = new StringReader("Hello 1\nWorld 1!\n");
-			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(reader);
+			BufferedInMemoryTextReader target = new BufferedInMemoryTextReader(new StringReader("Hello 1\nWorld 1!\n"));
 			Assert.AreEqual("Hello 1", target.ReadLine());
 			Assert.AreEqual("World 1!\n", target.ReadToEnd());
-			reader = new StringReader("Hello 1\nWorld 1!");
-			target = new BufferedInMemoryTextReader(reader);
+			target = new BufferedInMemoryTextReader(new StringReader("Hello 1\nWorld 1!"));
 			Assert.AreEqual("Hello 1", target.ReadLine());
 			Assert.AreEqual("World 1!", target.ReadToEnd());
 		}
