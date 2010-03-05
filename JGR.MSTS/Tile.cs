@@ -66,7 +66,6 @@ namespace Jgr.Msts {
 		public readonly string TileName;
 		public readonly TileCoordinate TileCoordinate;
 		Image TerrainImage;
-		Image ObjectImage;
 		List<TileTrackSection> TrackSections;
 		List<TilePlatform> Platforms;
 		List<TileSiding> Sidings;
@@ -391,9 +390,9 @@ namespace Jgr.Msts {
 						var my = (int)(y + h * marker.Z);
 						var fm = g.MeasureString(marker.Label, SystemFonts.CaptionFont);
 						g.FillEllipse(Brushes.DarkBlue, mx - 2, my - 2, 4, 4);
-						g.DrawLine(Pens.DarkBlue, mx, my, mx, my - 5 * fm.Height);
-						g.FillRectangle(Brushes.DarkBlue, mx, my - 5 * fm.Height, fm.Width - 1, fm.Height - 1);
-						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.White, mx, my - 5 * fm.Height);
+						g.DrawLine(Pens.DarkBlue, mx, my, mx, my - 4 * fm.Height);
+						g.FillRectangle(Brushes.DarkBlue, mx - fm.Width / 2, my - 5 * fm.Height, fm.Width - 1, fm.Height - 1);
+						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.White, mx - fm.Width / 2, my - 5 * fm.Height);
 					}
 					break;
 				case TileLayer.Platforms:
@@ -407,6 +406,12 @@ namespace Jgr.Msts {
 				case TileLayer.PlatformNames:
 					break;
 				case TileLayer.Sidings:
+					foreach (var siding in Sidings) {
+						var mx = (int)(x + w * (1024 + siding.X) / 2048);
+						var my = (int)(y + h * (1024 - siding.Z) / 2048);
+						g.FillPolygon(Brushes.DarkGreen, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
+						g.DrawLine(Pens.Green, mx - 8, my + 6, mx + 6, my - 8);
+					}
 					break;
 				case TileLayer.SidingNames:
 					break;
@@ -420,25 +425,6 @@ namespace Jgr.Msts {
 				case TileLayer.Mileposts:
 					break;
 				case TileLayer.FuelPoints:
-					break;
-			}
-		}
-
-		void Render(Graphics g, uint layer, float x, float y, float w, float h) {
-			switch (layer) {
-				case 0:
-					break;
-				case 1:
-					break;
-				case 2:
-					if (ObjectImage != null) {
-						g.DrawImage(ObjectImage, x, y, w, h);
-					}
-					break;
-				case 3:
-				case 4:
-					break;
-				case 10:
 					break;
 			}
 		}

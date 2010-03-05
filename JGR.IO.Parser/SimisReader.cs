@@ -297,7 +297,12 @@ namespace Jgr.IO.Parser
 				case "sint":
 					if (token.EndsWith(",", StringComparison.Ordinal)) token = token.Substring(0, token.Length - 1);
 					try {
-						rv.IntegerSigned = Int32.Parse(token, CultureInfo.InvariantCulture);
+						// Special-case -1 witten as an unsigned integer instead of signed.
+						if (token == "4294967295") {
+							rv.IntegerSigned = -1;
+						} else {
+							rv.IntegerSigned = Int32.Parse(token, CultureInfo.InvariantCulture);
+						}
 					} catch (FormatException ex) {
 						throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader failed to parse '" + token + "' as '" + rv.Type + "'.", ex);
 					} catch (OverflowException ex) {
