@@ -104,7 +104,12 @@ namespace Jgr.IO.Parser
 				}
 				// If we've run out of stream and have no pending tokens, we're done.
 				if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 1)) {
-					if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
+					try {
+						BnfState.LeaveBlock();
+					} catch (BnfStateException e) {
+						throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "", e);
+					}
+					if (!BnfState.IsCompleted) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
 					EndOfStream = true;
 				}
 				if (SimisReader.TraceSwitch.TraceInfo) {
@@ -172,7 +177,12 @@ namespace Jgr.IO.Parser
 
 			// If we've run out of stream and have no pending tokens, we're done.
 			if ((BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) && (PendingTokens.Count == 0)) {
-				if (!BnfState.IsEmpty) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
+				try {
+					BnfState.LeaveBlock();
+				} catch (BnfStateException e) {
+					throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "", e);
+				}
+				if (!BnfState.IsCompleted) throw new ReaderException(BinaryReader, StreamFormat == SimisStreamFormat.Binary, 0, "Unexpected end of stream.");
 				EndOfStream = true;
 			}
 

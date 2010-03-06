@@ -75,7 +75,7 @@ namespace Jgr.IO.Parser
 						break;
 					case SimisTokenKind.BlockEnd:
 						BnfState.LeaveBlock();
-						if (BnfState.IsEmpty) {
+						if (BnfState.IsCompleted) {
 							BnfState = null;
 						}
 						TextIndent--;
