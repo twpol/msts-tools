@@ -59,12 +59,13 @@ namespace Jgr.Grammar
 	public class BnfState : BufferedMessageSource
 	{
 		public Bnf Bnf { get; private set; }
-		Stack<KeyValuePair<BnfProduction, FsmState>> Rules;
+		Stack<KeyValuePair<BnfRule, FsmState>> Rules;
 
 		public BnfState(Bnf bnf) {
 			this.Bnf = bnf;
-			Rules = new Stack<KeyValuePair<BnfProduction, FsmState>>();
+			Rules = new Stack<KeyValuePair<BnfRule, FsmState>>();
 			IsEnterBlockTime = false;
+			Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Definitions["FILE"], Bnf.Definitions["FILE"].ExpressionFsm.Root));
 		}
 
 		public override string MessageSourceName {
@@ -75,7 +76,7 @@ namespace Jgr.Grammar
 
 		public FsmState State {
 			get {
-				if (Rules.Count == 0) {
+				if (IsCompleted) {
 					return null;
 				}
 				return Rules.Peek().Value;
@@ -92,29 +93,31 @@ namespace Jgr.Grammar
 		/// </summary>
 		public bool IsEndBlockTime {
 			get {
-				if (Rules.Count == 0) return false;
+				if (IsCompleted) {
+					return false;
+				}
 				return Rules.Peek().Value.NextStateHasFinish;
 			}
 		}
 
 		IEnumerable<FsmState> ValidReferences {
 			get {
-				if (Rules.Count == 0) return new List<FsmState>();
+				if (IsCompleted) {
+					return new FsmState[0];
+				}
 				return Rules.Peek().Value.NextReferences;
 			}
 		}
 
 		public IEnumerable<string> ValidStates {
 			get {
+				if (IsCompleted) {
+					return new string[0];
+				}
 				if (IsEnterBlockTime) {
 					return new List<string>() { "<begin-block>" };
 				}
-				var nextStates = new List<string>();
-				if (Rules.Count == 0) {
-					nextStates.AddRange(Bnf.Productions.Keys);
-				} else {
-					nextStates.AddRange(Rules.Peek().Value.NextReferenceNames);
-				}
+				var nextStates = new List<string>(Rules.Peek().Value.NextReferenceNames);
 				if (IsEndBlockTime) {
 					nextStates.Add("<end-block>");
 				}
@@ -129,10 +132,11 @@ namespace Jgr.Grammar
 		/// <exception cref="BnfStateException">Thrown if the given reference is not found or moving to a new reference is not valid at this time.</exception>
 		public void MoveTo(string reference) {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state '" + reference + "'.");
+			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
 			if (Rules.Count == 0) {
 				if (!Bnf.Productions.ContainsKey(reference)) throw new BnfStateException(this, "BNF has no production for root reference '" + reference + "'.");
-				Rules.Push(new KeyValuePair<BnfProduction, FsmState>(Bnf.Productions[reference], Bnf.Productions[reference].ExpressionFsm.Root));
+				Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Productions[reference], Bnf.Productions[reference].ExpressionFsm.Root));
 				IsEnterBlockTime = true;
 			} else {
 				var targets = ValidReferences;
@@ -141,9 +145,9 @@ namespace Jgr.Grammar
 
 				var rop = (ReferenceOperator)target.Operator;
 				var old = Rules.Pop();
-				Rules.Push(new KeyValuePair<BnfProduction, FsmState>(old.Key, target));
+				Rules.Push(new KeyValuePair<BnfRule, FsmState>(old.Key, target));
 				if (Bnf.Productions.ContainsKey(rop.Reference)) {
-					Rules.Push(new KeyValuePair<BnfProduction, FsmState>(Bnf.Productions[rop.Reference], Bnf.Productions[reference].ExpressionFsm.Root));
+					Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Productions[rop.Reference], Bnf.Productions[reference].ExpressionFsm.Root));
 					IsEnterBlockTime = true;
 				}
 			}
@@ -155,6 +159,7 @@ namespace Jgr.Grammar
 		/// </summary>
 		public void EnterBlock() {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state <begin-block>.");
+			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
 			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
 			IsEnterBlockTime = false;
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
@@ -165,15 +170,16 @@ namespace Jgr.Grammar
 		/// </summary>
 		public void LeaveBlock() {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state <end-block>.");
+			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got end-block.");
 			if (!IsEndBlockTime) throw new BnfStateException(this, "BNF expected begin-block, reference or literal; got end-block.");
 			Rules.Pop();
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
 		}
 
-		public bool IsEmpty {
+		public bool IsCompleted {
 			get {
-				return Rules.Count == 0;
+				return Rules.Count <= 0;
 			}
 		}
 

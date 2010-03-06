@@ -144,6 +144,7 @@ namespace Jgr.Grammar {
 			var nextStates = new List<FsmState>();
 			var nextReferences = new List<FsmState>();
 			var nextReferenceNames = new List<string>();
+			NextStateHasFinish = false;
 			foreach (var next in Next) {
 				if (next is FsmStateUnlink) {
 					nextStates.Add(next.Next[0]);
