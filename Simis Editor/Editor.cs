@@ -8,6 +8,7 @@ using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using Jgr;
+using Jgr.Grammar;
 using Jgr.Gui;
 using Jgr.IO.Parser;
 using Microsoft.CSharp;
@@ -41,6 +43,7 @@ namespace SimisEditor
 		SimisFile File;
 		SimisTreeNode SavedFileTree;
 		TreeNode SelectedNode;
+		TreeNode ContextNode;
 		SimisProvider SimisProvider;
 
 		#region Initialization
@@ -410,6 +413,85 @@ namespace SimisEditor
             SelectNode(e.Node);
         }
 
+		void SimisTree_MouseUp(object sender, MouseEventArgs e) {
+			// Basically fake right-clicking the tree so we can get the tree node that was right-clicked (KB810001).
+			if (e.Button == MouseButtons.Right) {
+				var point = new Point(e.X, e.Y + 1);
+				var node = SimisTree.GetNodeAt(point);
+				if (node != null) {
+					ContextNode = node;
+					contextMenuStrip.Show(SimisTree, point);
+				}
+			}
+		}
+
+		void contextMenuStrip_Opening(object sender, System.ComponentModel.CancelEventArgs e) {
+			// No ContextNode means we're not coming from SimisTree_MouseUp; most likely from context menu key.
+			if (ContextNode == null) {
+				ContextNode = SimisTree.SelectedNode;
+			}
+			// No context at all, give up thanks.
+			if ((ContextNode == null) || (ContextNode.Tag == null)) {
+				e.Cancel = true;
+				return;
+			}
+			// Make sure the user knows what they're on, as the tree doesn't keep the selection on the item.
+			var target = ((SimisTreeNode)ContextNode.Tag);
+			nodeLabelToolStripMenuItem.Visible = false;
+			var needSeparator = false;
+			// Remove all existing menu items.
+			for (var i = 0; i < contextMenuStrip.Items.Count; i++) {
+				if (contextMenuStrip.Items[i].Tag is string) {
+					contextMenuStrip.Items.RemoveAt(i);
+					i--;
+				}
+			}
+			// Get the BNF state for deciding what modifications we can make.
+			//contextMenuStrip.Items.Add("BNF: " + String.Join(", ", GetBnfState(ContextNode).ValidStates.ToArray())).Tag = "";
+			var pathsBefore = GetBnfPaths(ContextNode.PrevNode, ContextNode);
+			var pathsChildBefore = GetBnfPaths(null, ContextNode.FirstNode);
+			var pathsChildAfter = GetBnfPaths(ContextNode.LastNode, null);
+			var pathsAfter = GetBnfPaths(ContextNode, ContextNode.NextNode);
+
+			if (pathsBefore.Any(_ => true)) {
+				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				foreach (var path in pathsBefore.OrderBy(p => String.Join(", ", p.ToArray()))) {
+					contextMenuStrip.Items.Add("Insert " + String.Join(", ", path.ToArray()) + " before " + target.Type).Tag = String.Join(" ", path.ToArray());
+				}
+				needSeparator = true;
+			}
+			if (pathsChildBefore.Any(_ => true)) {
+				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				foreach (var path in pathsChildBefore.OrderBy(p => String.Join(", ", p.ToArray()))) {
+					contextMenuStrip.Items.Add("Prepend " + String.Join(", ", path.ToArray()) + " to " + target.Type).Tag = String.Join(" ", path.ToArray());
+				}
+				needSeparator = true;
+			}
+			if (pathsChildAfter.Any(_ => true)) {
+				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				foreach (var path in pathsChildAfter.OrderBy(p => String.Join(", ", p.ToArray()))) {
+					contextMenuStrip.Items.Add("Append " + String.Join(", ", path.ToArray()) + " to " + target.Type).Tag = String.Join(" ", path.ToArray());
+				}
+				needSeparator = true;
+			}
+			if (pathsAfter.Any(_ => true)) {
+				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				foreach (var path in pathsAfter.OrderBy(p => String.Join(", ", p.ToArray()))) {
+					contextMenuStrip.Items.Add("Insert " + String.Join(", ", path.ToArray()) + " after " + target.Type).Tag = String.Join(" ", path.ToArray());
+				}
+				needSeparator = true;
+			}
+			if (!needSeparator) {
+				nodeLabelToolStripMenuItem.Text = "No modifications possible here";
+				nodeLabelToolStripMenuItem.Visible = true;
+			}
+			// TODO: Insert all the modification menu items here.
+		}
+
+		void contextMenuStrip_Closed(object sender, ToolStripDropDownClosedEventArgs e) {
+			ContextNode = null;
+		}
+
 		void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
 			if (SelectedNode == null) {
 				return;
@@ -540,10 +622,12 @@ namespace SimisEditor
         void SelectNode(TreeNode treeNode) {
 			if ((treeNode == null) || (treeNode.Tag == null)) {
 				SelectedNode = null;
+				statusBarLabel.Text = "";
 				SimisProperties.SelectedObject = null;
 				return;
 			}
 			SelectedNode = treeNode;
+			statusBarLabel.Text = GetBnfLocation(File, SelectedNode);
 			SimisProperties.SelectedObject = CreateEditObjectFor((SimisTreeNode)SelectedNode.Tag);
         }
 
@@ -745,6 +829,109 @@ namespace SimisEditor
 			dProperty.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), dField.Name), new CodeVariableReferenceExpression("value")));
 			dProperties.Add(dProperty);
 			return dProperty;
+		}
+
+		string GetBnfLocation(SimisFile file, TreeNode treeNode) {
+			var nodes = new Stack<KeyValuePair<SimisTreeNode, bool>>();
+			while (treeNode != null) {
+				nodes.Push(new KeyValuePair<SimisTreeNode, bool>((SimisTreeNode)treeNode.Tag, true));
+				//while (treeNode.PrevNode != null) {
+				//    treeNode = treeNode.PrevNode;
+				//    nodes.Push(new KeyValuePair<SimisTreeNode, bool>((SimisTreeNode)treeNode.Tag, false));
+				//}
+				treeNode = treeNode.Parent;
+			}
+			var str = String.Join("", nodes.Select(n => n.Key.Type + (n.Value ? " > " : " + ")).ToArray());
+			return str.Substring(0, str.Length - 3);
+
+			//var bnfState = GetBnfState(treeNode);
+			//return bnfState.ToString();
+		}
+
+		BnfState GetBnfState(TreeNode treeNode) {
+			return GetBnfState(treeNode, false);
+		}
+
+		BnfState GetBnfState(TreeNode treeNode, bool beforeChildren) {
+			var nodes = new List<SimisTreeNode>();
+			while (treeNode != null) {
+				nodes.Insert(0, (SimisTreeNode)treeNode.Tag);
+				treeNode = treeNode.Parent;
+			}
+			var bnfState = new BnfState(File.SimisFormat.Bnf);
+			for (var i = 1; i < nodes.Count; i++) {
+				NavigateBnfStateThrough(bnfState, nodes[i - 1], nodes[i]);
+			}
+			if (nodes.Count > 0) {
+				if (beforeChildren) {
+					bnfState.MoveTo(nodes[nodes.Count - 1].Type);
+					if (bnfState.IsEnterBlockTime) {
+						bnfState.EnterBlock();
+					}
+				} else {
+					NavigateBnfStateThrough(bnfState, nodes[nodes.Count - 1], null);
+				}
+			}
+			return bnfState;
+		}
+
+		void NavigateBnfStateThrough(BnfState bnfState, SimisTreeNode node, SimisTreeNode child) {
+			bnfState.MoveTo(node.Type);
+			if (bnfState.IsEnterBlockTime) {
+				bnfState.EnterBlock();
+				foreach (var cnode in node) {
+					if (cnode == child) return;
+					NavigateBnfStateThrough(bnfState, cnode, null);
+				}
+				bnfState.LeaveBlock();
+			}
+		}
+
+		IEnumerable<IEnumerable<string>> GetBnfPaths(TreeNode treeNode1, TreeNode treeNode2) {
+			if ((treeNode1 == null) && (treeNode2 == null)) {
+				return new string[0][];
+			}
+			if (treeNode1 != null) {
+				return GetBnfPaths(GetBnfState(treeNode1), "<finish>");
+			}
+			if (treeNode2 != null) {
+				return GetBnfPaths(GetBnfState(treeNode2.Parent, true), ((SimisTreeNode)treeNode2.Tag).Type);
+			}
+			return GetBnfPaths(GetBnfState(treeNode1), ((SimisTreeNode)treeNode2.Tag).Type);
+		}
+
+		const int BnfPathDepth = 10;
+
+		IEnumerable<IEnumerable<string>> GetBnfPaths(BnfState bnfState, string targetName) {
+			var paths = new List<Stack<string>>();
+			foreach (var state in bnfState.State.NextStates) {
+				paths.AddRange(GetBnfPaths(state, targetName, BnfPathDepth));
+			}
+			return paths.Where(p => p.Count > 0).Select(p => (IEnumerable<string>)p);
+		}
+
+		IEnumerable<Stack<string>> GetBnfPaths(FsmState fsmState, string targetName, int depth) {
+			var paths = new List<Stack<string>>();
+			if ((depth < BnfPathDepth) && (fsmState.ReferenceName == targetName)) {
+				paths.Add(new Stack<string>());
+				return paths;
+			}
+			if (fsmState.NextStateNames.Contains(targetName)) {
+				paths.Add(new Stack<string>());
+			} else if (depth > 1) {
+				foreach (var state in fsmState.NextStates) {
+					paths.AddRange(GetBnfPaths(state, targetName, depth - 1));
+				}
+			}
+			if (fsmState.IsReference) {
+				if (paths.Any(p => p.Count == 0)) {
+					paths = new List<Stack<string>>(paths.Where(p => p.Count == 0).Take(1));
+				}
+				foreach (var path in paths) {
+					path.Push(fsmState.ReferenceName);
+				}
+			}
+			return paths;
 		}
 	}
 }

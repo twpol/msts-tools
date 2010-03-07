@@ -134,22 +134,15 @@ namespace Jgr.Grammar
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state '" + reference + "'.");
 			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
 			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
-			if (Rules.Count == 0) {
-				if (!Bnf.Productions.ContainsKey(reference)) throw new BnfStateException(this, "BNF has no production for root reference '" + reference + "'.");
-				Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Productions[reference], Bnf.Productions[reference].ExpressionFsm.Root));
+			var targets = ValidReferences;
+			var target = targets.FirstOrDefault(s => ((ReferenceOperator)s.Operator).Reference == reference);
+			if (target == null) throw new BnfStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
+			var rop = (ReferenceOperator)target.Operator;
+			var old = Rules.Pop();
+			Rules.Push(new KeyValuePair<BnfRule, FsmState>(old.Key, target));
+			if (Bnf.Productions.ContainsKey(rop.Reference)) {
+				Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Productions[rop.Reference], Bnf.Productions[reference].ExpressionFsm.Root));
 				IsEnterBlockTime = true;
-			} else {
-				var targets = ValidReferences;
-				var target = targets.FirstOrDefault(s => ((ReferenceOperator)s.Operator).Reference == reference);
-				if (target == null) throw new BnfStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
-
-				var rop = (ReferenceOperator)target.Operator;
-				var old = Rules.Pop();
-				Rules.Push(new KeyValuePair<BnfRule, FsmState>(old.Key, target));
-				if (Bnf.Productions.ContainsKey(rop.Reference)) {
-					Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Productions[rop.Reference], Bnf.Productions[reference].ExpressionFsm.Root));
-					IsEnterBlockTime = true;
-				}
 			}
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
 		}
