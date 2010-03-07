@@ -87,6 +87,32 @@ namespace Jgr.IO.Parser
 			return false;
 		}
 
+		public SimisTreeNode GetNextSibling(SimisTreeNode child) {
+			for (var i = 0; i < Count; i++) {
+				if (this[i] == child) {
+					return i == Count - 1 ? null : this[i + 1];
+				}
+			}
+			throw new ArgumentException("child is not a child of this node.", "child");
+		}
+
+		public SimisTreeNode GetPrevSibling(SimisTreeNode child) {
+			for (var i = 0; i < Count; i++) {
+				if (this[i] == child) {
+					return i == 0 ? null : this[i - 1];
+				}
+			}
+			throw new ArgumentException("child is not a child of this node.", "child");
+		}
+
+		public SimisTreeNode GetFirstChild() {
+			return this[0];
+		}
+
+		public SimisTreeNode GetLastChild() {
+			return this[Count - 1];
+		}
+
 		int LastIndexOf(SimisTreeNode node) {
 			for (var i = Count - 1; i >= 0; i--) {
 				if (this[i] == node) return i;
@@ -134,6 +160,9 @@ namespace Jgr.IO.Parser
 		/// <param name="before">The existing child to insert before.</param>
 		/// <returns>The new <see cref="SimisTreeNode"/>.</returns>
 		public SimisTreeNode InsertChild(SimisTreeNode child, SimisTreeNode before) {
+			if (before == null) {
+				return AppendChild(child);
+			}
 			var index = LastIndexOf(before);
 			if (index == -1) throw new InvalidDataException("Cannot InsertChild before node which is not a child of this node.");
 			return InsertChild(child, index);

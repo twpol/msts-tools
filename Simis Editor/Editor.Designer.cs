@@ -40,6 +40,7 @@
 			this.SimisProperties = new System.Windows.Forms.PropertyGrid();
 			this.SimisTree = new System.Windows.Forms.TreeView();
 			this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+			this.nodeLabelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -65,7 +66,6 @@
 			this.issueTrackerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
 			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.nodeLabelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			statusBar = new System.Windows.Forms.StatusStrip();
 			statusBar.SuspendLayout();
 			this.contextMenuStrip.SuspendLayout();
@@ -172,8 +172,14 @@
             this.nodeLabelToolStripMenuItem});
 			this.contextMenuStrip.Name = "contextMenuStrip";
 			this.contextMenuStrip.Size = new System.Drawing.Size(153, 48);
-			this.contextMenuStrip.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuStrip_Closed);
 			this.contextMenuStrip.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip_Opening);
+			// 
+			// nodeLabelToolStripMenuItem
+			// 
+			this.nodeLabelToolStripMenuItem.Enabled = false;
+			this.nodeLabelToolStripMenuItem.Name = "nodeLabelToolStripMenuItem";
+			this.nodeLabelToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.nodeLabelToolStripMenuItem.Text = "NodeLabel";
 			// 
 			// menuStrip
 			// 
@@ -396,13 +402,6 @@
 			this.reloadSimisResourcesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
 			this.reloadSimisResourcesToolStripMenuItem.Text = "Reload Simis Resources";
 			this.reloadSimisResourcesToolStripMenuItem.Click += new System.EventHandler(this.reloadSimisResourcesToolStripMenuItem_Click);
-			// 
-			// nodeLabelToolStripMenuItem
-			// 
-			this.nodeLabelToolStripMenuItem.Enabled = false;
-			this.nodeLabelToolStripMenuItem.Name = "nodeLabelToolStripMenuItem";
-			this.nodeLabelToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-			this.nodeLabelToolStripMenuItem.Text = "NodeLabel";
 			// 
 			// Editor
 			// 
