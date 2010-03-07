@@ -111,12 +111,15 @@ namespace Jgr.Grammar {
 		public IList<FsmState> Next { get; set; }
 		public readonly bool IsReference;
 		public readonly bool IsStructure;
+		public readonly string ReferenceName;
 		// Mutable by IndexFsmUnlinks for display linking.
 		public int Index { get; internal set; }
 		// Mutates when Next property assigned to.
 		public bool NextStateHasFinish { get; private set; }
 		// Mutates when Next property assigned to.
 		public IEnumerable<FsmState> NextStates { get; private set; }
+		// Mutates when Next property assigned to.
+		public IEnumerable<string> NextStateNames { get; private set; }
 		// Mutates when Next property assigned to.
 		public IEnumerable<FsmState> NextReferences { get; private set; }
 		// Mutates when Next property assigned to.
@@ -128,52 +131,57 @@ namespace Jgr.Grammar {
 		}
 
 		public FsmState(Operator op, IEnumerable<FsmState> nexts)
-			: this(op, op is ReferenceOperator, !(op is ReferenceOperator), nexts) {
+			: this(op, op is ReferenceOperator, !(op is ReferenceOperator), op is ReferenceOperator ? (op as ReferenceOperator).Reference : "<unknown>", nexts) {
 			Debug.Assert(op != null);
 		}
 
-		internal FsmState(Operator op, bool isReference, bool isStructure, IEnumerable<FsmState> nexts) {
+		internal FsmState(Operator op, bool isReference, bool isStructure, string referenceName, IEnumerable<FsmState> nexts) {
 			Operator = op;
 			IsReference = isReference;
 			IsStructure = isStructure;
+			ReferenceName = referenceName;
 			Next = new ReadOnlyCollection<FsmState>(new List<FsmState>(nexts));
 			UpdateNextCache();
 		}
 
 		internal void UpdateNextCache() {
 			var nextStates = new List<FsmState>();
+			var nextStateNames = new List<string>();
 			var nextReferences = new List<FsmState>();
 			var nextReferenceNames = new List<string>();
 			NextStateHasFinish = false;
 			foreach (var next in Next) {
 				if (next is FsmStateUnlink) {
 					nextStates.Add(next.Next[0]);
+					nextStateNames.Add(next.Next[0].ReferenceName);
 					if (next.Next[0] is FsmStateFinish) {
 						NextStateHasFinish = true;
 					}
 					if (next.Next[0].IsReference) {
 						nextReferences.Add(next.Next[0]);
-						nextReferenceNames.Add(((ReferenceOperator)(next.Next[0].Operator)).Reference);
+						nextReferenceNames.Add(next.Next[0].ReferenceName);
 					}
 				} else {
 					nextStates.Add(next);
+					nextStateNames.Add(next.ReferenceName);
 					if (next is FsmStateFinish) {
 						NextStateHasFinish = true;
 					}
 					if (next.IsReference) {
 						nextReferences.Add(next);
-						nextReferenceNames.Add(((ReferenceOperator)(next.Operator)).Reference);
+						nextReferenceNames.Add(next.ReferenceName);
 					}
 				}
 			}
 			NextStates = new ReadOnlyCollection<FsmState>(nextStates);
+			NextStateNames = new ReadOnlyCollection<string>(nextStateNames);
 			NextReferences = new ReadOnlyCollection<FsmState>(nextReferences);
 			NextReferenceNames = new ReadOnlyCollection<string>(nextReferenceNames);
 		}
 
 		internal virtual string OpString() {
 			if (IsReference) {
-				return ((ReferenceOperator)Operator).Reference;
+				return ReferenceName;
 			}
 			return "(" + (Operator != null ? Operator.Op.ToString().ToUpperInvariant() : "null") + ")";
 		}
@@ -198,7 +206,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateStart : FsmState {
 		internal FsmStateStart(IEnumerable<FsmState> nexts)
-			: base(null, false, false, nexts) {
+			: base(null, false, false, "<start>", nexts) {
 		}
 
 		internal override string OpString() {
@@ -209,7 +217,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateFinish : FsmState {
 		internal FsmStateFinish()
-			: base(null, false, false, new FsmState[0]) {
+			: base(null, false, false, "<finish>", new FsmState[0]) {
 		}
 
 		internal override string OpString() {
@@ -220,7 +228,7 @@ namespace Jgr.Grammar {
 	[Immutable]
 	public class FsmStateUnlink : FsmState {
 		internal FsmStateUnlink(FsmState state)
-			: base(null, false, false, new FsmState[] { state }) {
+			: base(null, false, false, "<unlink>", new FsmState[] { state }) {
 		}
 
 		internal override string OpString() {

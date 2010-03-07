@@ -25,6 +25,7 @@
 		/// the contents of this method with the code editor.
 		/// </summary>
 		private void InitializeComponent() {
+			this.components = new System.ComponentModel.Container();
 			System.Windows.Forms.StatusStrip statusBar;
 			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("No file loaded");
 			this.statusBarProgress = new System.Windows.Forms.ToolStripProgressBar();
@@ -38,6 +39,7 @@
 			this.ContentPanel = new System.Windows.Forms.ToolStripContentPanel();
 			this.SimisProperties = new System.Windows.Forms.PropertyGrid();
 			this.SimisTree = new System.Windows.Forms.TreeView();
+			this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.menuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -63,8 +65,10 @@
 			this.issueTrackerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
 			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.nodeLabelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			statusBar = new System.Windows.Forms.StatusStrip();
 			statusBar.SuspendLayout();
+			this.contextMenuStrip.SuspendLayout();
 			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -87,8 +91,11 @@
 			// 
 			// statusBarLabel
 			// 
+			this.statusBarLabel.AutoSize = false;
 			this.statusBarLabel.Name = "statusBarLabel";
-			this.statusBarLabel.Size = new System.Drawing.Size(0, 17);
+			this.statusBarLabel.Size = new System.Drawing.Size(769, 17);
+			this.statusBarLabel.Spring = true;
+			this.statusBarLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
 			// BottomToolStripPanel
 			// 
@@ -140,6 +147,7 @@
 			// SimisTree
 			// 
 			this.SimisTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
+			this.SimisTree.ContextMenuStrip = this.contextMenuStrip;
 			this.SimisTree.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.SimisTree.HideSelection = false;
 			this.SimisTree.Location = new System.Drawing.Point(0, 24);
@@ -153,9 +161,19 @@
 			this.SimisTree.ShowRootLines = false;
 			this.SimisTree.Size = new System.Drawing.Size(482, 516);
 			this.SimisTree.TabIndex = 0;
+			this.SimisTree.MouseUp += new System.Windows.Forms.MouseEventHandler(this.SimisTree_MouseUp);
 			this.SimisTree.Enter += new System.EventHandler(this.SimisTree_Enter);
 			this.SimisTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.SimisTree_AfterSelect);
 			this.SimisTree.Leave += new System.EventHandler(this.SimisTree_Leave);
+			// 
+			// contextMenuStrip
+			// 
+			this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.nodeLabelToolStripMenuItem});
+			this.contextMenuStrip.Name = "contextMenuStrip";
+			this.contextMenuStrip.Size = new System.Drawing.Size(153, 48);
+			this.contextMenuStrip.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuStrip_Closed);
+			this.contextMenuStrip.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip_Opening);
 			// 
 			// menuStrip
 			// 
@@ -188,7 +206,7 @@
 			this.newToolStripMenuItem.Enabled = false;
 			this.newToolStripMenuItem.Name = "newToolStripMenuItem";
 			this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-			this.newToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.newToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.newToolStripMenuItem.Text = "&New";
 			this.newToolStripMenuItem.ToolTipText = "Create a new Simis file.";
 			this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
@@ -197,7 +215,7 @@
 			// 
 			this.openToolStripMenuItem.Name = "openToolStripMenuItem";
 			this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-			this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.TextImageRelation = System.Windows.Forms.TextImageRelation.TextBeforeImage;
 			this.openToolStripMenuItem.ToolTipText = "Open an existing Simis file.";
@@ -208,7 +226,7 @@
 			this.saveToolStripMenuItem.Enabled = false;
 			this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
 			this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-			this.saveToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.saveToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.saveToolStripMenuItem.Text = "&Save";
 			this.saveToolStripMenuItem.ToolTipText = "Save the current Simis file.";
 			this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
@@ -217,7 +235,7 @@
 			// 
 			this.saveAsToolStripMenuItem.Enabled = false;
 			this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.saveAsToolStripMenuItem.Text = "Save &As...";
 			this.saveAsToolStripMenuItem.ToolTipText = "Save the current Simis file with a different name.";
 			this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
@@ -225,12 +243,12 @@
 			// toolStripMenuItem1
 			// 
 			this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-			this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+			this.toolStripMenuItem1.Size = new System.Drawing.Size(143, 6);
 			// 
 			// exitToolStripMenuItem
 			// 
 			this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-			this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.exitToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.exitToolStripMenuItem.Text = "E&xit";
 			this.exitToolStripMenuItem.ToolTipText = "Close Simis Editor.";
 			this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
@@ -379,6 +397,13 @@
 			this.reloadSimisResourcesToolStripMenuItem.Text = "Reload Simis Resources";
 			this.reloadSimisResourcesToolStripMenuItem.Click += new System.EventHandler(this.reloadSimisResourcesToolStripMenuItem_Click);
 			// 
+			// nodeLabelToolStripMenuItem
+			// 
+			this.nodeLabelToolStripMenuItem.Enabled = false;
+			this.nodeLabelToolStripMenuItem.Name = "nodeLabelToolStripMenuItem";
+			this.nodeLabelToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.nodeLabelToolStripMenuItem.Text = "NodeLabel";
+			// 
 			// Editor
 			// 
 			this.AllowDrop = true;
@@ -398,6 +423,7 @@
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Editor_FormClosing);
 			statusBar.ResumeLayout(false);
 			statusBar.PerformLayout();
+			this.contextMenuStrip.ResumeLayout(false);
 			this.menuStrip.ResumeLayout(false);
 			this.menuStrip.PerformLayout();
 			this.ResumeLayout(false);
@@ -443,6 +469,8 @@
 		private System.Windows.Forms.ToolStripPanel RightToolStripPanel;
 		private System.Windows.Forms.ToolStripPanel LeftToolStripPanel;
 		private System.Windows.Forms.ToolStripContentPanel ContentPanel;
+		private System.Windows.Forms.ContextMenuStrip contextMenuStrip;
+		private System.Windows.Forms.ToolStripMenuItem nodeLabelToolStripMenuItem;
 	}
 }
 
