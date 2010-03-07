@@ -430,11 +430,13 @@ namespace SimisEditor
 			if (ContextNode == null) {
 				ContextNode = SimisTree.SelectedNode;
 			}
+
 			// No context at all, give up thanks.
 			if ((ContextNode == null) || (ContextNode.Tag == null)) {
 				e.Cancel = true;
 				return;
 			}
+
 			// Make sure the user knows what they're on, as the tree doesn't keep the selection on the item.
 			var target = ((SimisTreeNode)ContextNode.Tag);
 			nodeLabelToolStripMenuItem.Visible = false;
@@ -446,38 +448,48 @@ namespace SimisEditor
 					i--;
 				}
 			}
+
 			// Get the BNF state for deciding what modifications we can make.
 			//contextMenuStrip.Items.Add("BNF: " + String.Join(", ", GetBnfState(ContextNode).ValidStates.ToArray())).Tag = "";
 			var pathsBefore = GetBnfPaths(ContextNode.PrevNode, ContextNode, ContextNode.Parent);
 			var pathsChildBefore = GetBnfPaths(null, ContextNode.FirstNode, ContextNode);
 			var pathsChildAfter = GetBnfPaths(ContextNode.LastNode, null, ContextNode);
 			var pathsAfter = GetBnfPaths(ContextNode, ContextNode.NextNode, ContextNode.Parent);
+			Action addMenuSeparator = () => {
+				var item = contextMenuStrip.Items.Add("-");
+				item.Tag = "";
+			};
+			Action<string, string> addMenuItem = (label, path) => {
+				var item = contextMenuStrip.Items.Add(label);
+				item.Tag = path;
+				item.Click += new EventHandler(contextMenuStripItem_Click);
+			};
 
 			if (pathsBefore.Any(_ => true)) {
-				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				if (needSeparator) addMenuSeparator();
 				foreach (var path in pathsBefore.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					contextMenuStrip.Items.Add("Insert " + String.Join(", ", path.ToArray()) + " before " + target.Type).Tag = String.Join(" ", path.ToArray());
+					addMenuItem("Insert " + String.Join(", ", path.ToArray()) + " before " + target.Type, "[insertbefore]" + String.Join(" ", path.ToArray()));
 				}
 				needSeparator = true;
 			}
 			if (pathsChildBefore.Any(_ => true)) {
-				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				if (needSeparator) addMenuSeparator();
 				foreach (var path in pathsChildBefore.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					contextMenuStrip.Items.Add("Prepend " + String.Join(", ", path.ToArray()) + " to " + target.Type).Tag = String.Join(" ", path.ToArray());
+					addMenuItem("Prepend " + String.Join(", ", path.ToArray()) + " to " + target.Type, "[childbefore]" + String.Join(" ", path.ToArray()));
 				}
 				needSeparator = true;
 			}
 			if (pathsChildAfter.Any(_ => true)) {
-				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				if (needSeparator) addMenuSeparator();
 				foreach (var path in pathsChildAfter.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					contextMenuStrip.Items.Add("Append " + String.Join(", ", path.ToArray()) + " to " + target.Type).Tag = String.Join(" ", path.ToArray());
+					addMenuItem("Append " + String.Join(", ", path.ToArray()) + " to " + target.Type, "[childafter]" + String.Join(" ", path.ToArray()));
 				}
 				needSeparator = true;
 			}
 			if (pathsAfter.Any(_ => true)) {
-				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
+				if (needSeparator) addMenuSeparator();
 				foreach (var path in pathsAfter.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					contextMenuStrip.Items.Add("Insert " + String.Join(", ", path.ToArray()) + " after " + target.Type).Tag = String.Join(" ", path.ToArray());
+					addMenuItem("Insert " + String.Join(", ", path.ToArray()) + " after " + target.Type, "[insertafter]" + String.Join(" ", path.ToArray()));
 				}
 				needSeparator = true;
 			}
@@ -488,8 +500,54 @@ namespace SimisEditor
 			// TODO: Insert all the modification menu items here.
 		}
 
-		void contextMenuStrip_Closed(object sender, ToolStripDropDownClosedEventArgs e) {
-			ContextNode = null;
+		void contextMenuStripItem_Click(object sender, EventArgs e) {
+			var item = sender as ToolStripItem;
+			var newItems = (string)item.Tag;
+			Debug.Assert(newItems.StartsWith("["));
+			var action = newItems.Substring(1, newItems.IndexOf("]") - 1);
+			newItems = newItems.Substring(newItems.IndexOf("]") + 1);
+
+			var node = ContextNode;
+			var blockPath = new Stack<SimisTreeNode>();
+			while (node != null) {
+				blockPath.Push((SimisTreeNode)node.Tag);
+				node = node.Parent;
+			}
+			var blockPathList = new List<SimisTreeNode>(blockPath);
+			var simisTreeNode = (SimisTreeNode)ContextNode.Tag;
+			var newNodes = newItems.Split(' ').Select(s => new SimisTreeNode(s, ""));
+
+			switch (action) {
+				case "insertbefore":
+				case "insertafter":
+					var targetNode = blockPathList.Last();
+					blockPathList.Remove(targetNode);
+					if (action == "insertafter") {
+						targetNode = blockPathList.Last().GetNextSibling(targetNode);
+					}
+					foreach (var newNode in newNodes) {
+						File.Tree = File.Tree.Apply(blockPathList, n => n.InsertChild(newNode, targetNode));
+					}
+					break;
+				case "childbefore":
+					targetNode = blockPathList.Last().GetFirstChild();
+					foreach (var newNode in newNodes) {
+						File.Tree = File.Tree.Apply(blockPathList, n => n.InsertChild(newNode, targetNode));
+					}
+					break;
+				case "childafter":
+					foreach (var newNode in newNodes) {
+						File.Tree = File.Tree.Apply(blockPathList, n => n.AppendChild(newNode));
+					}
+					break;
+			}
+
+			// TODO: New Simis nodes need filling in with the minimum path through the BNF!
+
+			ResyncSimisNodes();
+			SelectNode(SimisTree.SelectedNode);
+			UpdateTitle();
+			UpdateMenu();
 		}
 
 		void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
