@@ -448,10 +448,10 @@ namespace SimisEditor
 			}
 			// Get the BNF state for deciding what modifications we can make.
 			//contextMenuStrip.Items.Add("BNF: " + String.Join(", ", GetBnfState(ContextNode).ValidStates.ToArray())).Tag = "";
-			var pathsBefore = GetBnfPaths(ContextNode.PrevNode, ContextNode);
-			var pathsChildBefore = GetBnfPaths(null, ContextNode.FirstNode);
-			var pathsChildAfter = GetBnfPaths(ContextNode.LastNode, null);
-			var pathsAfter = GetBnfPaths(ContextNode, ContextNode.NextNode);
+			var pathsBefore = GetBnfPaths(ContextNode.PrevNode, ContextNode, ContextNode.Parent);
+			var pathsChildBefore = GetBnfPaths(null, ContextNode.FirstNode, ContextNode);
+			var pathsChildAfter = GetBnfPaths(ContextNode.LastNode, null, ContextNode);
+			var pathsAfter = GetBnfPaths(ContextNode, ContextNode.NextNode, ContextNode.Parent);
 
 			if (pathsBefore.Any(_ => true)) {
 				if (needSeparator) contextMenuStrip.Items.Add("-").Tag = "";
@@ -566,7 +566,7 @@ namespace SimisEditor
 			var simisTreeNodeIndex = 0;
 
 			if (simisTreeNodes.All(n => n is SimisTreeNodeValue)) {
-				simisTreeNodes = new SimisTreeNode[] { };
+				simisTreeNodes = new SimisTreeNode[0];
 			}
 
 			while ((viewTreeNodeIndex < viewTreeNodes.Count) && (simisTreeNodeIndex < simisTreeNodes.Count)) {
@@ -887,17 +887,15 @@ namespace SimisEditor
 			}
 		}
 
-		IEnumerable<IEnumerable<string>> GetBnfPaths(TreeNode treeNode1, TreeNode treeNode2) {
-			if ((treeNode1 == null) && (treeNode2 == null)) {
+		IEnumerable<IEnumerable<string>> GetBnfPaths(TreeNode treeNodeStart, TreeNode treeNodeFinish, TreeNode treeNodeParent) {
+			if ((treeNodeStart == null) && (treeNodeFinish == null) && (((SimisTreeNode)treeNodeParent.Tag).Count > 0) && ((SimisTreeNode)treeNodeParent.Tag).All(n => n is SimisTreeNodeValue)) {
+				// Empty node with all value children. This is a tree visualisation optimisation. We're a bit screwed here.
+				// TODO: Work out what to do with this case (all-value children not in tree).
 				return new string[0][];
 			}
-			if (treeNode1 != null) {
-				return GetBnfPaths(GetBnfState(treeNode1), "<finish>");
-			}
-			if (treeNode2 != null) {
-				return GetBnfPaths(GetBnfState(treeNode2.Parent, true), ((SimisTreeNode)treeNode2.Tag).Type);
-			}
-			return GetBnfPaths(GetBnfState(treeNode1), ((SimisTreeNode)treeNode2.Tag).Type);
+			var bnfState = treeNodeStart != null ? GetBnfState(treeNodeStart) : GetBnfState(treeNodeParent, true);
+			var targetName = treeNodeFinish != null ? ((SimisTreeNode)treeNodeFinish.Tag).Type : "<finish>";
+			return GetBnfPaths(bnfState, targetName);
 		}
 
 		const int BnfPathDepth = 10;
