@@ -277,13 +277,7 @@ namespace Jgr.Msts {
 							continue;
 						}
 
-						//g.DrawLine(Pens.Yellow,
-						//    (float)(x + w * (1024 + trackSection.X) / 2048),
-						//    (float)(y + h * (1024 - trackSection.Z) / 2048),
-						//    x,
-						//    y);
 						var needPoints = trackSection.Track.MainRoute > -1;
-
 						foreach (var path in trackSection.Track.Paths) {
 							// Rotation matrix for quaternion (a, b, c, d).
 							//   [a^2+b^2-c^2-d^2  2bc-2ad          2bd+2ac        ]
@@ -293,6 +287,17 @@ namespace Jgr.Msts {
 							var rxz = 2 * trackSection.DY * trackSection.DW - 2 * trackSection.DX * trackSection.DZ;
 							var rzx = 2 * trackSection.DY * trackSection.DW + 2 * trackSection.DX * trackSection.DZ;
 							var rzz = trackSection.DX * trackSection.DX - trackSection.DY * trackSection.DY - trackSection.DZ * trackSection.DZ + trackSection.DW * trackSection.DW;
+							{
+								// [ C  0  S] [xx yx zx] [ xxC+xzS  yxC+yzS  zxC+zzS]
+								// [ 0  1  0].[xy yy zy]=[ xy       yy       zy     ]
+								// [-S  0  C] [xz yz zz] [-xxS+xzC -yxS+yzC -zxS+zzC]
+								var angle = path.Rotation * Math.PI / 180;
+								var rxx2 = rxx * Math.Cos(angle) + rxz * Math.Sin(angle);
+								var rxz2 = rxz * Math.Cos(angle) - rxx * Math.Sin(angle);
+								var rzx2 = rzx * Math.Cos(angle) + rzz * Math.Sin(angle);
+								var rzz2 = rzz * Math.Cos(angle) - rzx * Math.Sin(angle);
+								rxx = rxx2; rxz = rxz2; rzx = rzx2; rzz = rzz2;
+							}
 
 							var startX = trackSection.X - rxx * path.X - rzx * path.Z;
 							var startZ = trackSection.Z - rxz * path.X - rzz * path.Z;
@@ -306,10 +311,7 @@ namespace Jgr.Msts {
 								needPoints = false;
 							}
 
-							//var index = 1;
 							foreach (var section in path.Sections) {
-								//g.DrawString(String.Format("{0:X8}:{1:X8}:{2}{3}", trackSection.GetHashCode(), path.GetHashCode(), index, section.IsCurve ? "c" : "s"), SystemFonts.SmallCaptionFont, Brushes.Blue, (float)(x + w * (1024 + startX) / 2048), (float)(y + h * (1024 - startZ) / 2048));
-								//index++;
 								if (section.IsCurve) {
 									var angle = section.Angle * Math.PI / 180;
 									// Rotate 90 degrees left or right base ioon +ve or -ve angle (-ve angle = left).
@@ -320,21 +322,7 @@ namespace Jgr.Msts {
 									var curveEndZ = curveCenterZ + (startX - curveCenterX) * Math.Sin(-angle) + (startZ - curveCenterZ) * Math.Cos(-angle);
 									// Work out the display angle.
 									var angleStart = (float)(Math.Asin((curveCenterX - startX) / section.Radius) * 180 / Math.PI);
-									//g.DrawLine(Pens.Yellow,
-									//    (float)(x + w * (1024 + startX) / 2048),
-									//    (float)(y + h * (1024 - startZ) / 2048),
-									//    (float)(x + w * (1024 + curveCenterX) / 2048),
-									//    (float)(y + h * (1024 - curveCenterZ) / 2048));
-									//g.DrawLine(Pens.Yellow,
-									//    (float)(x + w * (1024 + curveEndX) / 2048),
-									//    (float)(y + h * (1024 - curveEndZ) / 2048),
-									//    (float)(x + w * (1024 + curveCenterX) / 2048),
-									//    (float)(y + h * (1024 - curveCenterZ) / 2048));
-									//g.DrawLine(Pens.Blue,
-									//    (float)(x + w * (1024 + startX) / 2048),
-									//    (float)(y + h * (1024 - startZ) / 2048),
-									//    (float)(x + w * (1024 + curveEndX) / 2048),
-									//    (float)(y + h * (1024 - curveEndZ) / 2048));
+
 									g.DrawArc(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
 										(float)(x + w * (1024 + curveCenterX - section.Radius) / 2048),
 										(float)(y + h * (1024 - curveCenterZ - section.Radius) / 2048),
@@ -342,13 +330,7 @@ namespace Jgr.Msts {
 										(float)(h * section.Radius / 1024),
 										(startZ < curveCenterZ ? 90 + angleStart : 270 - angleStart),
 										(float)section.Angle);
-									// [xx yx zx] [ C  0  S] [xxC-zxS yx xxS+zxC]
-									// [xy yy zy].[ 0  1  0]=[xyC-zyS yy xyS+zyC]
-									// [xz yz zz] [-S  0  C] [xzC-zzS yz xzS+zzC]
-									//var rxx2 = rxx * Math.Cos(angle) + rzx * Math.Sin(angle);
-									//var rxz2 = rxz * Math.Cos(angle) + rzz * Math.Sin(angle);
-									//var rzx2 = rzx * Math.Cos(angle) - rxx * Math.Sin(angle);
-									//var rzz2 = rzz * Math.Cos(angle) - rxz * Math.Sin(angle);
+
 									// [ C  0  S] [xx yx zx] [ xxC+xzS  yxC+yzS  zxC+zzS]
 									// [ 0  1  0].[xy yy zy]=[ xy       yy       zy     ]
 									// [-S  0  C] [xz yz zz] [-xxS+xzC -yxS+yzC -zxS+zzC]
@@ -362,21 +344,13 @@ namespace Jgr.Msts {
 								} else {
 									var straightEndX = startX - rzx * section.Length;
 									var straightEndZ = startZ - rzz * section.Length;
-									//g.DrawLine(Pens.LightGray,
-									//    (float)(x + w * (1024 + startX) / 2048),
-									//    (float)(y + h * (1024 - startZ) / 2048),
-									//    x,
-									//    y + h);
-									//g.DrawLine(Pens.LightGray,
-									//    (float)(x + w * (1024 + straightEndX) / 2048),
-									//    (float)(y + h * (1024 - straightEndZ) / 2048),
-									//    x,
-									//    y + h);
+
 									g.DrawLine(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
 										(float)(x + w * (1024 + startX) / 2048),
 										(float)(y + h * (1024 - startZ) / 2048),
 										(float)(x + w * (1024 + straightEndX) / 2048),
 										(float)(y + h * (1024 - straightEndZ) / 2048));
+
 									startX = straightEndX;
 									startZ = straightEndZ;
 								}
