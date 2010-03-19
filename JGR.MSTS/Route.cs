@@ -56,10 +56,12 @@ namespace Jgr.Msts {
 
 		public TrackService TrackService {
 			get {
-				if (_TrackService != null) {
-					return _TrackService;
+				lock (this) {
+					if (_TrackService != null) {
+						return _TrackService;
+					}
+					_TrackService = new TrackService(FileName, Files, SimisProvider);
 				}
-				_TrackService = new TrackService(Files, SimisProvider);
 				return _TrackService;
 			}
 		}

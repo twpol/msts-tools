@@ -761,8 +761,8 @@ namespace SimisEditor
 				var dPropertyName = node.Name.Length > 0 ? node.Name : node.Type;
 				if (block.Count(b => (b.Name.Length > 0 ? b.Name : b.Type) == dPropertyName) > 1) {
 					var index = 1;
-					while (dBlockNames.Contains(dPropertyName + (index == 0 ? "" : "_" + index))) index++;
-					dPropertyName += "_" + index;
+					while (dBlockNames.Contains((index == 0 ? "" : "_" + index.ToString("D2") + "_") + dPropertyName)) index++;
+					dPropertyName = "_" + index.ToString("D2") + "_" + dPropertyName;
 					dBlockNames.Add(dPropertyName);
 				}
 				if (block.Count == 1) {
