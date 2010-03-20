@@ -72,6 +72,7 @@ namespace SimisEditor
 				menuItem.MouseEnter += new EventHandler(toolStrip_Enter);
 				menuItem.MouseLeave += new EventHandler(toolStrip_Leave);
 			}
+			menuItem.DropDown.ShowItemToolTips = false;
 			foreach (ToolStripItem item in menuItem.DropDown.Items) {
 				InitializeMenu(item);
 			}
@@ -449,16 +450,25 @@ namespace SimisEditor
 				}
 			}
 
-			// Get the BNF state for deciding what modifications we can make.
-			//contextMenuStrip.Items.Add("BNF: " + String.Join(", ", GetBnfState(ContextNode).ValidStates.ToArray())).Tag = "";
+			var hasChildren = ContextNode.FirstNode != null;
+			var isValueNode = target is SimisTreeNodeValue;
+
+			// Collect all the possible paths to insert before this node.
 			var pathsBefore = GetBnfPaths(ContextNode.PrevNode, ContextNode, ContextNode.Parent);
-			var pathsChildBefore = GetBnfPaths(null, ContextNode.FirstNode, ContextNode);
-			var pathsChildAfter = GetBnfPaths(ContextNode.LastNode, null, ContextNode);
+			// Collect all the possible paths to insert before this node's first child IF it has children (otherwise no children means pathsChildBefore == pathsChildAfter).
+			var pathsChildBefore = !isValueNode && hasChildren ? GetBnfPaths(null, ContextNode.FirstNode, ContextNode) : new string[0][];
+			// Collect all the possible paths to insert after this node's last child.
+			var pathsChildAfter = !isValueNode ? GetBnfPaths(ContextNode.LastNode, null, ContextNode) : new string[0][];
+			// Collect all the possible paths to insert after this node.
 			var pathsAfter = GetBnfPaths(ContextNode, ContextNode.NextNode, ContextNode.Parent);
+
+			// Action to add a menu separator; we put one between each group of paths to insert.
 			Action addMenuSeparator = () => {
 				var item = contextMenuStrip.Items.Add("-");
 				item.Tag = "";
 			};
+
+			// Action to add a path insertion item; hooks up the event and data.
 			Action<string, string> addMenuItem = (label, path) => {
 				var item = contextMenuStrip.Items.Add(label);
 				item.Tag = path;
@@ -497,7 +507,6 @@ namespace SimisEditor
 				nodeLabelToolStripMenuItem.Text = "No modifications possible here";
 				nodeLabelToolStripMenuItem.Visible = true;
 			}
-			// TODO: Insert all the modification menu items here.
 		}
 
 		void contextMenuStripItem_Click(object sender, EventArgs e) {
@@ -515,7 +524,7 @@ namespace SimisEditor
 			}
 			var blockPathList = new List<SimisTreeNode>(blockPath);
 			var simisTreeNode = (SimisTreeNode)ContextNode.Tag;
-			var newNodes = newItems.Split(' ').Select(s => new SimisTreeNode(s, ""));
+			var newNodes = newItems.Split(' ').Select(s => SimisTreeNodeValue.NodeTypes.ContainsKey(s) ? (SimisTreeNode)SimisTreeNodeValue.NodeTypes[s].GetConstructor(new Type[] { typeof(string), typeof(string) }).Invoke(new object[] { s, "" }) : new SimisTreeNode(s, ""));
 
 			switch (action) {
 				case "insertbefore":
@@ -567,16 +576,20 @@ namespace SimisEditor
 			var value = e.ChangedItem.Value;
 
 			var blockPathList = new List<SimisTreeNode>(blockPath);
-			if (child is SimisTreeNodeValueIntegerUnsigned) {
+			if (child is SimisTreeNodeValueString) {
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
+			} else if (child is SimisTreeNodeValueIntegerUnsigned) {
 				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerUnsigned(child.Type, child.Name, (uint)value), child));
 			} else if (child is SimisTreeNodeValueIntegerSigned) {
 				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerSigned(child.Type, child.Name, (int)value), child));
 			} else if (child is SimisTreeNodeValueIntegerDWord) {
 				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerDWord(child.Type, child.Name, (uint)value), child));
+			} else if (child is SimisTreeNodeValueIntegerWord) {
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerWord(child.Type, child.Name, (ushort)value), child));
+			} else if (child is SimisTreeNodeValueIntegerByte) {
+				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerByte(child.Type, child.Name, (byte)value), child));
 			} else if (child is SimisTreeNodeValueFloat) {
 				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (float)value), child));
-			} else if (child is SimisTreeNodeValueString) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
 			}
 
 			ResyncSimisNodes();
@@ -780,12 +793,20 @@ namespace SimisEditor
 				dPropertyValues.Add(dSimisProperty.Name, nodeValue);
 
 				CodeTypeReference type;
-				if (node is SimisTreeNodeValueInteger) {
-					type = new CodeTypeReference(typeof(long));
-				} else if (node is SimisTreeNodeValueFloat) {
-					type = new CodeTypeReference(typeof(double));
-				} else if (node is SimisTreeNodeValueString) {
+				if (node is SimisTreeNodeValueString) {
 					type = new CodeTypeReference(typeof(string));
+				} else if (node is SimisTreeNodeValueIntegerUnsigned) {
+					type = new CodeTypeReference(typeof(uint));
+				} else if (node is SimisTreeNodeValueIntegerSigned) {
+					type = new CodeTypeReference(typeof(int));
+				} else if (node is SimisTreeNodeValueIntegerDWord) {
+					type = new CodeTypeReference(typeof(uint));
+				} else if (node is SimisTreeNodeValueIntegerWord) {
+					type = new CodeTypeReference(typeof(ushort));
+				} else if (node is SimisTreeNodeValueIntegerByte) {
+					type = new CodeTypeReference(typeof(byte));
+				} else if (node is SimisTreeNodeValueFloat) {
+					type = new CodeTypeReference(typeof(float));
 				} else {
 					return;
 				}
@@ -951,9 +972,13 @@ namespace SimisEditor
 				// TODO: Work out what to do with this case (all-value children not in tree).
 				return new string[0][];
 			}
-			var bnfState = treeNodeStart != null ? GetBnfState(treeNodeStart) : GetBnfState(treeNodeParent, true);
-			var targetName = treeNodeFinish != null ? ((SimisTreeNode)treeNodeFinish.Tag).Type : "<finish>";
-			return GetBnfPaths(bnfState, targetName);
+			try {
+				var bnfState = treeNodeStart != null ? GetBnfState(treeNodeStart) : GetBnfState(treeNodeParent, true);
+				var targetName = treeNodeFinish != null ? ((SimisTreeNode)treeNodeFinish.Tag).Type : "<finish>";
+				return GetBnfPaths(bnfState, targetName);
+			} catch (BnfStateException) {
+				return new string[0][];
+			}
 		}
 
 		const int BnfPathDepth = 10;
@@ -982,6 +1007,13 @@ namespace SimisEditor
 			if (fsmState.IsReference) {
 				if (paths.Any(p => p.Count == 0)) {
 					paths = new List<Stack<string>>(paths.Where(p => p.Count == 0).Take(1));
+				} else {
+					for (var i = 0; i < paths.Count; i++) {
+						if (paths.Count(p => p.Contains(paths[i].First())) > 1) {
+							paths = new List<Stack<string>>(paths.Where(p => p == paths[i] || !p.Contains(paths[i].First())));
+							i = -1;
+						}
+					}
 				}
 				foreach (var path in paths) {
 					path.Push(fsmState.ReferenceName);
