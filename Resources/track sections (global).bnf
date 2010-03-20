@@ -22,10 +22,10 @@ WaterScoop                    ==> .
 XoverPt                       ==> :float :uint :float .
 
 /* Format types */
-TrackSections                 ==> :uint,NextIndex {:TrackSection} .
-TrackSection                  ==> :uint,Index [:SectionSize [:SectionCurve|:SectionSkew] [:WaterScoop]] .
-TrackShapes                   ==> :uint,NextIndex {:TrackShape} .
-TrackShape                    ==> :uint,Index [:FileName {:ClearanceDist|:CrossoverShape|:MainRoute|:ManualJunctionShape|:NumPaths|:RoadShape|:SectionIdx|:TunnelShape|:XoverPts}] .
+TrackSections                 ==> :uint,NextID {:TrackSection} .
+TrackSection                  ==> :uint,TrackSectionID [:SectionSize [:SectionCurve|:SectionSkew] [:WaterScoop]] .
+TrackShapes                   ==> :uint,NextID {:TrackShape} .
+TrackShape                    ==> :uint,TrackShapeID [:FileName {:ClearanceDist|:CrossoverShape|:MainRoute|:ManualJunctionShape|:NumPaths|:RoadShape|:SectionIdx|:TunnelShape|:XoverPts}] .
 XoverPts                      ==> :uint,Count {:XoverPt} .
 
 EOF                           /* End of file */
