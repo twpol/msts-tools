@@ -94,7 +94,7 @@ namespace Jgr.IO.Parser {
 			throw new ArgumentException("child is not a child of this node.", "child");
 		}
 
-		public SimisTreeNode GetPrevSibling(SimisTreeNode child) {
+		public SimisTreeNode GetPreviousSibling(SimisTreeNode child) {
 			for (var i = 0; i < Count; i++) {
 				if (this[i] == child) {
 					return i == 0 ? null : this[i - 1];
