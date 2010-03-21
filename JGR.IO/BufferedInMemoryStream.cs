@@ -34,7 +34,6 @@ namespace Jgr.IO
 		public BufferedInMemoryStream(Stream stream) {
 			Memory = new MemoryStream();
 			Base = stream;
-			if (Base.CanRead) ReadChunk(ChunkSize);
 		}
 
 		public override void Close() {

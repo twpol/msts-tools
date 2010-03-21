@@ -35,9 +35,9 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ConstructorTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
-			Assert.AreEqual(0, stream.Position, "Base stream must not be read from.");
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
+			Assert.AreEqual(0, stream.Position, "Must not read from base stream.");
 			Assert.AreEqual(0, target.Position, "Must start from the beginning.");
 		}
 
@@ -46,8 +46,8 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void CanReadTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			Assert.AreEqual(true, target.CanRead);
 		}
 
@@ -56,8 +56,8 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void CanSeekTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			Assert.AreEqual(true, target.CanSeek);
 		}
 
@@ -66,8 +66,8 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void CanWriteTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			Assert.AreEqual(true, target.CanWrite);
 		}
 
@@ -76,10 +76,15 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void CloseTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
+			var i = stream.Position;
 			target.Close();
-			Assert.Inconclusive("A method that does not return a value cannot be verified.");
+			try {
+				i = stream.Position;
+				Assert.Fail("Must close base stream.");
+			} catch (ObjectDisposedException) {
+			}
 		}
 
 		/// <summary>
@@ -87,9 +92,9 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void LengthTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
-			Assert.AreEqual(1024, target.Length, "Should exposed length of seekable base stream.");
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
+			Assert.AreEqual(1024, target.Length, "Must exposed length of seekable base stream.");
 		}
 
 		/// <summary>
@@ -97,8 +102,8 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void FlushTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			target.WriteByte(0);
 			target.Flush();
 			Assert.AreEqual(0, stream.Position, "Must not advance base stream.");
@@ -109,10 +114,10 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void PositionTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			target.WriteByte(0);
-			Assert.AreEqual(1, target.Position, "Stream must advance for writes.");
+			Assert.AreEqual(1, target.Position, "Must advance stream for writes.");
 		}
 
 		/// <summary>
@@ -120,16 +125,16 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ReadTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
-			byte[] buffer = new byte[10];
-			int offset = 0;
-			int count = 10;
-			int actual = target.Read(buffer, offset, count);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
+			var buffer = new byte[10];
+			var offset = 0;
+			var count = 10;
+			var actual = target.Read(buffer, offset, count);
 			Assert.AreNotEqual(0, stream.Position, "Base stream must have advanced.");
 			Assert.AreEqual(count, actual, "Must read 'count' bytes.");
 			Assert.AreEqual(count, target.Position, "Must advanced 'count' bytes.");
-			// FIXME: Verify 'buffer' has correct contents.
+			Assert.Inconclusive("Verify 'buffer' has correct contents.");
 		}
 
 		/// <summary>
@@ -137,12 +142,12 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void RealFlushTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			target.WriteByte(1);
 			target.RealFlush();
 			Assert.AreNotEqual(0, stream.Position, "Must advanced base stream on ReadFlush() after Write().");
-			// FIXME: Verify 'stream' has correct contents.
+			Assert.Inconclusive("Verify 'stream' has correct contents.");
 		}
 
 		/// <summary>
@@ -150,11 +155,11 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void SetLengthTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
 			try {
 				target.SetLength(0);
-				Assert.Fail("Should have thrown NotImplementedException");
+				Assert.Fail("Must throw NotImplementedException.");
 			} catch (NotImplementedException) {
 			}
 		}
@@ -164,19 +169,15 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void SeekTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream);
-			long offset = 10;
-			try {
-				long actual = target.Seek(offset, SeekOrigin.Begin);
-				Assert.Fail("Should have thrown ArgumentOutOfRangeException");
-			} catch (ArgumentOutOfRangeException) {
-			}
-			// Causes base stream to be read.
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream);
+			var offset = 10;
+			target.Seek(offset, SeekOrigin.Begin);
+			Assert.AreEqual(0, stream.Position, "Must not advanced base stream.");
 			target.ReadByte();
 			Assert.AreNotEqual(0, stream.Position, "Must advanced base stream.");
 			{
-				long actual = target.Seek(offset, SeekOrigin.Begin);
+				var actual = target.Seek(offset, SeekOrigin.Begin);
 				Assert.AreEqual(offset, actual, "Must seek stream.");
 			}
 		}
@@ -186,11 +187,11 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void WriteTest() {
-			Stream stream = new MemoryStream(new byte[1024]);
-			BufferedInMemoryStream target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
-			byte[] buffer = null; // TODO: Initialize to an appropriate value
-			int offset = 0; // TODO: Initialize to an appropriate value
-			int count = 0; // TODO: Initialize to an appropriate value
+			var stream = new MemoryStream(new byte[1024]);
+			var target = new BufferedInMemoryStream(stream); // TODO: Initialize to an appropriate value
+			var buffer = new byte[0]; // TODO: Initialize to an appropriate value
+			var offset = 0; // TODO: Initialize to an appropriate value
+			var count = 0; // TODO: Initialize to an appropriate value
 			target.Write(buffer, offset, count);
 			Assert.Inconclusive("A method that does not return a value cannot be verified.");
 		}
