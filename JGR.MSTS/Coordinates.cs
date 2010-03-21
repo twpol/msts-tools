@@ -11,18 +11,18 @@ using System.Globalization;
 namespace Jgr.Msts {
 	public class TileCoordinate {
 		public readonly int X;
-		public readonly int Y;
+		public readonly int Z;
 		public readonly int Size;
-		public TileCoordinate(int x, int y)
-			: this(x, y, 1) {
+		public TileCoordinate(int x, int z)
+			: this(x, z, 1) {
 		}
-		public TileCoordinate(int x, int y, int size) {
+		public TileCoordinate(int x, int z, int size) {
 			X = x;
-			Y = y;
+			Z = z;
 			Size = size;
 		}
 		public override string ToString() {
-			return "TILE{" + X + " " + Y + " " + Size + "}";
+			return "TILE{" + X + " " + Z + " " + Size + "}";
 		}
 	}
 
@@ -89,7 +89,7 @@ namespace Jgr.Msts {
 		// MSTS Tile -> Tile Name.
 		public static string ConvertToTileName(TileCoordinate coordinates) {
 			var sample = coordinates.X + 16384;
-			var line = 16384 - coordinates.Y - 1;
+			var line = 16384 - coordinates.Z - 1;
 			var depthRight = new List<bool>();
 			var depthDown = new List<bool>();
 			for (var i = 14; (i >= 0) && (Math.Pow(2, i) >= coordinates.Size); i--) {
@@ -113,31 +113,31 @@ namespace Jgr.Msts {
 		}
 
 		// MSTS Tile -> IGH
-		public static IghCoordinate ConvertToIgh(TileCoordinate coordinates, double tileX, double tileY) {
-			Debug.Assert(tileY >= 0, "tileY is off the top");
-			Debug.Assert(tileY <= 1, "tileY is off the bottom");
+		public static IghCoordinate ConvertToIgh(TileCoordinate coordinates, double tileX, double tileZ) {
+			Debug.Assert(tileZ >= 0, "tileZ is off the top");
+			Debug.Assert(tileZ <= 1, "tileZ is off the bottom");
 			Debug.Assert(tileX >= 0, "tileX is off the left");
 			Debug.Assert(tileX <= 1, "tileX is off the right");
-			return new IghCoordinate(2048 * (16384 - coordinates.Y - 1 + tileY), 2048 * (coordinates.X + 16384 + tileX));
+			return new IghCoordinate(2048 * (16384 - coordinates.Z - 1 + tileZ), 2048 * (coordinates.X + 16384 + tileX));
 		}
 
 		// IGH -> MSTS Tile
-		public static TileCoordinate ConvertToTile(IghCoordinate coordinates, out double tileX, out double tileY) {
+		public static TileCoordinate ConvertToTile(IghCoordinate coordinates, out double tileX, out double tileZ) {
 			var x = coordinates.Sample / 2048;
-			var y = coordinates.Line / 2048;
+			var z = coordinates.Line / 2048;
 			tileX = x - Math.Floor(x);
-			tileY = y - Math.Floor(y);
-			Debug.Assert(tileY >= 0, "tileY is off the top");
-			Debug.Assert(tileY <= 1, "tileY is off the bottom");
+			tileZ = z - Math.Floor(z);
+			Debug.Assert(tileZ >= 0, "tileZ is off the top");
+			Debug.Assert(tileZ <= 1, "tileZ is off the bottom");
 			Debug.Assert(tileX >= 0, "tileX is off the left");
 			Debug.Assert(tileX <= 1, "tileX is off the right");
-			return new TileCoordinate((int)Math.Floor(x) - 16384, 16384 - (int)Math.Floor(y) - 1);
+			return new TileCoordinate((int)Math.Floor(x) - 16384, 16384 - (int)Math.Floor(z) - 1);
 		}
 
 		public static TileCoordinate ConvertToTile(IghCoordinate coordinates) {
 			double tileX;
-			double tileY;
-			return ConvertToTile(coordinates, out tileX, out tileY);
+			double tileZ;
+			return ConvertToTile(coordinates, out tileX, out tileZ);
 		}
 
 		// Original calculations:
