@@ -65,17 +65,17 @@ namespace Tests {
 			Assert.AreEqual("name", target.Name);
 			Assert.AreEqual(1, target.Count);
 			Assert.AreEqual(child1.Type, target[0].Type);
-			Assert.AreEqual(child1.Type, target[0].Name);
+			Assert.AreEqual(child1.Name, target[0].Name);
 			Assert.AreEqual(child1.Count, target[0].Count);
 			target = target.AppendChild(child2);
 			Assert.AreEqual("type", target.Type);
 			Assert.AreEqual("name", target.Name);
 			Assert.AreEqual(2, target.Count);
 			Assert.AreEqual(child1.Type, target[0].Type);
-			Assert.AreEqual(child1.Type, target[0].Name);
+			Assert.AreEqual(child1.Name, target[0].Name);
 			Assert.AreEqual(child1.Count, target[0].Count);
 			Assert.AreEqual(child2.Type, target[1].Type);
-			Assert.AreEqual(child2.Type, target[1].Name);
+			Assert.AreEqual(child2.Name, target[1].Name);
 			Assert.AreEqual(child2.Count, target[1].Count);
 		}
 
@@ -123,10 +123,10 @@ namespace Tests {
 			Assert.AreEqual("name", target.Name);
 			Assert.AreEqual(2, target.Count);
 			Assert.AreEqual(child2.Type, target[0].Type);
-			Assert.AreEqual(child2.Type, target[0].Name);
+			Assert.AreEqual(child2.Name, target[0].Name);
 			Assert.AreEqual(child2.Count, target[0].Count);
 			Assert.AreEqual(child1.Type, target[1].Type);
-			Assert.AreEqual(child1.Type, target[1].Name);
+			Assert.AreEqual(child1.Name, target[1].Name);
 			Assert.AreEqual(child1.Count, target[1].Count);
 		}
 
@@ -143,7 +143,7 @@ namespace Tests {
 			Assert.AreEqual("name", target.Name);
 			Assert.AreEqual(1, target.Count);
 			Assert.AreEqual(child2.Type, target[0].Type);
-			Assert.AreEqual(child2.Type, target[0].Name);
+			Assert.AreEqual(child2.Name, target[0].Name);
 			Assert.AreEqual(child2.Count, target[0].Count);
 			target = new SimisTreeNode("type", "name", new SimisTreeNode[] { child1, child2 });
 			target = target.RemoveChild(child2);
@@ -151,7 +151,7 @@ namespace Tests {
 			Assert.AreEqual("name", target.Name);
 			Assert.AreEqual(1, target.Count);
 			Assert.AreEqual(child1.Type, target[0].Type);
-			Assert.AreEqual(child1.Type, target[0].Name);
+			Assert.AreEqual(child1.Name, target[0].Name);
 			Assert.AreEqual(child1.Count, target[0].Count);
 		}
 
@@ -189,14 +189,14 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ToStringTest() {
-			string type = string.Empty; // TODO: Initialize to an appropriate value
-			string name = string.Empty; // TODO: Initialize to an appropriate value
-			SimisTreeNode target = new SimisTreeNode(type, name); // TODO: Initialize to an appropriate value
-			string expected = string.Empty; // TODO: Initialize to an appropriate value
-			string actual;
-			actual = target.ToString();
-			Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
+			SimisTreeNode child1 = new SimisTreeNode("child1type", "child1name");
+			SimisTreeNode child2 = new SimisTreeNode("child2type", "child2name");
+			SimisTreeNode target = new SimisTreeNode("type", "name");
+			Assert.AreEqual("<type \"name\"></type>", target.ToString());
+			target = target.AppendChild(child1);
+			Assert.AreEqual("<type \"name\"><child1type \"child1name\"></child1type></type>", target.ToString());
+			target = target.AppendChild(child2);
+			Assert.AreEqual("<type \"name\"><child1type \"child1name\"></child1type>, <child2type \"child2name\"></child2type></type>", target.ToString());
 		}
 
 		/// <summary>
