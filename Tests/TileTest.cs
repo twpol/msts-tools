@@ -40,7 +40,7 @@ namespace Tests {
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(tileName);
 			Assert.AreEqual(expected.X, actual.X);
-			Assert.AreEqual(expected.Y, actual.Y);
+			Assert.AreEqual(expected.Z, actual.Z);
 		}
 
 		/// <summary>
@@ -66,7 +66,7 @@ namespace Tests {
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new TileCoordinate(x, y), 0, 0));
 			Assert.AreEqual(expected.X, actual.X);
-			Assert.AreEqual(expected.Y, actual.Y);
+			Assert.AreEqual(expected.Z, actual.Z);
 		}
 
 		/// <summary>
@@ -96,7 +96,7 @@ namespace Tests {
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(lat, lon)));
 			Assert.AreEqual(expected.X, actual.X);
-			Assert.AreEqual(expected.Y, actual.Y);
+			Assert.AreEqual(expected.Z, actual.Z);
 		}
 	}
 }

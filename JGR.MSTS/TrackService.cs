@@ -3,29 +3,22 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Text;
 using Jgr.IO;
 using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
 	public class TrackService {
-		public readonly string RoutePath;
-		public readonly string GlobalPath;
 		public readonly SimisProvider SimisProvider;
 		public readonly FileFinder Files;
-		readonly string FileName;
 		readonly SimisFile TSection;
-		readonly SimisFile TDB;
 		public readonly Dictionary<uint, TrackShape> TrackShapes;
 		public readonly Dictionary<string, TrackShape> TrackShapesByFileName;
 		public readonly Dictionary<uint, TrackSection> TrackSections;
 
-		public TrackService(string fileName, FileFinder files, SimisProvider simisProvider) {
-			FileName = fileName;
+		public TrackService(FileFinder files, SimisProvider simisProvider) {
 			Files = files;
 			SimisProvider = simisProvider;
 
@@ -68,9 +61,6 @@ namespace Jgr.Msts {
 					TrackShapesByFileName.Add(ts.FileName, ts);
 				}
 			}
-
-			TDB = new SimisFile(Files[FileName + ".tdb"], SimisProvider);
-			TDB.ReadFile();
 		}
 	}
 

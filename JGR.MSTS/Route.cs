@@ -15,6 +15,7 @@ namespace Jgr.Msts {
 		public readonly string RoutePath;
 		public readonly FileFinder Files;
 		TrackService _TrackService;
+		RouteTrack _RouteTrack;
 		readonly SimisFile TrackFile;
 
 		public Route(string trackFile, SimisProvider simisProvider) {
@@ -60,9 +61,21 @@ namespace Jgr.Msts {
 					if (_TrackService != null) {
 						return _TrackService;
 					}
-					_TrackService = new TrackService(FileName, Files, SimisProvider);
+					_TrackService = new TrackService(Files, SimisProvider);
 				}
 				return _TrackService;
+			}
+		}
+
+		public RouteTrack Track {
+			get {
+				lock (this) {
+					if (_RouteTrack != null) {
+						return _RouteTrack;
+					}
+					_RouteTrack = new RouteTrack(FileName, Files, SimisProvider);
+				}
+				return _RouteTrack;
 			}
 		}
 
