@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Jgr.IO.Parser;
+using System.Globalization;
 
 namespace Jgr.Msts {
 	class TileObject {
@@ -89,10 +90,10 @@ namespace Jgr.Msts {
 				case TileLayer.Tiles:
 					break;
 				case TileLayer.Terrain:
-					string tileElevation = String.Format(@"{0}\Tiles\{1}_y.raw", Route.RoutePath, TileName);
-					string tileShadow = String.Format(@"{0}\Tiles\{1}_n.raw", Route.RoutePath, TileName);
-					string tileUnknown = String.Format(@"{0}\Tiles\{1}_e.raw", Route.RoutePath, TileName);
-					string tileFile = String.Format(@"{0}\Tiles\{1}.t", Route.RoutePath, TileName);
+					string tileElevation = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_y.raw", Route.RoutePath, TileName);
+					string tileShadow = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_n.raw", Route.RoutePath, TileName);
+					string tileUnknown = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_e.raw", Route.RoutePath, TileName);
+					string tileFile = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}.t", Route.RoutePath, TileName);
 
 					var image = new Bitmap(256, 256);
 					using (var g = Graphics.FromImage(image)) {
@@ -149,7 +150,7 @@ namespace Jgr.Msts {
 					// TODO: Roads and track use the same basic data, can we split anything out here?
 					break;
 				case TileLayer.Track:
-					string worldFile = String.Format(@"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
+					string worldFile = String.Format(CultureInfo.InvariantCulture, @"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Y);
 
 					if (File.Exists(worldFile)) {
 						var world = new SimisFile(worldFile, SimisProvider);
@@ -183,7 +184,7 @@ namespace Jgr.Msts {
 										if (Route.TrackService.TrackShapes.ContainsKey(sectionIdx)) {
 											tts.Track = Route.TrackService.TrackShapes[sectionIdx];
 										} else {
-											tts.Label = sectionIdx.ToString();
+											tts.Label = sectionIdx.ToString(CultureInfo.InvariantCulture);
 										}
 									} else {
 										var tpaths = new List<TrackPath>();
@@ -216,7 +217,7 @@ namespace Jgr.Msts {
 					}
 					break;
 				case TileLayer.Markers:
-					string markersFile = String.Format(@"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
+					string markersFile = String.Format(CultureInfo.InvariantCulture, @"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
 
 					if (File.Exists(markersFile)) {
 						var markers = new SimisFile(markersFile, SimisProvider);
@@ -252,21 +253,21 @@ namespace Jgr.Msts {
 			}
 		}
 
-		public void DrawLayer(TileLayer layer, Graphics g, float x, float y, float w, float h) {
+		public void DrawLayer(TileLayer layer, Graphics graphics, float x, float y, float w, float h) {
 			switch (layer) {
 				case TileLayer.Tiles:
-					g.DrawRectangle(Pens.LightGray, x, y, w, h);
+					graphics.DrawRectangle(Pens.LightGray, x, y, w, h);
 					break;
 				case TileLayer.Terrain:
 					if (TerrainImage != null) {
-						g.DrawImage(TerrainImage, x, y, w, h);
+						graphics.DrawImage(TerrainImage, x, y, w, h);
 					}
 					break;
 				case TileLayer.Roads:
 				case TileLayer.Track:
 					foreach (var trackSection in TrackSections) {
 						if (!String.IsNullOrEmpty(trackSection.Label)) {
-							g.DrawString(trackSection.Label, SystemFonts.CaptionFont, Brushes.Black,
+							graphics.DrawString(trackSection.Label, SystemFonts.CaptionFont, Brushes.Black,
 								(int)(x + w * (0 + (trackSection.X + 1024) / 2048)),
 								(int)(y + h * (1 - (trackSection.Z + 1024) / 2048)));
 						}
@@ -303,7 +304,7 @@ namespace Jgr.Msts {
 							var startZ = trackSection.Z - rxz * path.X - rzz * path.Z;
 
 							if (needPoints) {
-								g.FillEllipse(Brushes.Black,
+								graphics.FillEllipse(Brushes.Black,
 									(float)(x + w * (1024 + startX) / 2048) - 3,
 									(float)(y + h * (1024 - startZ) / 2048) - 3,
 									6,
@@ -323,7 +324,7 @@ namespace Jgr.Msts {
 									// Work out the display angle.
 									var angleStart = (float)(Math.Asin((curveCenterX - startX) / section.Radius) * 180 / Math.PI);
 
-									g.DrawArc(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
+									graphics.DrawArc(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
 										(float)(x + w * (1024 + curveCenterX - section.Radius) / 2048),
 										(float)(y + h * (1024 - curveCenterZ - section.Radius) / 2048),
 										(float)(w * section.Radius / 1024),
@@ -345,7 +346,7 @@ namespace Jgr.Msts {
 									var straightEndX = startX - rzx * section.Length;
 									var straightEndZ = startZ - rzz * section.Length;
 
-									g.DrawLine(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
+									graphics.DrawLine(trackSection.Track.IsRoadShape ? Pens.Gray : Pens.Black,
 										(float)(x + w * (1024 + startX) / 2048),
 										(float)(y + h * (1024 - startZ) / 2048),
 										(float)(x + w * (1024 + straightEndX) / 2048),
@@ -362,19 +363,19 @@ namespace Jgr.Msts {
 					foreach (var marker in Markers) {
 						var mx = (int)(x + w * marker.X);
 						var my = (int)(y + h * marker.Z);
-						var fm = g.MeasureString(marker.Label, SystemFonts.CaptionFont);
-						g.FillEllipse(Brushes.DarkBlue, mx - 2, my - 2, 4, 4);
-						g.DrawLine(Pens.DarkBlue, mx, my, mx, my - 4 * fm.Height);
-						g.FillRectangle(Brushes.DarkBlue, mx - fm.Width / 2, my - 5 * fm.Height, fm.Width - 1, fm.Height - 1);
-						g.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.White, mx - fm.Width / 2, my - 5 * fm.Height);
+						var fm = graphics.MeasureString(marker.Label, SystemFonts.CaptionFont);
+						graphics.FillEllipse(Brushes.DarkBlue, mx - 2, my - 2, 4, 4);
+						graphics.DrawLine(Pens.DarkBlue, mx, my, mx, my - 4 * fm.Height);
+						graphics.FillRectangle(Brushes.DarkBlue, mx - fm.Width / 2, my - 5 * fm.Height, fm.Width - 1, fm.Height - 1);
+						graphics.DrawString(marker.Label, SystemFonts.CaptionFont, Brushes.White, mx - fm.Width / 2, my - 5 * fm.Height);
 					}
 					break;
 				case TileLayer.Platforms:
 					foreach (var platform in Platforms) {
 						var mx = (int)(x + w * (1024 + platform.X) / 2048);
 						var my = (int)(y + h * (1024 - platform.Z) / 2048);
-						g.FillPolygon(Brushes.DarkBlue, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
-						g.DrawLine(Pens.Blue, mx - 8, my + 6, mx + 6, my - 8);
+						graphics.FillPolygon(Brushes.DarkBlue, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
+						graphics.DrawLine(Pens.Blue, mx - 8, my + 6, mx + 6, my - 8);
 					}
 					break;
 				case TileLayer.PlatformNames:
@@ -383,8 +384,8 @@ namespace Jgr.Msts {
 					foreach (var siding in Sidings) {
 						var mx = (int)(x + w * (1024 + siding.X) / 2048);
 						var my = (int)(y + h * (1024 - siding.Z) / 2048);
-						g.FillPolygon(Brushes.DarkGreen, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
-						g.DrawLine(Pens.Green, mx - 8, my + 6, mx + 6, my - 8);
+						graphics.FillPolygon(Brushes.DarkGreen, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
+						graphics.DrawLine(Pens.Green, mx - 8, my + 6, mx + 6, my - 8);
 					}
 					break;
 				case TileLayer.SidingNames:
@@ -393,7 +394,7 @@ namespace Jgr.Msts {
 					foreach (var signal in Signals) {
 						var mx = (int)(x + w * (1024 + signal.X) / 2048);
 						var my = (int)(y + h * (1024 - signal.Z) / 2048);
-						g.FillEllipse(Brushes.DarkRed, mx - 3, my - 3, 6, 6);
+						graphics.FillEllipse(Brushes.DarkRed, mx - 3, my - 3, 6, 6);
 					}
 					break;
 				case TileLayer.Mileposts:

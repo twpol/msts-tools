@@ -3,9 +3,9 @@
 // License: Microsoft Public License (Ms-PL).
 //------------------------------------------------------------------------------
 
+using System.Globalization;
 using Jgr.Msts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Diagnostics;
 
 namespace Tests {
 	/// <summary>
@@ -35,8 +35,8 @@ namespace Tests {
 		[DataSource("Microsoft.VisualStudio.TestTools.DataSource.CSV", "|DataDirectory|\\Tiles.csv", "Tiles#csv", DataAccessMethod.Sequential), DeploymentItem("Tests\\Tiles.csv"), TestMethod]
 		public void ConvertTileNameToTileTest() {
 			var tileName = testContextInstance.DataRow["Tile"].ToString();
-			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
-			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
+			var x = int.Parse(testContextInstance.DataRow["X"].ToString(), CultureInfo.InvariantCulture);
+			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(tileName);
 			Assert.AreEqual(expected.X, actual.X);
@@ -49,8 +49,8 @@ namespace Tests {
 		[DataSource("Microsoft.VisualStudio.TestTools.DataSource.CSV", "|DataDirectory|\\Tiles.csv", "Tiles#csv", DataAccessMethod.Sequential), DeploymentItem("Tests\\Tiles.csv"), TestMethod]
 		public void ConvertTileToTileNameTest() {
 			var tileName = testContextInstance.DataRow["Tile"].ToString();
-			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
-			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
+			var x = int.Parse(testContextInstance.DataRow["X"].ToString(), CultureInfo.InvariantCulture);
+			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
 			var expected = tileName;
 			var actual = Coordinates.ConvertToTileName(new TileCoordinate(x, y));
 			Assert.AreEqual(expected, actual);
@@ -61,8 +61,8 @@ namespace Tests {
 		///</summary>
 		[DataSource("Microsoft.VisualStudio.TestTools.DataSource.CSV", "|DataDirectory|\\Tiles.csv", "Tiles#csv", DataAccessMethod.Sequential), DeploymentItem("Tests\\Tiles.csv"), TestMethod]
 		public void ConvertTileToIghRoundTripTest() {
-			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
-			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
+			var x = int.Parse(testContextInstance.DataRow["X"].ToString(), CultureInfo.InvariantCulture);
+			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new TileCoordinate(x, y), 0, 0));
 			Assert.AreEqual(expected.X, actual.X);
@@ -74,10 +74,10 @@ namespace Tests {
 		///</summary>
 		[DataSource("Microsoft.VisualStudio.TestTools.DataSource.CSV", "|DataDirectory|\\Tiles.csv", "Tiles#csv", DataAccessMethod.Sequential), DeploymentItem("Tests\\Tiles.csv"), TestMethod]
 		public void ConvertTileToLatLonTest() {
-			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
-			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
-			var lat = double.Parse(testContextInstance.DataRow["Lat"].ToString());
-			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString());
+			var x = int.Parse(testContextInstance.DataRow["X"].ToString(), CultureInfo.InvariantCulture);
+			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
+			var lat = double.Parse(testContextInstance.DataRow["Lat"].ToString(), CultureInfo.InvariantCulture);
+			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new LatitudeLongitudeCoordinate(lat, lon);
 			var actual = Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(new TileCoordinate(x, y), 0.5, 0.5));
 			Assert.AreEqual(expected.Latitude, actual.Latitude, 0.01);
@@ -89,10 +89,10 @@ namespace Tests {
 		///</summary>
 		[DataSource("Microsoft.VisualStudio.TestTools.DataSource.CSV", "|DataDirectory|\\Tiles.csv", "Tiles#csv", DataAccessMethod.Sequential), DeploymentItem("Tests\\Tiles.csv"), TestMethod]
 		public void ConvertLatLonToTileTest() {
-			var x = int.Parse(testContextInstance.DataRow["X"].ToString());
-			var y = int.Parse(testContextInstance.DataRow["Y"].ToString());
-			var lat = double.Parse(testContextInstance.DataRow["Lat"].ToString());
-			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString());
+			var x = int.Parse(testContextInstance.DataRow["X"].ToString(), CultureInfo.InvariantCulture);
+			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
+			var lat = double.Parse(testContextInstance.DataRow["Lat"].ToString(), CultureInfo.InvariantCulture);
+			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(lat, lon)));
 			Assert.AreEqual(expected.X, actual.X);

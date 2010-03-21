@@ -41,9 +41,9 @@ namespace Jgr.Msts {
 	public class LatitudeLongitudeCoordinate {
 		public readonly double Latitude;
 		public readonly double Longitude;
-		public LatitudeLongitudeCoordinate(double lat, double lon) {
-			Latitude = lat;
-			Longitude = lon;
+		public LatitudeLongitudeCoordinate(double latitude, double longitude) {
+			Latitude = latitude;
+			Longitude = longitude;
 		}
 		public override string ToString() {
 			return "LL{" + Latitude + " " + Longitude + "}";
@@ -61,7 +61,7 @@ namespace Jgr.Msts {
 			// c d   8 9
 			// f e   b a
 			foreach (var ch in tileName.Substring(1)) {
-				var value = int.Parse(ch.ToString(), NumberStyles.HexNumber);
+				var value = int.Parse(ch.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 				depthRight.Add((value % 12) >= 4);
 				depthDown.Add(value >= 8);
 				depthRight.Add(((value % 4) % 3) >= 1);
@@ -106,7 +106,7 @@ namespace Jgr.Msts {
 			}
 			for (var i = 0; i < depthDown.Count; i += 2) {
 				var c = (depthRight[i] ? depthDown[i] ? 8 : 4 : depthDown[i] ? 12 : 0) + (depthRight[i + 1] ? depthDown[i + 1] ? 2 : 1 : depthDown[i + 1] ? 3 : 0);
-				tileName += c.ToString("x");
+				tileName += c.ToString("x", CultureInfo.InvariantCulture);
 			}
 
 			return tileName;
