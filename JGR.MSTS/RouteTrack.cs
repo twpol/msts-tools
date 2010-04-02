@@ -53,42 +53,13 @@ namespace Jgr.Msts {
 						var z = sections[i * 16 + 13].ToValue<float>();
 						vectors.Add(new RouteTrackVector(tileX, tileZ, x, y, z));
 					}
-					var rtVectors = new RouteTrackVectors(node[0].ToValue<uint>(), vectors);
+					if (node["TrPins"].Count != 4) throw new InvalidDataException("Track DB node does not have exactly 2 pins.");
+					var rtVectors = new RouteTrackVectors(node[0].ToValue<uint>(), vectors, node["TrPins"][2][0].ToValue<uint>(), node["TrPins"][3][0].ToValue<uint>());
 					TrackVectors.Add(rtVectors.ID, rtVectors);
 				} else {
 					throw new InvalidDataException("Track DB contains track node with no obvious type.");
 				}
 			}
-		}
-	}
-
-	[Immutable]
-	public class RouteTrackNode {
-		public readonly uint ID;
-		public readonly int TileX;
-		public readonly uint TileZ;
-		public readonly double X;
-		public readonly double Y;
-		public readonly double Z;
-
-		public RouteTrackNode(uint id, int tileX, uint tileZ, double x, double y, double z) {
-			ID = id;
-			TileX = tileX;
-			TileZ = tileZ;
-			X = x;
-			Y = y;
-			Z = z;
-		}
-	}
-
-	[Immutable]
-	public class RouteTrackVectors {
-		public readonly uint ID;
-		public readonly IEnumerable<RouteTrackVector> Vectors;
-
-		public RouteTrackVectors(uint id, IEnumerable<RouteTrackVector> vectors) {
-			ID = id;
-			Vectors = vectors;
 		}
 	}
 
@@ -106,6 +77,31 @@ namespace Jgr.Msts {
 			X = x;
 			Y = y;
 			Z = z;
+		}
+	}
+
+	[Immutable]
+	public class RouteTrackNode : RouteTrackVector {
+		public readonly uint ID;
+
+		public RouteTrackNode(uint id, int tileX, uint tileZ, double x, double y, double z)
+			: base(tileX, tileZ, x, y, z) {
+			ID = id;
+		}
+	}
+
+	[Immutable]
+	public class RouteTrackVectors {
+		public readonly uint ID;
+		public readonly IEnumerable<RouteTrackVector> Vectors;
+		public readonly uint PinStart;
+		public readonly uint PinEnd;
+
+		public RouteTrackVectors(uint id, IEnumerable<RouteTrackVector> vectors, uint pinStart, uint pinEnd) {
+			ID = id;
+			Vectors = vectors;
+			PinStart = pinStart;
+			PinEnd = pinEnd;
 		}
 	}
 }
