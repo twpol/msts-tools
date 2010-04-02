@@ -36,7 +36,7 @@ namespace Jgr.Msts {
 	class TileTrackNode : TileLabeledObject {
 		public bool IsRoad;
 		public uint ID;
-		public List<TileObject> Sections;
+		public List<TileObject> Vectors;
 	}
 
 	class TilePlatform : TileLabeledObject {
@@ -158,87 +158,16 @@ namespace Jgr.Msts {
 					// TODO: Roads and track use the same basic data, can we split anything out here?
 					break;
 				case TileLayer.Track:
-					//foreach (var trackNode in Route.Track.TrackNodes.Values) {
-					//    if ((trackNode.TileX == TileCoordinate.X) && (trackNode.TileZ == TileCoordinate.Z)) {
-					//        var sections = new List<TileObject>();
-					//        TrackNodes.Add(new TileTrackNode() { IsRoad = false, Label = "", Sections = sections, X = trackNode.X, Y = trackNode.Y, Z = trackNode.Z });
-					//    }
-					//}
 					foreach (var trackVectors in Route.Track.TrackVectors.Values) {
 						if (trackVectors.Vectors.Any(v => v.TileX == TileCoordinate.X && v.TileZ == TileCoordinate.Z)) {
-							var sections = new List<TileObject>();
-							foreach (var vector in trackVectors.Vectors) {
-								sections.Add(new TileObject() { X = vector.X + 2048 * (vector.TileX - TileCoordinate.X), Y = vector.Y, Z = vector.Z + 2048 * (vector.TileZ - TileCoordinate.Z) });
-							}
-							TrackNodes.Add(new TileTrackNode() { IsRoad = false, Label = "", ID = trackVectors.ID, Sections = sections, X = sections[0].X, Y = sections[0].Y, Z = sections[0].Z });
+							var sections = new List<TileObject>(from vector in trackVectors.Vectors.Union(new RouteTrackVector[] { Route.Track.TrackNodes[trackVectors.PinEnd] })
+																	select new TileObject() { X = vector.X + 2048 * (vector.TileX - TileCoordinate.X), Y = vector.Y, Z = vector.Z + 2048 * (vector.TileZ - TileCoordinate.Z) });
+							TrackNodes.Add(new TileTrackNode() {
+								ID = trackVectors.ID, IsRoad = false, Label = "", Vectors = sections,
+								X = sections[0].X, Y = sections[0].Y, Z = sections[0].Z
+							});
 						}
 					}
-
-					//string worldFile = String.Format(CultureInfo.InvariantCulture, @"{0}\World\w{1,6:+000000;-000000}{2,6:+000000;-000000}.w", Route.RoutePath, TileCoordinate.X, TileCoordinate.Z);
-
-					//if (File.Exists(worldFile)) {
-					//    var world = new SimisFile(worldFile, SimisProvider);
-					//    try {
-					//        world.ReadFile();
-					//    } catch (FileException) {
-					//        return;
-					//    }
-					//    foreach (var item in world.Tree["Tr_Worldfile"]) {
-					//        // TODO: Make this work with Matrix3x3 as well as QDirection.
-					//        if (!item.Contains("QDirection")) {
-					//            continue;
-					//        }
-					//        var position = item["Position"];
-					//        var direction = item["QDirection"];
-
-					//        switch (item.Type) {
-					//            case "TrackObj":
-					//            case "Dyntrack":
-					//                var tts = new TileTrackSection() {
-					//                    X = position[0].ToValue<float>(),
-					//                    Y = position[1].ToValue<float>(),
-					//                    Z = position[2].ToValue<float>(),
-					//                    DW = direction[0].ToValue<float>(),
-					//                    DX = direction[1].ToValue<float>(),
-					//                    DY = direction[2].ToValue<float>(),
-					//                    DZ = direction[3].ToValue<float>(),
-					//                };
-					//                if (item.Type == "TrackObj") {
-					//                    var sectionIdx = item["SectionIdx"][0].ToValue<uint>();
-					//                    if (Route.TrackService.TrackShapes.ContainsKey(sectionIdx)) {
-					//                        tts.Track = Route.TrackService.TrackShapes[sectionIdx];
-					//                    } else {
-					//                        tts.Label = sectionIdx.ToString(CultureInfo.InvariantCulture);
-					//                    }
-					//                } else {
-					//                    var tpaths = new List<TrackPath>();
-					//                    var tsections = new List<TrackSection>();
-					//                    foreach (var section in item["TrackSections"].Where(n => n.Type == "TrackSection")) {
-					//                        if (section[1].ToValue<int>() > 0) {
-					//                            if (section["SectionCurve"][0].ToValue<uint>() != 0) {
-					//                                tsections.Add(new TrackSection(0, 0, 0, true, section[3].ToValue<float>(), section[2].ToValue<float>() * 180 / Math.PI));
-					//                            } else {
-					//                                tsections.Add(new TrackSection(0, 0, section[2].ToValue<float>()));
-					//                            }
-					//                        }
-					//                    }
-					//                    tpaths.Add(new TrackPath(0, 0, 0, 0, tsections));
-					//                    tts.Track = new TrackShape(0, "", 0, false, false, tpaths, -1);
-					//                }
-					//                TrackSections.Add(tts);
-					//                break;
-					//            case "Platform":
-					//                Platforms.Add(new TilePlatform() { X = position[0].ToValue<float>(), Y = position[1].ToValue<float>(), Z = position[2].ToValue<float>(), Label = "" });
-					//                break;
-					//            case "Siding":
-					//                Sidings.Add(new TileSiding() { X = position[0].ToValue<float>(), Y = position[1].ToValue<float>(), Z = position[2].ToValue<float>(), Label = "" });
-					//                break;
-					//            case "Signal":
-					//                Signals.Add(new TileSignal() { X = position[0].ToValue<float>(), Y = position[1].ToValue<float>(), Z = position[2].ToValue<float>(), Label = "" });
-					//                break;
-					//        }
-					//    }
-					//}
 					break;
 				case TileLayer.Markers:
 					string markersFile = String.Format(CultureInfo.InvariantCulture, @"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
@@ -293,9 +222,9 @@ namespace Jgr.Msts {
 						if (layer != (trackNode.IsRoad ? TileLayer.Roads : TileLayer.Track)) {
 							continue;
 						}
-						//var brush = trackNode.IsRoad ? Brushes.Gray : Brushes.Black;
-						var col = (int)(64 * (trackNode.ID % 4));
-						var brush = new SolidBrush(Color.FromArgb(col, col, col));
+						var brush = trackNode.IsRoad ? Brushes.Gray : Brushes.Black;
+						//var col = (int)(64 * (trackNode.ID % 4));
+						//var brush = new SolidBrush(Color.FromArgb(col, col, col));
 						var pen = new Pen(brush);
 
 						if (!String.IsNullOrEmpty(trackNode.Label)) {
@@ -304,23 +233,23 @@ namespace Jgr.Msts {
 								(int)(y + h * (1 - (trackNode.Z + 1024) / 2048)));
 						}
 						TileObject previousLocation = trackNode;
-						graphics.FillEllipse(brush,
-							(float)(x + w * (1024 + trackNode.X) / 2048) - 1,
-							(float)(y + h * (1024 - trackNode.Z) / 2048) - 1,
-							2,
-							2);
+						//graphics.FillEllipse(brush,
+						//    (float)(x + w * (1024 + trackNode.X) / 2048) - 1,
+						//    (float)(y + h * (1024 - trackNode.Z) / 2048) - 1,
+						//    2,
+						//    2);
 
-						foreach (var section in trackNode.Sections) {
+						foreach (var section in trackNode.Vectors) {
 							graphics.DrawLine(pen,
 								(float)(x + w * (1024 + previousLocation.X) / 2048),
 								(float)(y + h * (1024 - previousLocation.Z) / 2048),
 								(float)(x + w * (1024 + section.X) / 2048),
 								(float)(y + h * (1024 - section.Z) / 2048));
-							graphics.FillEllipse(brush,
-								(float)(x + w * (1024 + section.X) / 2048) - 1,
-								(float)(y + h * (1024 - section.Z) / 2048) - 1,
-								2,
-								2);
+							//graphics.FillEllipse(brush,
+							//    (float)(x + w * (1024 + section.X) / 2048) - 1,
+							//    (float)(y + h * (1024 - section.Z) / 2048) - 1,
+							//    2,
+							//    2);
 
 							previousLocation = section;
 						}
