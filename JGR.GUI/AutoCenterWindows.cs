@@ -51,14 +51,14 @@ namespace Jgr.Gui {
 		void SetHook() {
 			if (!Hooked) {
 				var cb = new NativeMethods.HookProc(WindowHookProc);
-				Hook = NativeMethods.SetWindowsHookEx(WH_CBT, cb, new HandleRef(null, NativeMethods.GetModuleHandle(null)), NativeMethods.GetCurrentThreadId());
+				Hook = NativeMethods.SetWindowsHookEx(WH_CBT, cb, NativeMethods.GetModuleHandle(null), NativeMethods.GetCurrentThreadId());
 				Hooked = true;
 			}
 		}
 
 		void UnsetHook() {
 			if (Hooked) {
-				NativeMethods.UnhookWindowsHookEx(new HandleRef(null, Hook));
+				NativeMethods.UnhookWindowsHookEx(Hook);
 				Hooked = false;
 			}
 		}
@@ -66,7 +66,7 @@ namespace Jgr.Gui {
 		IntPtr WindowHookProc(int lMsg, IntPtr wParam, IntPtr lParam) {
 			if (lMsg == HCBT_ACTIVATE) {
 				var dialog = new RECT();
-				NativeMethods.GetWindowRect(new HandleRef(null, wParam), ref dialog);
+				NativeMethods.GetWindowRect(wParam, ref dialog);
 				var x = (Owner.Left + (Owner.Right - Owner.Left) / 2) - ((dialog.Right - dialog.Left) / 2);
 				var y = (Owner.Top + (Owner.Bottom - Owner.Top) / 2) - ((dialog.Bottom - dialog.Top) / 2);
 				var screen = Screen.FromHandle(wParam);
@@ -74,7 +74,7 @@ namespace Jgr.Gui {
 				if (y + dialog.Height > screen.WorkingArea.Bottom) y = screen.WorkingArea.Bottom - dialog.Height;
 				if (x < screen.WorkingArea.Left) x = screen.WorkingArea.Left;
 				if (y < screen.WorkingArea.Top) y = screen.WorkingArea.Top;
-				NativeMethods.SetWindowPos(new HandleRef(null, wParam), new HandleRef(null, IntPtr.Zero), x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+				NativeMethods.SetWindowPos(wParam, IntPtr.Zero, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 				if (Mode == AutoCenterWindowsMode.FirstWindowOnly) {
 					UnsetHook();
 				}
