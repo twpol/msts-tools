@@ -29,22 +29,22 @@ namespace Jgr.Gui {
 
 		[DllImport("user32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool GetWindowRect(HandleRef hWnd, [In, Out] ref RECT rect);
+		public static extern bool GetWindowRect(IntPtr hWnd, [In, Out] ref RECT rect);
 
 		[DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
 		public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
 
 		[DllImport("user32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool SetWindowPos(HandleRef hWnd, HandleRef hWndInsertAfter, int x, int y, int cx, int cy, int flags);
+		public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, int flags);
 
 		public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 		[DllImport("user32.dll", SetLastError = true)]
-		public static extern IntPtr SetWindowsHookEx(int hookid, HookProc pfnhook, HandleRef hinst, int threadid);
+		public static extern IntPtr SetWindowsHookEx(int hookid, HookProc pfnhook, IntPtr hinst, int threadid);
 
 		[DllImport("user32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool UnhookWindowsHookEx(HandleRef hhook);
+		public static extern bool UnhookWindowsHookEx(IntPtr hhook);
 	}
 
 }
