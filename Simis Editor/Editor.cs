@@ -18,6 +18,7 @@ using System.Windows.Forms;
 using Jgr;
 using Jgr.Grammar;
 using Jgr.Gui;
+using Jgr.IO;
 using Jgr.IO.Parser;
 using Microsoft.CSharp;
 using SimisEditor.Properties;
@@ -124,8 +125,9 @@ namespace SimisEditor
 				SimisProvider.Join();
 			} catch (FileException ex) {
 				this.Invoke((MethodInvoker)(() => {
-					using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-						ShowMessageBox(ex.ToString(), "Load Resources", MessageBoxIcon.Error);
+					var report = new ProblemReport(ex);
+					if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
+						report.PromptAndSend(this);
 					}
 				}));
 				return false;
@@ -185,8 +187,9 @@ namespace SimisEditor
 			try {
 				newFile.ReadFile();
 			} catch (FileException ex) {
-				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					ShowMessageBox(ex.ToString(), "Open File", MessageBoxIcon.Error);
+				var report = new ProblemReport(ex);
+				if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
+					report.PromptAndSend(this);
 				}
 				return false;
 			}
@@ -212,12 +215,10 @@ namespace SimisEditor
 			try {
 				File.WriteFile();
 			} catch (FileException ex) {
-				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					if (ex.InnerException is UnauthorizedAccessException) {
-						ShowMessageBox(ex.InnerException.Message, "Save File", MessageBoxIcon.Error);
-					} else {
-						ShowMessageBox(ex.ToString(), "Save File", MessageBoxIcon.Error);
-					}
+				if (ex.InnerException is UnauthorizedAccessException) {
+					TaskDialog.Show(this, TaskDialogCommonIcon.Error, "Unable to save '" + Path.GetFileName(ex.FileName) + "'", ex.InnerException.Message);
+				} else {
+					TaskDialog.Show(this, TaskDialogCommonIcon.Error, "Unable to save '" + Path.GetFileName(ex.FileName) + "'", ex.ToString());
 				}
 				return false;
 			}
@@ -230,16 +231,14 @@ namespace SimisEditor
 
 		bool SaveFileIfModified() {
 			if ((File != null) && (File.Tree != SavedFileTree)) {
-				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					switch (ShowMessageBox("Do you want to save changes to '" + FilenameTitle + "'?", "", MessageBoxButtons.YesNoCancel)) {
-						case DialogResult.Yes:
-							if (!SaveFile()) {
-								return false;
-							}
-							break;
-						case DialogResult.Cancel:
+				switch (TaskDialog.ShowYesNoCancel(this, 0, "Do you want to save changes to '" + FilenameTitle + "'?", "", "Save", "Don't Save", "Cancel")) {
+					case DialogResult.Yes:
+						if (!SaveFile()) {
 							return false;
-					}
+						}
+						break;
+					case DialogResult.Cancel:
+						return false;
 				}
 			}
 			UpdateTitle();
@@ -600,18 +599,6 @@ namespace SimisEditor
 
 		#endregion
 
-		DialogResult ShowMessageBox(string text, string caption, MessageBoxButtons buttons) {
-			return ShowMessageBox(text, caption, buttons, MessageBoxIcon.None);
-		}
-
-		DialogResult ShowMessageBox(string text, string caption, MessageBoxIcon icon) {
-			return ShowMessageBox(text, caption, MessageBoxButtons.OK, icon);
-		}
-
-		DialogResult ShowMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon) {
-			return MessageBox.Show(text, caption + (caption.Length > 0 ? " - " : "") + Application.ProductName, buttons, icon, MessageBoxDefaultButton.Button1, RightToLeft == RightToLeft.Yes ? MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading : 0);
-		}
-
 		void UpdateTitle() {
 			if (File == null) {
 				Text = Application.ProductName;
@@ -851,7 +838,7 @@ namespace SimisEditor
 			dUnit.ReferencedAssemblies.Add("System.dll");
 			dUnit.ReferencedAssemblies.Add("System.Drawing.dll");
 			dUnit.ReferencedAssemblies.Add("System.Windows.Forms.dll");
-			dUnit.ReferencedAssemblies.Add("JGR.IO.Parser.dll");
+			dUnit.ReferencedAssemblies.Add("JGR.IO.Par_ser.dll");
 			dUnit.Namespaces.Add(dNamespace);
 
 			// Set up compiler options.
@@ -873,9 +860,8 @@ namespace SimisEditor
 				var messages = new string[compileResults.Output.Count];
 				compileResults.Output.CopyTo(messages, 0);
 
-				using (new AutoCenterWindows(this, AutoCenterWindowsMode.FirstWindowOnly)) {
-					ShowMessageBox("CreateEditObjectFor() created C# code which failed to compile. Please look at 'CreateEditObjectFor.cs' in the application directory for the code.\n\n"
-						+ String.Join("\n", messages), "Create Property Editor Data", MessageBoxIcon.Error);
+				if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem creating the edit object?", String.Join("\n", messages), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
+					// TODO: Show and send report!
 				}
 				return null;
 			}

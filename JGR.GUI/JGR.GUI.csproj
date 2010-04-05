@@ -51,7 +51,9 @@
     <Compile Include="AutoCenterWindows.cs" />
     <Compile Include="EditState.cs" />
     <Compile Include="NativeMethods.cs" />
+    <Compile Include="ProblemReport.cs" />
     <Compile Include="RedrawBlock.cs" />
+    <Compile Include="TaskDialog.cs" />
     <Compile Include="ToolStripNativeRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
