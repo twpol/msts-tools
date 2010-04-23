@@ -16,8 +16,10 @@ using System.Xml.Linq;
 namespace Jgr.IO {
 	public class ProblemReport {
 		public readonly string EnvironmentOS;
+		public readonly Version EnvironmentOSVersion;
 		public readonly int EnvironmentCores;
-		public readonly string EnvironmentCLR;
+		public readonly Version EnvironmentCLR;
+		public readonly int EnvironmentCLRBitness;
 		public readonly string ApplicationName;
 		public readonly string ApplicationVersion;
 		public readonly DateTime Time;
@@ -32,8 +34,10 @@ namespace Jgr.IO {
 			var callingStackFrame = new StackTrace(2, true).GetFrames().First(f => !f.GetMethod().DeclaringType.FullName.StartsWith("System.", StringComparison.OrdinalIgnoreCase));
 
 			EnvironmentOS = Environment.OSVersion.ToString();
+			EnvironmentOSVersion = Environment.OSVersion.Version;
 			EnvironmentCores = Environment.ProcessorCount;
-			EnvironmentCLR = Environment.Version.ToString() + " (" + IntPtr.Size * 8 + "bit)";
+			EnvironmentCLR = Environment.Version;
+			EnvironmentCLRBitness = IntPtr.Size * 8;
 			ApplicationName = Application.ProductName;
 			ApplicationVersion = Application.ProductVersion;
 			Time = DateTime.Now;
@@ -53,10 +57,10 @@ namespace Jgr.IO {
 			var report =
 				"Operating System: " + EnvironmentOS + "\n" +
 				"Processor Cores: " + EnvironmentCores + "\n" +
-				".NET CLR Version: " + EnvironmentCLR + "\n" +
+				"Runtime Version: " + EnvironmentCLR + " (" + EnvironmentCLRBitness + "bit)" + "\n" +
 				"Report Time: " + Time.ToString("F") + "\n" +
 				"Report Application: " + ApplicationName + " " + ApplicationVersion + "\n" +
-				"Report Location: " + LocationMethod + " (" + LocationFileName + ":" + LocationFileLine + ":" + LocationFileColumn + ")\n" +
+				"Report Source: " + LocationMethod + " (" + LocationFileName + ":" + LocationFileLine + ":" + LocationFileColumn + ")\n" +
 				"Report Type: " + Type + "\n" +
 				"Report Details:\n" +
 				"\n" +
@@ -72,25 +76,24 @@ namespace Jgr.IO {
 					new XDeclaration("1.0", "utf-8", "yes"),
 					new XElement(XName.Get("report"),
 						new XElement(XName.Get("environment"),
-							new XElement(XName.Get("os"), EnvironmentOS),
+							new XElement(XName.Get("os"),
+								EnvironmentOS,
+								new XAttribute(XName.Get("version"), EnvironmentOSVersion.ToString())),
 							new XElement(XName.Get("cores"), EnvironmentCores),
-							new XElement(XName.Get("clr"), EnvironmentCLR)
-						),
-						new XElement(XName.Get("application"),
-							new XElement(XName.Get("name"), ApplicationName),
-							new XElement(XName.Get("version"), ApplicationVersion)
-						),
-						new XElement(XName.Get("caller"),
-							new XElement(XName.Get("method"), LocationMethod),
-							new XElement(XName.Get("filename"), LocationFileName),
-							new XElement(XName.Get("fileline"), LocationFileLine),
-							new XElement(XName.Get("filecolumn"), LocationFileColumn)
-						),
+							new XElement(XName.Get("clr"),
+								EnvironmentCLR,
+								new XAttribute(XName.Get("bits"), EnvironmentCLRBitness.ToString()))),
 						new XElement(XName.Get("time"), Time.ToString("O")),
+						new XElement(XName.Get("application"),
+							ApplicationName,
+							new XAttribute(XName.Get("version"), ApplicationVersion)),
+						new XElement(XName.Get("source"),
+							LocationMethod,
+							new XAttribute(XName.Get("file"), LocationFileName),
+							new XAttribute(XName.Get("line"), LocationFileLine),
+							new XAttribute(XName.Get("column"), LocationFileColumn)),
 						new XElement(XName.Get("type"), Type),
-						new XElement(XName.Get("details"), Details)
-					)
-				);
+						new XElement(XName.Get("details"), Details)));
 
 			TaskDialog.Show(owner, TaskDialogCommonIcon.None, "XML REPORT", reportXML.ToString());
 		}
