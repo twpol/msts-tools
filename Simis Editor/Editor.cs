@@ -18,7 +18,6 @@ using System.Windows.Forms;
 using Jgr;
 using Jgr.Grammar;
 using Jgr.Gui;
-using Jgr.IO;
 using Jgr.IO.Parser;
 using Microsoft.CSharp;
 using SimisEditor.Properties;
@@ -125,7 +124,7 @@ namespace SimisEditor
 				SimisProvider.Join();
 			} catch (FileException ex) {
 				this.Invoke((MethodInvoker)(() => {
-					var report = new ProblemReport(ex);
+					var report = new Feedback(ex);
 					if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
 						report.PromptAndSend(this);
 					}
@@ -187,7 +186,7 @@ namespace SimisEditor
 			try {
 				newFile.ReadFile();
 			} catch (FileException ex) {
-				var report = new ProblemReport(ex);
+				var report = new Feedback(ex);
 				if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
 					report.PromptAndSend(this);
 				}
@@ -1006,6 +1005,11 @@ namespace SimisEditor
 				}
 			}
 			return paths;
+		}
+
+		void sendFeedbackToolStripMenuItem_Click(object sender, EventArgs e) {
+			var report = new Feedback();
+			report.PromptAndSend(this);
 		}
 	}
 }

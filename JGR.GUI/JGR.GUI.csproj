@@ -50,12 +50,23 @@
   <ItemGroup>
     <Compile Include="AutoCenterWindows.cs" />
     <Compile Include="EditState.cs" />
+    <Compile Include="FeedbackPrompt.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FeedbackPrompt.Designer.cs">
+      <DependentUpon>FeedbackPrompt.cs</DependentUpon>
+    </Compile>
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="ProblemReport.cs" />
+    <Compile Include="Feedback.cs" />
     <Compile Include="RedrawBlock.cs" />
     <Compile Include="TaskDialog.cs" />
     <Compile Include="ToolStripNativeRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="FeedbackPrompt.resx">
+      <DependentUpon>FeedbackPrompt.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
