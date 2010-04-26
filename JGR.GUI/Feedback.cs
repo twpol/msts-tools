@@ -134,6 +134,7 @@ namespace Jgr.Gui {
 			var wc = new WebClient();
 			try {
 				wc.Encoding = Encoding.UTF8;
+				wc.Headers["User-Agent"] = ApplicationName.Replace(' ', '_') + "/" + ApplicationVersion + " (" + EnvironmentOS + "; .NET CLR " + EnvironmentCLR + "; " + EnvironmentCLRBitness + "bit)";
 				wc.Headers["Content-Type"] = "application/xml";
 				wc.UploadString(uri, reportXML.Declaration.ToString() + "\r\n" + reportXML.ToString());
 			} catch (Exception ex) {

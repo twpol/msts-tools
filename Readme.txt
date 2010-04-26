@@ -71,35 +71,35 @@ Performs operations on individual or collections of Simis files.
 Support File Types
 ==================
 
-* Activity (.act)                        [Updated]
-* Activity Save (.asv)                   [Updated] [Uses :buffer type]
+* Activity (.act)
+* Activity Save (.asv)                   [Uses :buffer type]
 * Environment (.env)
 * Hazard (.haz)
 * IOM (.iom)
 * Material Palette (.pal)
-* Path (.pat)                            [Updated]
-* Route (.trk)                           [New]
-* Route Database (.rdb)                  [New]
-* Route Items (.rit)                     [New]
-* Route Markers (.mkr)                   [New]
-* Route REF (.ref)                       [New]
-* Service (.srv)                         [Updated]
-* Shape (.s)                             [Updated]
-* Shape Detail (.sd)                     [Updated]
-* Sound Management (.sms)                [Updated]
-* Sound Sources (ssource.dat)            [New]
-* Telegraph Poles (telepole.dat)         [New]
+* Path (.pat)
+* Route (.trk)
+* Route Database (.rdb)
+* Route Items (.rit)
+* Route Markers (.mkr)
+* Route REF (.ref)
+* Service (.srv)
+* Shape (.s)
+* Shape Detail (.sd)
+* Sound Management (.sms)
+* Sound Sources (ssource.dat)
+* Telegraph Poles (telepole.dat)
 * Terrain (.t)                           [Uses :buffer type]
-* Track Database (.tdb)                  [New]
-* Track Items (.tit)                     [New]
-* Track Sections (Global) (tsection.dat) [New]
-* Track Sections (Route) (tsection.dat)  [New]
+* Track Database (.tdb)                  [Updated]
+* Track Items (.tit)
+* Track Sections (Global) (tsection.dat) [Updated]
+* Track Sections (Route) (tsection.dat)
 * Traffic Pattern (.trf)
-* Train (Consist) (.con)                 [New]
-* Train (Consist) Cab View (.cvf)        [New]
-* Train (Consist) Engine (.eng)          [New]
-* Train (Consist) Wagon (.wag)           [New]
-* World (.w)
+* Train (Consist) (.con)
+* Train (Consist) Cab View (.cvf)
+* Train (Consist) Engine (.eng)
+* Train (Consist) Wagon (.wag)
+* World (.w)                             [Updated]
 * World Sound (.ws)
 
 Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
@@ -107,6 +107,42 @@ Note: Formats which use the :buffer type can be loaded but are not completely pa
 
 Version History
 ===============
+
+--- ????????????? 2010 ---
+* Simis Editor v0.4
+  * Open and Save dialogs support full filename filters from BNFs (e.g. "tsection.dat").
+  * Added statusbar and menu help text.
+  * Added context menu tree editing with 4 groups of options populated from BNFs:
+    * Insert previous siblings.
+    * Insert next siblings.
+    * Insert before children.
+    * Insert after children.
+  * Problems loading *.bnf files and loading or saving Simis files are all offered for reporting online.
+* Simis File
+* Libraries
+  * BNFs: Track Database updated to support CrossoverItem.
+  * BNFs: Track Database updated to label some values.
+  * BNFs: Track Sections (Global) updated.
+  * BNFs: World updated to label some values.
+  * BNFs: Labels updated from TileY to TileZ to match MSTS's coordinate system.
+  * Jgr.Grammar: BNF and FSM now enforce the structure of the FILE definition in *.bnf files.
+  * Jgr.Gui: Feedback class added for collecting data, prompting user via FeedbackPrompt and reporting problems online.
+  * Jgr.Gui: FeedbackPrompt class added for prompting user about submission of comments/exceptions.
+  * Jgr.Gui: TaskDialog class added for Vista+ task dialogs, with fallback to message boxes on XP.
+  * Jgr.IO: FileFinder class added to scan a list of directories and return the first containing a given file.
+  * Jgr.IO.Parser: SimisReader now parses text files case-insensitively.
+  * Jgr.IO.Parser: SimisReader treats -1 read as an unsigned int as if it was signed (thus giving -1).
+  * Jgr.IO.Parser: bool SimisTreeNode.Contains(string) added for easier checking of existence of children.
+  * Jgr.IO.Parser: SimisTreeNode[string] now finds children case-insensitively.
+  * Jgr.IO.Parser: SimisTreeNode SimisTreeNode.GetNextSibling(SimisTreeNode) added to find next siblings; likewise previous siblings.
+  * Jgr.IO.Parser: SimisTreeNode SimisTreeNode.GetFirstChild() added to get first children; likewise last children.
+  * Jgr.IO.Parser: SimisTreeNode.InsertChild() can now be called with 'before' of null, which acts like AppendChild().
+  * Jgr.Msts: RouteService, RouteTrack and TrackService classes added, providing some wrapped data about routes.
+  * Jgr.Msts: Tile class added; can load data and render 2D images of object locations within it and the track.
+  * Jgr.Msts: Coordinate transformations improved to match MSTS better.
+  * FxCop warning fixes.
+  * Unit test fixes.
+  * More unit tests.
 
 --- 21st February 2010 ---
 * Simis Editor v0.3
