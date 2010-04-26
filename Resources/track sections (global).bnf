@@ -19,7 +19,7 @@ SectionSize                   ==> :float,Guage :float,Length .
 SectionSkew                   ==> :float .
 TunnelShape                   ==> .
 WaterScoop                    ==> .
-XoverPt                       ==> :float :uint :float .
+XoverPt                       ==> :float,X :float,Y :float,Z .
 
 /* Format types */
 TrackSections                 ==> :uint,NextID {:TrackSection} .
