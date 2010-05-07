@@ -4,13 +4,13 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml.Linq;
-using Jgr.Gui;
 using Microsoft.Win32;
 
 namespace Jgr.Gui {
@@ -29,12 +29,12 @@ namespace Jgr.Gui {
 		public readonly int LocationFileLine;
 		public readonly int LocationFileColumn;
 		public readonly string Type;
-		public readonly string Details;
+		public readonly IDictionary<string, string> Details;
 		string Email;
 		string Comments;
 
-		Feedback(string type, string details) {
-			var callingStackFrame = new StackTrace(2, true).GetFrames().First(f => !f.GetMethod().DeclaringType.FullName.StartsWith("System.", StringComparison.OrdinalIgnoreCase));
+		Feedback(string type, IDictionary<string, string> details, StackTrace stack) {
+			var callingStackFrame = stack.GetFrames().First(f => !f.GetMethod().DeclaringType.FullName.StartsWith("System.", StringComparison.OrdinalIgnoreCase));
 
 			EnvironmentOS = Environment.OSVersion.ToString();
 			EnvironmentOSVersion = Environment.OSVersion.Version;
@@ -63,12 +63,16 @@ namespace Jgr.Gui {
 			}
 		}
 
+		public Feedback(string type, IDictionary<string, string> details)
+			: this(type, details, new StackTrace(1, true)) {
+		}
+
 		public Feedback(Exception e)
-			: this("Application Error", e.ToString()) {
+			: this("Application Exception", new Dictionary<string, string> { { "", e.ToString() } }, new StackTrace(1, true)) {
 		}
 
 		public Feedback()
-			: this("User Comment", "") {
+			: this("User Comment", new Dictionary<string, string> { }, new StackTrace(1, true)) {
 		}
 
 		public void PromptAndSend(Form owner) {
@@ -80,13 +84,12 @@ namespace Jgr.Gui {
 				"Report Time: " + Time.ToString("F") + "\n" +
 				"Report Application: " + ApplicationName + " " + ApplicationVersion + "\n" +
 				"Report Source: " + LocationMethod + " (" + LocationFileName + ":" + LocationFileLine + ":" + LocationFileColumn + ")\n" +
-				"Report Type: " + Type + 
-				(Details.Length > 0 ? 
-					"\n" +
-					"Report Details:\n" +
-					"\n" +
-					Details
-				: "");
+				"Report Type: " + Type +
+				(Details.ContainsKey("") ? "\nReport Details:\n\n" + Details[""] : "");
+			foreach (var item in Details.Where(i => i.Key.Length > 0)) {
+				report += "\n\nReport Attachment (" + item.Key + "):\n\n" +
+					item.Value;
+			}
 
 			using (var feedback = new FeedbackPrompt()) {
 				feedback.TextApplication.Text = ApplicationName + " " + ApplicationVersion;
@@ -127,7 +130,7 @@ namespace Jgr.Gui {
 							new XAttribute(XName.Get("file"), LocationFileName),
 							new XAttribute(XName.Get("line"), LocationFileLine),
 							new XAttribute(XName.Get("column"), LocationFileColumn)),
-						new XElement(XName.Get("details"), Details),
+						Details.Select(d => d.Key.Length == 0 ? new XElement(XName.Get("details"), d.Value) : new XElement(XName.Get("details"), new XAttribute(XName.Get("name"), d.Key), d.Value)),
 						new XElement(XName.Get("comments"), Comments)));
 
 			var uri = new Uri("http://twpol.dyndns.org/projects/jgrmsts/reports/upload?uid=" + UID);

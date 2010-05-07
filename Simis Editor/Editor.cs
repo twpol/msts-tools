@@ -837,7 +837,7 @@ namespace SimisEditor
 			dUnit.ReferencedAssemblies.Add("System.dll");
 			dUnit.ReferencedAssemblies.Add("System.Drawing.dll");
 			dUnit.ReferencedAssemblies.Add("System.Windows.Forms.dll");
-			dUnit.ReferencedAssemblies.Add("JGR.IO.Par_ser.dll");
+			dUnit.ReferencedAssemblies.Add("JGR.IO.Parser.dll");
 			dUnit.Namespaces.Add(dNamespace);
 
 			// Set up compiler options.
@@ -852,15 +852,21 @@ namespace SimisEditor
 			// Did it work? Did it?
 			if (compileResults.Errors.HasErrors) {
 				// We failed so write out a file the user can look at.
-				using (var writer = new StreamWriter(Application.ExecutablePath + @"\..\CreateEditObjectFor.cs", false, Encoding.UTF8)) {
-					compiler.GenerateCodeFromCompileUnit(dUnit, writer, new CodeGeneratorOptions());
-				}
+				using (var codeStream = new MemoryStream()) {
+					using (var codeStreamWriter = new StreamWriter(codeStream, Encoding.Unicode)) {
+						compiler.GenerateCodeFromCompileUnit(dUnit, codeStreamWriter, new CodeGeneratorOptions());
+					}
 
-				var messages = new string[compileResults.Output.Count];
-				compileResults.Output.CopyTo(messages, 0);
+					var messages = new string[compileResults.Output.Count];
+					compileResults.Output.CopyTo(messages, 0);
 
-				if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem creating the edit object?", String.Join("\n", messages), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
-					// TODO: Show and send report!
+					var report = new Feedback("Code Generation Error", new Dictionary<string, string> {
+							{ "", String.Join("\n", messages) },
+							{ "CreateEditObjectFor.cs", Encoding.Unicode.GetString(codeStream.ToArray()) },
+						});
+					if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem creating the edit object?", String.Join("\n", messages), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
+						report.PromptAndSend(this);
+					}
 				}
 				return null;
 			}
