@@ -61,11 +61,19 @@ namespace Jgr.Grammar
 		public Bnf Bnf { get; private set; }
 		Stack<KeyValuePair<BnfRule, FsmState>> Rules;
 
-		public BnfState(Bnf bnf) {
+		public BnfState(Bnf bnf)
+			: this(bnf, "FILE") {
+		}
+
+		public BnfState(Bnf bnf, string root) {
 			this.Bnf = bnf;
 			Rules = new Stack<KeyValuePair<BnfRule, FsmState>>();
 			IsEnterBlockTime = false;
-			Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Definitions["FILE"], Bnf.Definitions["FILE"].ExpressionFsm.Root));
+			if (Bnf.Definitions.ContainsKey(root)) {
+				Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Definitions[root], Bnf.Definitions[root].ExpressionFsm.Root));
+			} else {
+				Rules.Push(new KeyValuePair<BnfRule, FsmState>(Bnf.Productions[root], Bnf.Productions[root].ExpressionFsm.Root));
+			}
 		}
 
 		public override string MessageSourceName {

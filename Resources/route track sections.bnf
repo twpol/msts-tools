@@ -1,6 +1,6 @@
 /* File format information */
 FILE                          = :TrackSections :SectionIdx .
-FILE_NAME                     = "Track Sections (Route)" .
+FILE_NAME                     = "Route Track Sections" .
 FILE_EXT                      = "tsection.dat" .
 FILE_TYPE                     = "T" .
 FILE_TYPE_VER                 = "0" .
@@ -10,8 +10,8 @@ SectionCurve                  ==> :uint .
 
 /* Format types */
 TrackSections                 ==> :uint,Count {:TrackSection} .
-TrackSection                  ==> :SectionCurve :uint,ID :float :float .
+TrackSection                  ==> :SectionCurve :uint,TrackSectionID :float,Length :float,Radius .
 SectionIdx                    ==> :uint,Count {:TrackPath} .
-TrackPath                     ==> :uint :uint,Count {:uint} .
+TrackPath                     ==> :uint,TrackNodeID :uint,Count {:uint,TrackSectionID} .
 
 EOF                           /* End of file */
