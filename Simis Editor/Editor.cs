@@ -475,29 +475,29 @@ namespace SimisEditor
 
 			if (pathsBefore.Any(_ => true)) {
 				if (needSeparator) addMenuSeparator();
-				foreach (var path in pathsBefore.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					addMenuItem("Insert " + String.Join(", ", path.ToArray()) + " before " + target.Type, "[insertbefore]" + String.Join(" ", path.ToArray()));
+				foreach (var path in pathsBefore.Select(p => String.Join(" ", p.ToArray())).OrderBy(s => s)) {
+					addMenuItem("Insert " + path.Replace(" ( ", "(").Replace(" )", ")") + " before " + target.Type, "[insertbefore]" + path);
 				}
 				needSeparator = true;
 			}
 			if (pathsChildBefore.Any(_ => true)) {
 				if (needSeparator) addMenuSeparator();
-				foreach (var path in pathsChildBefore.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					addMenuItem("Prepend " + String.Join(", ", path.ToArray()) + " to " + target.Type, "[childbefore]" + String.Join(" ", path.ToArray()));
+				foreach (var path in pathsChildBefore.Select(p => String.Join(" ", p.ToArray())).OrderBy(s => s)) {
+					addMenuItem("Prepend " + path.Replace(" ( ", "(").Replace(" )", ")") + " to " + target.Type, "[childbefore]" + path);
 				}
 				needSeparator = true;
 			}
 			if (pathsChildAfter.Any(_ => true)) {
 				if (needSeparator) addMenuSeparator();
-				foreach (var path in pathsChildAfter.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					addMenuItem("Append " + String.Join(", ", path.ToArray()) + " to " + target.Type, "[childafter]" + String.Join(" ", path.ToArray()));
+				foreach (var path in pathsChildAfter.Select(p => String.Join(" ", p.ToArray())).OrderBy(s => s)) {
+					addMenuItem("Append " + path.Replace(" ( ", "(").Replace(" )", ")") + " to " + target.Type, "[childafter]" + path);
 				}
 				needSeparator = true;
 			}
 			if (pathsAfter.Any(_ => true)) {
 				if (needSeparator) addMenuSeparator();
-				foreach (var path in pathsAfter.OrderBy(p => String.Join(", ", p.ToArray()))) {
-					addMenuItem("Insert " + String.Join(", ", path.ToArray()) + " after " + target.Type, "[insertafter]" + String.Join(" ", path.ToArray()));
+				foreach (var path in pathsAfter.Select(p => String.Join(" ", p.ToArray())).OrderBy(s => s)) {
+					addMenuItem("Insert " + path.Replace(" ( ", "(").Replace(" )", ")") + " after " + target.Type, "[insertafter]" + path);
 				}
 				needSeparator = true;
 			}
@@ -514,15 +514,40 @@ namespace SimisEditor
 			var action = newItems.Substring(1, newItems.IndexOf("]") - 1);
 			newItems = newItems.Substring(newItems.IndexOf("]") + 1);
 
-			var node = ContextNode;
 			var blockPath = new Stack<SimisTreeNode>();
-			while (node != null) {
-				blockPath.Push((SimisTreeNode)node.Tag);
-				node = node.Parent;
+			{
+				var node = ContextNode;
+				while (node != null) {
+					blockPath.Push((SimisTreeNode)node.Tag);
+					node = node.Parent;
+				}
 			}
 			var blockPathList = new List<SimisTreeNode>(blockPath);
 			var simisTreeNode = (SimisTreeNode)ContextNode.Tag;
-			var newNodes = newItems.Split(' ').Select(s => SimisTreeNodeValue.NodeTypes.ContainsKey(s) ? (SimisTreeNode)SimisTreeNodeValue.NodeTypes[s].GetConstructor(new Type[] { typeof(string), typeof(string) }).Invoke(new object[] { s, "" }) : new SimisTreeNode(s, ""));
+			var newNodeStack = new Stack<List<SimisTreeNode>>();
+			newNodeStack.Push(new List<SimisTreeNode>());
+			foreach (var newItem in newItems.Split(' ')) {
+				switch (newItem) {
+					case "(":
+						newNodeStack.Push(new List<SimisTreeNode>());
+						break;
+					case ")":
+						var nodes = newNodeStack.Pop();
+						var index = newNodeStack.Peek().Count - 1;
+						foreach (var node in nodes) {
+							newNodeStack.Peek()[index] = newNodeStack.Peek()[index].AppendChild(node);
+						}
+						break;
+					default:
+						if (SimisTreeNodeValue.NodeTypes.ContainsKey(newItem)) {
+							newNodeStack.Peek().Add((SimisTreeNode)SimisTreeNodeValue.NodeTypes[newItem].GetConstructor(new Type[] { typeof(string), typeof(string) }).Invoke(new object[] { newItem, "" }));
+						} else {
+							newNodeStack.Peek().Add(new SimisTreeNode(newItem, ""));
+						}
+						break;
+				}
+			}
+			var newNodes = newNodeStack.Peek();
 
 			switch (action) {
 				case "insertbefore":
@@ -905,17 +930,10 @@ namespace SimisEditor
 			var nodes = new Stack<KeyValuePair<SimisTreeNode, bool>>();
 			while (treeNode != null) {
 				nodes.Push(new KeyValuePair<SimisTreeNode, bool>((SimisTreeNode)treeNode.Tag, true));
-				//while (treeNode.PrevNode != null) {
-				//    treeNode = treeNode.PrevNode;
-				//    nodes.Push(new KeyValuePair<SimisTreeNode, bool>((SimisTreeNode)treeNode.Tag, false));
-				//}
 				treeNode = treeNode.Parent;
 			}
 			var str = String.Join("", nodes.Select(n => n.Key.Type + (n.Value ? " > " : " + ")).ToArray());
 			return str.Substring(0, str.Length - 3);
-
-			//var bnfState = GetBnfState(treeNode);
-			//return bnfState.ToString();
 		}
 
 		BnfState GetBnfState(TreeNode treeNode) {
@@ -977,28 +995,38 @@ namespace SimisEditor
 		IEnumerable<IEnumerable<string>> GetBnfPaths(BnfState bnfState, string targetName) {
 			var paths = new List<Stack<string>>();
 			foreach (var state in bnfState.State.NextStates) {
-				paths.AddRange(GetBnfPaths(state, targetName, BnfPathDepth));
+				paths.AddRange(GetBnfPaths(bnfState.Bnf, state, targetName, BnfPathDepth));
 			}
+			// Remove zero-step paths, as they go direct from the start to finish without adding any new states - and
+			// we WANT to add states.
 			return paths.Where(p => p.Count > 0).Select(p => (IEnumerable<string>)p);
 		}
 
-		IEnumerable<Stack<string>> GetBnfPaths(FsmState fsmState, string targetName, int depth) {
+		IEnumerable<Stack<string>> GetBnfPaths(Bnf bnf, FsmState fsmState, string targetName, int depth) {
 			var paths = new List<Stack<string>>();
 			if ((depth < BnfPathDepth) && (fsmState.ReferenceName == targetName)) {
+				// We're right at the target, return a single zero-step path.
 				paths.Add(new Stack<string>());
 				return paths;
 			}
 			if (fsmState.NextStateNames.Contains(targetName)) {
+				// We know that the target is one of the next states, so pretend we called ourself and we returned a
+				// single zero-step path (i.e. the codepath just above).
 				paths.Add(new Stack<string>());
 			} else if (depth > 1) {
+				// Target isn't next and we've got depth quota, just go recursive.
 				foreach (var state in fsmState.NextStates) {
-					paths.AddRange(GetBnfPaths(state, targetName, depth - 1));
+					paths.AddRange(GetBnfPaths(bnf, state, targetName, depth - 1));
 				}
 			}
+			// If we're not a reference node, we don't exist in the BNF.
 			if (fsmState.IsReference) {
 				if (paths.Any(p => p.Count == 0)) {
-					paths = new List<Stack<string>>(paths.Where(p => p.Count == 0).Take(1));
+					// The target was found in the next state, so wipe out all other paths.
+					paths = new List<Stack<string>> { new Stack<string>() };
 				} else {
+					// Path optimisation; for each path's first state, remove any other paths that go through that
+					// state.
 					for (var i = 0; i < paths.Count; i++) {
 						if (paths.Count(p => p.Contains(paths[i].First())) > 1) {
 							paths = new List<Stack<string>>(paths.Where(p => p == paths[i] || !p.Contains(paths[i].First())));
@@ -1006,9 +1034,18 @@ namespace SimisEditor
 						}
 					}
 				}
-				foreach (var path in paths) {
-					path.Push(fsmState.ReferenceName);
+				if (bnf.Productions.ContainsKey(fsmState.ReferenceName)) {
+					// We're a "block" of some kind, so find out the possible nested paths and insert them.
+					var newPaths = new List<Stack<string>>();
+					foreach (var nestedPath in GetBnfPaths(new BnfState(bnf, fsmState.ReferenceName), "<finish>")) {
+						foreach (var path in paths) {
+							newPaths.Add(nestedPath.Prefix("(").Concat(")").Concat(path).AsStack());
+						}
+					}
+					paths = newPaths;
 				}
+				// All paths go through us.
+				paths.ForEach(path => path.Push(fsmState.ReferenceName));
 			}
 			return paths;
 		}

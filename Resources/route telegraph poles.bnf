@@ -1,6 +1,6 @@
 /* File format information */
 FILE                          = :TPoleConfigData .
-FILE_NAME                     = "Telegraph Poles" .
+FILE_NAME                     = "Route Telegraph Poles" .
 FILE_EXT                      = "telepole.dat" .
 FILE_TYPE                     = "r" .
 FILE_TYPE_VER                 = "1" .

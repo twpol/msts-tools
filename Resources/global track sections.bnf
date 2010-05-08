@@ -1,6 +1,6 @@
 /* File format information */
 FILE                          = :TrackSections :TrackShapes .
-FILE_NAME                     = "Track Sections (Global)" .
+FILE_NAME                     = "Global Track Sections" .
 FILE_EXT                      = "tsection.dat" .
 FILE_TYPE                     = "F" .
 FILE_TYPE_VER                 = "0" .
@@ -14,7 +14,7 @@ ManualJunctionShape           ==> .
 NumPaths                      ==> :uint .
 RoadShape                     ==> .
 SectionCurve                  ==> :float,Radius :float,Angle .
-SectionIdx                    ==> :uint,SectionCount :float,OffsetX :float,OffsetY :float,OffsetZ :float,RotateY {:uint} .
+SectionIdx                    ==> :uint,Count :float,X :float,Y :float,Z :float,RotateY {:uint,TrackSectionID} .
 SectionSize                   ==> :float,Guage :float,Length .
 SectionSkew                   ==> :float .
 TunnelShape                   ==> .

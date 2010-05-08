@@ -1,0 +1,13 @@
+/* File format information */
+FILE                          = :uint,Count [{:CarSpawnerItem}] .
+FILE_NAME                     = "Route Car Spawn" .
+FILE_EXT                      = "carspawn.dat" .
+FILE_TYPE                     = "v" .
+FILE_TYPE_VER                 = "1" .
+
+/* Base types */
+CarSpawnerItem                ==> :string :uint .
+
+/* Format types */
+
+EOF                           /* End of file */
