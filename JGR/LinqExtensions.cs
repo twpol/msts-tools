@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // Jgr library, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
-// License: Microsoft Public License (Ms-PL).
+// License: New BSD License (BSD).
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
