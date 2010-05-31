@@ -16,7 +16,7 @@ namespace Jgr.Msts {
 		public readonly SimisProvider SimisProvider;
 		public readonly FileFinder Files;
 		public readonly string FileName;
-		readonly SimisFile TrackDB;
+		readonly UndoRedoSimisFile TrackDB;
 		public readonly Dictionary<uint, RouteTrackNode> TrackNodes;
 		public readonly Dictionary<uint, RouteTrackVectors> TrackVectors;
 
@@ -28,8 +28,8 @@ namespace Jgr.Msts {
 			TrackNodes = new Dictionary<uint, RouteTrackNode>();
 			TrackVectors = new Dictionary<uint, RouteTrackVectors>();
 
-			TrackDB = new SimisFile(Files[FileName + ".tdb"], SimisProvider);
-			TrackDB.ReadFile();
+			TrackDB = new UndoRedoSimisFile(Files[FileName + ".tdb"], SimisProvider);
+			TrackDB.Read();
 
 			foreach (var node in TrackDB.Tree["TrackDB"]["TrackNodes"].Where(n => n.Type == "TrackNode")) {
 				if (node.Contains("TrJunctionNode") || node.Contains("TrEndNode")) {

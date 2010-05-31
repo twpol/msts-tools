@@ -110,8 +110,8 @@ namespace Jgr.Msts {
 						var terrainFloor = 0f;
 						var terrainScale = 1f;
 						try {
-							var tile = new SimisFile(tileFile, SimisProvider);
-							tile.ReadFile();
+							var tile = new UndoRedoSimisFile(tileFile, SimisProvider);
+							tile.Read();
 							terrainWidth = terrainHeight = (int)tile.Tree["terrain"]["terrain_samples"]["terrain_nsamples"][0].ToValue<uint>();
 							Debug.Assert(terrainWidth == 256);
 							Debug.Assert(terrainHeight == 256);
@@ -158,24 +158,24 @@ namespace Jgr.Msts {
 					// TODO: Roads and track use the same basic data, can we split anything out here?
 					break;
 				case TileLayer.Track:
-					foreach (var trackVectors in Route.Track.TrackVectors.Values) {
-						if (trackVectors.Vectors.Any(v => v.TileX == TileCoordinate.X && v.TileZ == TileCoordinate.Z)) {
-							var sections = new List<TileObject>(from vector in trackVectors.Vectors.Union(new RouteTrackVector[] { Route.Track.TrackNodes[trackVectors.PinEnd] })
-																	select new TileObject() { X = vector.X + 2048 * (vector.TileX - TileCoordinate.X), Y = vector.Y, Z = vector.Z + 2048 * (vector.TileZ - TileCoordinate.Z) });
-							TrackNodes.Add(new TileTrackNode() {
-								ID = trackVectors.ID, IsRoad = false, Label = "", Vectors = sections,
-								X = sections[0].X, Y = sections[0].Y, Z = sections[0].Z
-							});
-						}
-					}
+					//foreach (var trackVectors in Route.Track.TrackVectors.Values) {
+					//    if (trackVectors.Vectors.Any(v => v.TileX == TileCoordinate.X && v.TileZ == TileCoordinate.Z)) {
+					//        var sections = new List<TileObject>(from vector in trackVectors.Vectors.Union(new RouteTrackVector[] { Route.Track.TrackNodes[trackVectors.PinEnd] })
+					//                                                select new TileObject() { X = vector.X + 2048 * (vector.TileX - TileCoordinate.X), Y = vector.Y, Z = vector.Z + 2048 * (vector.TileZ - TileCoordinate.Z) });
+					//        TrackNodes.Add(new TileTrackNode() {
+					//            ID = trackVectors.ID, IsRoad = false, Label = "", Vectors = sections,
+					//            X = sections[0].X, Y = sections[0].Y, Z = sections[0].Z
+					//        });
+					//    }
+					//}
 					break;
 				case TileLayer.Markers:
 					string markersFile = String.Format(CultureInfo.InvariantCulture, @"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
 
 					if (File.Exists(markersFile)) {
-						var markers = new SimisFile(markersFile, SimisProvider);
+						var markers = new UndoRedoSimisFile(markersFile, SimisProvider);
 						try {
-							markers.ReadFile();
+							markers.Read();
 						} catch (FileException) {
 							return;
 						}
