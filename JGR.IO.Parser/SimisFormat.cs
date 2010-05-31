@@ -11,6 +11,7 @@ namespace Jgr.IO.Parser
 	/// <summary>
 	/// Contains all the information for reading and writing a single Simis format.
 	/// </summary>
+	[Immutable]
 	public class SimisFormat
 	{
 		/// <summary>
@@ -28,7 +29,7 @@ namespace Jgr.IO.Parser
 		/// <summary>
 		/// A list of all the root productions in the BNF for parsing.
 		/// </summary>
-		public List<string> Roots { get; private set; }
+		public IEnumerable<string> Roots { get; private set; }
 		/// <summary>
 		/// The <see cref="Bnf"/> used for verification during reading and writing of this format.
 		/// </summary>

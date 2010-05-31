@@ -5,100 +5,31 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
-namespace Jgr.IO.Parser
-{
-	/// <summary>
-	/// A support class for using <see cref="SimisReader"/> and <see cref="SimisWriter"/> with on-disk files and editing capabilities.
-	/// </summary>
-	public class SimisFile
-	{
-		public string FileName { get; set; }
-		public SimisFormat SimisFormat { get; set; }
-		public SimisStreamFormat StreamFormat { get; set; }
-		public bool StreamCompressed { get; set; }
-		Stack<SimisTreeNode> UndoBuffer { get; set; }
-		Stack<SimisTreeNode> RedoBuffer { get; set; }
-		SimisTreeNode _Tree { get; set; }
-		SimisProvider SimisProvider;
+namespace Jgr.IO.Parser {
+	[Immutable]
+	[SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
+	public class SimisFile : DataTreeNode<SimisFile> {
+		public readonly string FileName;
+		public readonly SimisFormat SimisFormat;
+		public readonly SimisStreamFormat StreamFormat;
+		public readonly bool StreamCompressed;
+		public readonly SimisTreeNode Tree;
+		readonly SimisProvider SimisProvider;
 
-		public SimisFile(string fileName, SimisProvider provider) {
+		/// <summary>
+		/// Creates a <see cref="SimisFile"/> from a file.
+		/// </summary>
+		/// <param name="fileName">The file to read from.</param>
+		/// <param name="simisProvider">A <see cref="SimisProvider"/> within which the appropriate <see cref="Bnf"/> for parsing can be found.</param>
+		public SimisFile(string fileName, SimisProvider simisProvider) {
 			FileName = fileName;
-			UndoBuffer = new Stack<SimisTreeNode>();
-			RedoBuffer = new Stack<SimisTreeNode>();
-			ResetUndo(new SimisTreeNode("<root>", ""));
-			SimisFormat = null;
-			SimisProvider = provider.GetForPath(fileName);
-		}
-
-		/// <summary>
-		/// Gets or sets the root <see cref="SimisTreeNode"/> for the tree read or written by this class.
-		/// </summary>
-		/// <remarks>
-		/// <para>Setting the <see cref="Tree"/> will add to the available undo buffers and reset the redo buffers.</para>
-		/// </remarks>
-		public SimisTreeNode Tree {
-			get {
-				return _Tree;
-			}
-			set {
-				UndoBuffer.Push(_Tree);
-				RedoBuffer.Clear();
-				_Tree = value;
-			}
-		}
-
-		void ResetUndo(SimisTreeNode newTree) {
-			UndoBuffer.Clear();
-			RedoBuffer.Clear();
-			_Tree = newTree;
-		}
-
-		/// <summary>
-		/// Switches to the previous <see cref="SimisTreeNode"/> root.
-		/// </summary>
-		public void Undo() {
-			RedoBuffer.Push(_Tree);
-			_Tree = UndoBuffer.Pop();
-		}
-
-		/// <summary>
-		/// Switches to the next <see cref="SimisTreeNode"/> root.
-		/// </summary>
-		public void Redo() {
-			UndoBuffer.Push(_Tree);
-			_Tree = RedoBuffer.Pop();
-		}
-
-		/// <summary>
-		/// Gets a <see cref="bool"/> indicating whether undo is available.
-		/// </summary>
-		public bool CanUndo {
-			get {
-				return UndoBuffer.Count > 0;
-			}
-		}
-
-		/// <summary>
-		/// Gets a <see cref="bool"/> indicating whether redo is available.
-		/// </summary>
-		public bool CanRedo {
-			get {
-				return RedoBuffer.Count > 0;
-			}
-		}
-
-		/// <summary>
-		/// Reads the file specified in <see cref="FileName"/> into the <see cref="Tree"/>.
-		/// </summary>
-		/// <remarks>
-		/// <para>This operation will reset the undo and redo buffers if it succeeds.</para>
-		/// </remarks>
-		public void ReadFile() {
+			SimisProvider = simisProvider.GetForPath(FileName);
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
-					ReadStream(fileStream);
+					ReadStream(fileStream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
 				}
 			} catch (ReaderException e) {
 				throw new FileException(FileName, e);
@@ -106,13 +37,35 @@ namespace Jgr.IO.Parser
 		}
 
 		/// <summary>
-		/// Reads any readable <see cref="Stream"/> into the <see cref="Tree"/>.
+		/// Creates a <see cref="SimisFile"/> from a readable <see cref="Stream"/>.
 		/// </summary>
 		/// <param name="stream">The <see cref="Stream"/> to read from.</param>
-		/// <remarks>
-		/// <para>This operation will reset the undo and redo buffers if it succeeds.</para>
-		/// </remarks>
-		public void ReadStream(Stream stream) {
+		/// <param name="simisProvider">A <see cref="SimisProvider"/> within which the appropriate <see cref="Bnf"/> for parsing can be found.</param>
+		public SimisFile(Stream stream, SimisProvider simisProvider) {
+			FileName = "";
+			SimisProvider = simisProvider;
+			ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
+		}
+
+		/// <summary>
+		/// Creates a <see cref="SimisFile"/> from the component parts.
+		/// </summary>
+		/// <param name="fileName">The file to read from.</param>
+		/// <param name="simisFormat">The <see cref="SimisFormat"/> for this <see cref="SimisFile"/>.</param>
+		/// <param name="streamFormat">The <see cref="SimisStreamFormat"/> for this <see cref="SimisFile"/>.</param>
+		/// <param name="streamCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="tree">The <see cref="SimisTreeNode"/> tree for this <see cref="SimisFile"/>.</param>
+		/// <param name="simisProvider">A <see cref="SimisProvider"/> within which the appropriate <see cref="Bnf"/> for writing can be found.</param>
+		public SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisTreeNode tree, SimisProvider simisProvider) {
+			FileName = fileName;
+			SimisFormat = simisFormat;
+			StreamFormat = streamFormat;
+			StreamCompressed = streamCompressed;
+			Tree = tree;
+			SimisProvider = simisProvider.GetForPath(fileName);
+		}
+
+		void ReadStream(Stream stream, out SimisFormat simisFormat, out SimisStreamFormat streamFormat, out bool streamCompressed, out SimisTreeNode tree) {
 			var reader = new SimisReader(new BufferedInMemoryStream(stream), SimisProvider, SimisFormat);
 
 			var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
@@ -156,22 +109,20 @@ namespace Jgr.IO.Parser
 			}
 
 			var rootBlock = blockStack.Pop();
-			var tree = new SimisTreeNode("<root>", "", rootBlock.Value);
-
-			// We need to do this AFTER reading the file, otherwise they'll not be correct.
-			SimisFormat = reader.SimisFormat;
-			StreamFormat = reader.StreamFormat;
-			StreamCompressed = reader.StreamCompressed;
-			ResetUndo(tree);
+			simisFormat = reader.SimisFormat;
+			streamFormat = reader.StreamFormat;
+			streamCompressed = reader.StreamCompressed;
+			tree = new SimisTreeNode("<root>", "", rootBlock.Value);
 		}
 
 		/// <summary>
-		/// Writes the <see cref="Tree"/> out to the file specified in <see cref="FileName"/>.
+		/// Writes the <see cref="SimisTreeNode"/> tree to <see cref="FileName"/>.
 		/// </summary>
-		public void WriteFile() {
+		public void Write() {
+			if (String.IsNullOrEmpty(FileName)) throw new InvalidOperationException("Cannot write to file without a filename.");
 			try {
 				using (var fileStream = File.Create(FileName)) {
-					WriteStream(fileStream);
+					Write(fileStream);
 				}
 			} catch (Exception e) {
 				throw new FileException(FileName, e);
@@ -179,10 +130,10 @@ namespace Jgr.IO.Parser
 		}
 
 		/// <summary>
-		/// Writes the <see cref="Tree"/> to any writable <see cref="Stream"/>.
+		/// Writes the <see cref="SimisTreeNode"/> tree to any writable <see cref="Stream"/>.
 		/// </summary>
 		/// <param name="stream">The <see cref="Stream"/> to write to.</param>
-		public void WriteStream(Stream stream) {
+		public void Write(Stream stream) {
 			var writer = new SimisWriter(stream, SimisProvider, SimisFormat, StreamFormat, StreamCompressed);
 			foreach (var child in Tree) {
 				WriteBlock(writer, child);
