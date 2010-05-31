@@ -29,7 +29,7 @@ namespace Jgr.Gui {
 		public readonly DateTime Time;
 		public readonly string ApplicationName;
 		public readonly string ApplicationVersion;
-		public readonly StackFrame[] Location;
+		public readonly StackFrame Source;
 		public readonly FeedbackType Type;
 		public readonly string Operation;
 		public readonly IDictionary<string, string> Details;
@@ -38,19 +38,19 @@ namespace Jgr.Gui {
 
 		static string[] FeedbackTypeFaces = {
 												"☹",
-												"☺/☹",
+												"☺☹",
 											};
 		static string[] FeedbackTypeIntros = {
 												 "{1} encountered an error while {0}. This wasn't meant to happen and we'd like you to send this problem report to us so we can make sure it never happens again. If you want to include some comments, that's fine with us.",
-												 "Has {1} done everything you wanted? Annoyed you repeatedly? Wiped your hard drive? Whatever it has done - or not done - we'd love to hear all the gory details.",
+												 "Dying to tell us what you think of {1}? Write your comments below and send - we don't even need your e-mail address. If you want us to get back to you about your comments, however, you'll need to provide it.",
 											 };
 		static string[] FeedbackTypeNames = {
 												"Application Failure",
 												"User Comment",
 											};
 
-		Feedback(FeedbackType type, string operation, IDictionary<string, string> details, StackTrace stack) {
-			var callingStackFrame = stack.GetFrames().First(f => !f.GetMethod().DeclaringType.FullName.StartsWith("System.", StringComparison.OrdinalIgnoreCase));
+		Feedback(FeedbackType type, string operation, IDictionary<string, string> details, StackTrace source) {
+			var callingStackFrame = source.GetFrames().First(f => !f.GetMethod().DeclaringType.FullName.StartsWith("System.", StringComparison.OrdinalIgnoreCase));
 
 			EnvironmentOS = Environment.OSVersion.ToString();
 			EnvironmentOSVersion = Environment.OSVersion.Version;
@@ -60,7 +60,7 @@ namespace Jgr.Gui {
 			Time = DateTime.Now;
 			ApplicationName = Application.ProductName;
 			ApplicationVersion = Application.ProductVersion;
-			Location = stack.GetFrames();
+			Source = callingStackFrame;
 			Type = type;
 			Operation = operation;
 			Details = details;
@@ -95,13 +95,13 @@ namespace Jgr.Gui {
 				"Operating System: " + EnvironmentOS + "\n" +
 				"Processor Cores: " + EnvironmentCores + "\n" +
 				"Runtime Version: " + EnvironmentCLR + " (" + EnvironmentCLRBitness + "bit)" + "\n" +
-				"Report Time: " + Time.ToString("F") + "\n" +
-				"Report Application: " + ApplicationName + " " + ApplicationVersion + "\n" +
-				"Report Call Stack: " + "\n" + String.Join("\n", Location.Select(f => "    " + PrettyStackFrame(f)).ToArray()) + "\n" +
-				"Report Type: " + FeedbackTypeNames[(int)Type] +
-				(Details.ContainsKey("") ? "\nReport Details:\n\n" + Details[""] : "");
+				"Time: " + Time.ToString("F") + "\n" +
+				"Application: " + ApplicationName + " " + ApplicationVersion + "\n" +
+				"Source: " + FormatMethodName(Source) + "\n" +
+				"Type: " + FeedbackTypeNames[(int)Type] +
+				(Details.ContainsKey("") ? "\nDetails:\n\n" + Details[""] : "");
 			foreach (var item in Details.Where(i => i.Key.Length > 0)) {
-				report += "\n\nReport Attachment (" + item.Key + "):\n\n" +
+				report += "\n\nAttachment (" + item.Key + "):\n\n" +
 					item.Value;
 			}
 
@@ -137,26 +137,23 @@ namespace Jgr.Gui {
 						new XAttribute(XName.Get("email"), Email),
 						new XElement(XName.Get("environment"),
 							new XElement(XName.Get("os"),
-								EnvironmentOS,
-								new XAttribute(XName.Get("version"), EnvironmentOSVersion.ToString())),
+								new XAttribute(XName.Get("version"), EnvironmentOSVersion.ToString()),
+								EnvironmentOS),
 							new XElement(XName.Get("processor"),
 								new XAttribute(XName.Get("cores"), EnvironmentCores)),
 							new XElement(XName.Get("clr"),
 								new XAttribute(XName.Get("bits"), EnvironmentCLRBitness.ToString()),
 								new XAttribute(XName.Get("version"), EnvironmentCLR))),
 						new XElement(XName.Get("application"),
-							ApplicationName,
-							new XAttribute(XName.Get("version"), ApplicationVersion)),
-						new XElement(XName.Get("stack"),
-							Location.Select(f => new XElement(XName.Get("frame"),
-								f.GetFileName() != null ? new XAttribute(XName.Get("file"), f.GetFileName()) : null,
-								f.GetFileName() != null ? new XAttribute(XName.Get("line"), f.GetFileLineNumber()) : null,
-								f.GetFileName() != null ? new XAttribute(XName.Get("column"), f.GetFileColumnNumber()) : null,
-								f.GetMethod().DeclaringType.FullName + "." + f.GetMethod().Name))),
+							new XAttribute(XName.Get("version"), ApplicationVersion),
+							ApplicationName),
+						new XElement(XName.Get("source"),
+							Source.GetFileName() != null ? new XAttribute(XName.Get("file"), Source.GetFileName()) : null,
+							Source.GetFileName() != null ? new XAttribute(XName.Get("line"), Source.GetFileLineNumber()) : null,
+							Source.GetFileName() != null ? new XAttribute(XName.Get("column"), Source.GetFileColumnNumber()) : null,
+							FormatMethodName(Source)),
 						Details.Select(d => d.Key.Length == 0 ? new XElement(XName.Get("details"), d.Value) : new XElement(XName.Get("details"), new XAttribute(XName.Get("name"), d.Key), d.Value)),
 						new XElement(XName.Get("comments"), Comments)));
-
-			//TaskDialog.Show(owner, TaskDialogCommonIcon.Information, "XML REPORT", reportXML.ToString());
 
 			var uri = new Uri("http://twpol.dyndns.org/projects/jgrmsts/reports/upload?uid=" + UID);
 			var wc = new WebClient();
@@ -183,9 +180,8 @@ namespace Jgr.Gui {
 			return uid.ToString();
 		}
 
-		string PrettyStackFrame(StackFrame frame) {
+		string FormatMethodName(StackFrame frame) {
 			return frame.GetMethod().DeclaringType.FullName + "." + frame.GetMethod().Name;
-			// + " (" + frame.GetFileName() + ":" + frame.GetFileLineNumber() + ":" + frame.GetFileColumnNumber() + ")";
 		}
 	}
 }
