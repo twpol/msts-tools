@@ -1043,8 +1043,7 @@ namespace SimisEditor
 		}
 
 		void sendFeedbackToolStripMenuItem_Click(object sender, EventArgs e) {
-			var report = new Feedback();
-			report.PromptAndSend(this);
+			new Feedback().PromptAndSend(this);
 		}
 	}
 }
