@@ -5,18 +5,25 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Jgr.IO;
 using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
-	public class Route {
+	[Immutable]
+	public class Route : DataTreeNode<Route> {
 		public readonly SimisProvider SimisProvider;
 		public readonly string RoutePath;
 		public readonly FileFinder Files;
-		TrackService _TrackService;
-		RouteTrack _RouteTrack;
+		//TrackService _TrackService;
+		//RouteTrack _RouteTrack;
 		readonly SimisFile TrackFile;
+
+		internal Route(SimisProvider simisProvider, string routePath, FileFinder files, SimisFile trackFile) {
+			SimisProvider = simisProvider;
+			RoutePath = routePath;
+			Files = files;
+			TrackFile = trackFile;
+		}
 
 		public Route(string trackFile, SimisProvider simisProvider) {
 			RoutePath = Path.GetDirectoryName(trackFile);
@@ -34,7 +41,21 @@ namespace Jgr.Msts {
 			Files = new FileFinder(new string[] { RoutePath, Path.Combine(RoutePath, "Global"), mstsPath, Path.Combine(mstsPath, "Global") });
 
 			TrackFile = new SimisFile(trackFile, SimisProvider);
-			TrackFile.ReadFile();
+		}
+
+		protected override void SetArgument(string name, object value, ref Dictionary<string, object> arguments, ref DataTreeNode<Route>.TypeData typeData) {
+			var trackFile = arguments.ContainsKey("TrackFile") ? (SimisFile)arguments["TrackFile"] : TrackFile;
+			switch (name) {
+				case "Name":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "Name", 0).Set(new SimisTreeNodeValueString("string", "", (string)value));
+					break;
+				case "Description":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "Description", 0).Set(new SimisTreeNodeValueString("string", "", ((string)value).Replace("\r\n", "\n")));
+					break;
+				default:
+					base.SetArgument(name, value, ref arguments, ref typeData);
+					break;
+			}
 		}
 
 		public string Name {
@@ -55,36 +76,50 @@ namespace Jgr.Msts {
 			}
 		}
 
-		public TrackService TrackService {
-			get {
-				lock (this) {
-					if (_TrackService != null) {
-						return _TrackService;
-					}
-					_TrackService = new TrackService(Files, SimisProvider);
-				}
-				return _TrackService;
-			}
-		}
+		//public Route Set(string name, string description, string fileName) {
+		//    var trackFileTree = TrackFile.Tree;
+		//    if (name != null) {
+		//        trackFileTree = trackFileTree.Path("Tr_RouteFile", "Name", 0).Apply(n => new SimisTreeNodeValueString("string", "", name)).Root;
+		//    }
+		//    if (description != null) {
+		//        trackFileTree = trackFileTree.Path("Tr_RouteFile", "Description", 0).Apply(n => new SimisTreeNodeValueString("string", "", description)).Root;
+		//    }
+		//    if (fileName != null) {
+		//        trackFileTree = trackFileTree.Path("Tr_RouteFile", "FileName", 0).Apply(n => new SimisTreeNodeValueString("string", "", fileName)).Root;
+		//    }
+		//    return new Route(SimisProvider, RoutePath, Files, new SimisFile(TrackFile.FileName, TrackFile.SimisFormat, TrackFile.StreamFormat, TrackFile.StreamCompressed, trackFileTree, SimisProvider));
+		//}
 
-		public RouteTrack Track {
-			get {
-				lock (this) {
-					if (_RouteTrack != null) {
-						return _RouteTrack;
-					}
-					_RouteTrack = new RouteTrack(FileName, Files, SimisProvider);
-				}
-				return _RouteTrack;
-			}
-		}
+		//public TrackService TrackService {
+		//    get {
+		//        lock (this) {
+		//            if (_TrackService != null) {
+		//                return _TrackService;
+		//            }
+		//            _TrackService = new TrackService(Files, SimisProvider);
+		//        }
+		//        return _TrackService;
+		//    }
+		//}
 
-		public IEnumerable<Tile> Tiles {
-			get {
-				// TODO: Cache the tiles by name or something. We should not be creating a new set every time!
-				return from tile in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
-					   select new Tile(Path.GetFileNameWithoutExtension(tile), this, SimisProvider);
-			}
-		}
+		//public RouteTrack Track {
+		//    get {
+		//        lock (this) {
+		//            if (_RouteTrack != null) {
+		//                return _RouteTrack;
+		//            }
+		//            _RouteTrack = new RouteTrack(FileName, Files, SimisProvider);
+		//        }
+		//        return _RouteTrack;
+		//    }
+		//}
+
+		//public IEnumerable<Tile> Tiles {
+		//    get {
+		//        // TODO: Cache the tiles by name or something. We should not be creating a new set every time!
+		//        return from tile in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
+		//               select new Tile(Path.GetFileNameWithoutExtension(tile), this, SimisProvider);
+		//    }
+		//}
 	}
 }
