@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,9 +16,10 @@ namespace Jgr.IO.Parser {
 	/// Represents Simis data as a tree of immutable nodes with values.
 	/// </summary>
 	[Immutable]
-	public class SimisTreeNode : ReadOnlyCollection<SimisTreeNode> {
-		public string Type { get; private set; }
-		public string Name { get; private set; }
+	[DebuggerDisplay("{ToString()}")]
+	public class SimisTreeNode : ReadOnlyCollection<SimisTreeNode>, IDataTreeNode {
+		public readonly string Type;
+		public readonly string Name;
 
 		/// <summary>
 		/// Constructs a new node with a given <see cref="Type"/>, <see cref="Name"/> and no children.
@@ -118,6 +120,17 @@ namespace Jgr.IO.Parser {
 			return -1;
 		}
 
+		public SimisTreeNodePath Path(params object[] pathSteps) {
+			Debug.Assert(pathSteps.Length > 0);
+			var path = new List<SimisTreeNode>(pathSteps.Length);
+			var pathNode = this;
+			foreach (var step in pathSteps) {
+				pathNode = step is string ? pathNode[(string)step] : step is int ? pathNode[(int)step] : null;
+				path.Add(pathNode);
+			}
+			return new SimisTreeNodePath(this, path);
+		}
+
 		public SimisTreeNode Apply(IList<SimisTreeNode> path, Func<SimisTreeNode, SimisTreeNode> action) {
 			return Apply(path, 0, action);
 		}
@@ -214,6 +227,41 @@ namespace Jgr.IO.Parser {
 		/// <returns>The value of the node, cast to <see cref="T"/>.</returns>
 		public virtual T ToValue<T>() {
 			throw new NotImplementedException();
+		}
+
+		#region IDataTreeNode Members
+
+		public bool HasChildNodes() {
+			return !(this is SimisTreeNodeValue);
+		}
+
+		public IDataTreeNode GetChildNode(object name) {
+			if (name is string) {
+				return this[(string)name];
+			}
+			return this[(int)name];
+		}
+
+		public IDataTreeNode ReplaceChildNode(IDataTreeNode child, object name, IDataTreeNode oldChild) {
+			return ReplaceChild((SimisTreeNode)child, (SimisTreeNode)oldChild);
+		}
+
+		#endregion
+	}
+
+	[Immutable]
+	public class SimisTreeNodePath : ReadOnlyCollection<SimisTreeNode> {
+		public readonly SimisTreeNode Root;
+
+		public SimisTreeNodePath(SimisTreeNode root, IList<SimisTreeNode> path)
+			: base(path) {
+			Root = root;
+		}
+
+		public SimisTreeNodePath Apply(Func<SimisTreeNode, SimisTreeNode> action) {
+			var path = new List<SimisTreeNode>(this);
+			var root = Root.Apply(path, action);
+			return new SimisTreeNodePath(root, path);
 		}
 	}
 

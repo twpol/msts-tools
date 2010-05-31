@@ -40,7 +40,7 @@ namespace SimisEditor
 				return title;
 			}
 		}
-		SimisFile File;
+		UndoRedoSimisFile File;
 		SimisTreeNode SavedFileTree;
 		TreeNode SelectedNode;
 		TreeNode ContextNode;
@@ -173,7 +173,7 @@ namespace SimisEditor
 		void NewFile() {
 			WaitForSimisProvider();
 			Filename = "";
-			File = new SimisFile("", SimisProvider);
+			File = new UndoRedoSimisFile("", SimisProvider);
 			SavedFileTree = File.Tree;
 			SelectNode(null);
 			ResyncSimisNodes();
@@ -183,9 +183,9 @@ namespace SimisEditor
 
 		bool OpenFile(string filename) {
 			if (!WaitForSimisProvider()) return false;
-			var newFile = new SimisFile(filename, SimisProvider);
+			var newFile = new UndoRedoSimisFile(filename, SimisProvider);
 			try {
-				newFile.ReadFile();
+				newFile.Read();
 			} catch (FileException ex) {
 				var report = new Feedback(ex);
 				if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
@@ -213,7 +213,7 @@ namespace SimisEditor
 				File.FileName = Filename;
 			}
 			try {
-				File.WriteFile();
+				File.Write();
 			} catch (FileException ex) {
 				if (ex.InnerException is UnauthorizedAccessException) {
 					TaskDialog.Show(this, TaskDialogCommonIcon.Error, "Unable to save '" + Path.GetFileName(ex.FileName) + "'", ex.InnerException.Message);
@@ -927,7 +927,7 @@ namespace SimisEditor
 			return dProperty;
 		}
 
-		string GetBnfLocation(SimisFile file, TreeNode treeNode) {
+		string GetBnfLocation(UndoRedoSimisFile file, TreeNode treeNode) {
 			var nodes = new Stack<KeyValuePair<SimisTreeNode, bool>>();
 			while (treeNode != null) {
 				nodes.Push(new KeyValuePair<SimisTreeNode, bool>((SimisTreeNode)treeNode.Tag, true));
