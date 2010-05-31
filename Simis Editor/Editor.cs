@@ -45,6 +45,7 @@ namespace SimisEditor
 		TreeNode SelectedNode;
 		TreeNode ContextNode;
 		SimisProvider SimisProvider;
+		Thread SimisProviderThread;
 
 		#region Initialization
 
@@ -112,30 +113,30 @@ namespace SimisEditor
 		}
 
 		void InitializeSimisProvider() {
-			var resourcesDirectory = Application.ExecutablePath;
-			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
-			SimisProvider = new SimisProvider(resourcesDirectory);
-			var thread = new Thread(() => WaitForSimisProvider());
-			thread.Start();
+			SimisProviderThread = new Thread(() => {
+				var resourcesDirectory = Application.ExecutablePath;
+				resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
+				try {
+					SimisProvider = new SimisProvider(resourcesDirectory);
+				} catch (FileException ex) {
+					this.Invoke((MethodInvoker)(() => {
+						var report = new Feedback(ex);
+						if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
+							report.PromptAndSend(this);
+						}
+					}));
+				}
+			});
+			SimisProviderThread.Start();
 		}
 
 		bool WaitForSimisProvider() {
-			try {
-				SimisProvider.Join();
-			} catch (FileException ex) {
-				this.Invoke((MethodInvoker)(() => {
-					var report = new Feedback(ex);
-					if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
-						report.PromptAndSend(this);
-					}
-				}));
-				return false;
-			}
+			SimisProviderThread.Join();
 			return true;
 		}
 
 		bool UpdateFromSimisProvider() {
-			if (!WaitForSimisProvider()) return false;
+			if (SimisProvider == null) return false;
 
 			var generalName = "Train Simulator files";
 
