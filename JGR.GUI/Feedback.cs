@@ -14,6 +14,11 @@ using System.Xml.Linq;
 using Microsoft.Win32;
 
 namespace Jgr.Gui {
+	public enum FeedbackType {
+		ApplicationFailure,
+		UserComment,
+	}
+
 	public class Feedback {
 		readonly string UID;
 		public readonly string EnvironmentOS;
@@ -24,16 +29,27 @@ namespace Jgr.Gui {
 		public readonly DateTime Time;
 		public readonly string ApplicationName;
 		public readonly string ApplicationVersion;
-		public readonly string LocationMethod;
-		public readonly string LocationFileName;
-		public readonly int LocationFileLine;
-		public readonly int LocationFileColumn;
-		public readonly string Type;
+		public readonly StackFrame[] Location;
+		public readonly FeedbackType Type;
+		public readonly string Operation;
 		public readonly IDictionary<string, string> Details;
 		string Email;
 		string Comments;
 
-		Feedback(string type, IDictionary<string, string> details, StackTrace stack) {
+		static string[] FeedbackTypeFaces = {
+												"☹",
+												"☺/☹",
+											};
+		static string[] FeedbackTypeIntros = {
+												 "{1} encountered an error while {0}. This wasn't meant to happen and we'd like you to send this problem report to us so we can make sure it never happens again. If you want to include some comments, that's fine with us.",
+												 "Has {1} done everything you wanted? Annoyed you repeatedly? Wiped your hard drive? Whatever it has done - or not done - we'd love to hear all the gory details.",
+											 };
+		static string[] FeedbackTypeNames = {
+												"Application Failure",
+												"User Comment",
+											};
+
+		Feedback(FeedbackType type, string operation, IDictionary<string, string> details, StackTrace stack) {
 			var callingStackFrame = stack.GetFrames().First(f => !f.GetMethod().DeclaringType.FullName.StartsWith("System.", StringComparison.OrdinalIgnoreCase));
 
 			EnvironmentOS = Environment.OSVersion.ToString();
@@ -44,11 +60,9 @@ namespace Jgr.Gui {
 			Time = DateTime.Now;
 			ApplicationName = Application.ProductName;
 			ApplicationVersion = Application.ProductVersion;
-			LocationMethod = callingStackFrame.GetMethod().DeclaringType.FullName + "." + callingStackFrame.GetMethod().Name;
-			LocationFileName = callingStackFrame.GetFileName();
-			LocationFileLine = callingStackFrame.GetFileLineNumber();
-			LocationFileColumn = callingStackFrame.GetFileColumnNumber();
+			Location = stack.GetFrames();
 			Type = type;
+			Operation = operation;
 			Details = details;
 			Email = "";
 			Comments = "";
@@ -63,16 +77,16 @@ namespace Jgr.Gui {
 			}
 		}
 
-		public Feedback(string type, IDictionary<string, string> details)
-			: this(type, details, new StackTrace(1, true)) {
+		public Feedback(FeedbackType type, string operation, IDictionary<string, string> details)
+			: this(type, operation, details, new StackTrace(1, true)) {
 		}
 
-		public Feedback(Exception e)
-			: this("Application Exception", new Dictionary<string, string> { { "", e.ToString() } }, new StackTrace(1, true)) {
+		public Feedback(Exception e, string operation)
+			: this(FeedbackType.ApplicationFailure, operation, new Dictionary<string, string> { { "", e.ToString() } }, new StackTrace(1, true)) {
 		}
 
 		public Feedback()
-			: this("User Comment", new Dictionary<string, string> { }, new StackTrace(1, true)) {
+			: this(FeedbackType.UserComment, "", new Dictionary<string, string> { }, new StackTrace(1, true)) {
 		}
 
 		public void PromptAndSend(Form owner) {
@@ -83,8 +97,8 @@ namespace Jgr.Gui {
 				"Runtime Version: " + EnvironmentCLR + " (" + EnvironmentCLRBitness + "bit)" + "\n" +
 				"Report Time: " + Time.ToString("F") + "\n" +
 				"Report Application: " + ApplicationName + " " + ApplicationVersion + "\n" +
-				"Report Source: " + LocationMethod + " (" + LocationFileName + ":" + LocationFileLine + ":" + LocationFileColumn + ")\n" +
-				"Report Type: " + Type +
+				"Report Call Stack: " + "\n" + String.Join("\n", Location.Select(f => "    " + PrettyStackFrame(f)).ToArray()) + "\n" +
+				"Report Type: " + FeedbackTypeNames[(int)Type] +
 				(Details.ContainsKey("") ? "\nReport Details:\n\n" + Details[""] : "");
 			foreach (var item in Details.Where(i => i.Key.Length > 0)) {
 				report += "\n\nReport Attachment (" + item.Key + "):\n\n" +
@@ -92,14 +106,22 @@ namespace Jgr.Gui {
 			}
 
 			using (var feedback = new FeedbackPrompt()) {
+				feedback.LabelFace.Text = FeedbackTypeFaces[(int)Type];
+				feedback.LabelIntro.Text = String.Format(FeedbackTypeIntros[(int)Type], Operation, ApplicationName);
 				feedback.TextApplication.Text = ApplicationName + " " + ApplicationVersion;
-				feedback.TextType.Text = Type;
+				feedback.TextType.Text = FeedbackTypeNames[(int)Type];
 				feedback.TextEmail.Text = Email;
 				feedback.AllData = report;
-				if (feedback.ShowDialog(owner) == DialogResult.OK) {
+				var rv = feedback.ShowDialog(owner);
+				if (rv != DialogResult.Cancel) {
 					Email = feedback.TextEmail.Text;
 					Comments = feedback.TextComments.Text;
-					Send(owner);
+					using (var key = Registry.CurrentUser.CreateSubKey(@"Software\JGR\" + ApplicationName, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+						key.SetValue("Email", Email);
+					}
+					if (rv == DialogResult.Yes) {
+						Send(owner);
+					}
 				}
 			}
 		}
@@ -125,13 +147,16 @@ namespace Jgr.Gui {
 						new XElement(XName.Get("application"),
 							ApplicationName,
 							new XAttribute(XName.Get("version"), ApplicationVersion)),
-						new XElement(XName.Get("source"),
-							LocationMethod,
-							new XAttribute(XName.Get("file"), LocationFileName),
-							new XAttribute(XName.Get("line"), LocationFileLine),
-							new XAttribute(XName.Get("column"), LocationFileColumn)),
+						new XElement(XName.Get("stack"),
+							Location.Select(f => new XElement(XName.Get("frame"),
+								f.GetFileName() != null ? new XAttribute(XName.Get("file"), f.GetFileName()) : null,
+								f.GetFileName() != null ? new XAttribute(XName.Get("line"), f.GetFileLineNumber()) : null,
+								f.GetFileName() != null ? new XAttribute(XName.Get("column"), f.GetFileColumnNumber()) : null,
+								f.GetMethod().DeclaringType.FullName + "." + f.GetMethod().Name))),
 						Details.Select(d => d.Key.Length == 0 ? new XElement(XName.Get("details"), d.Value) : new XElement(XName.Get("details"), new XAttribute(XName.Get("name"), d.Key), d.Value)),
 						new XElement(XName.Get("comments"), Comments)));
+
+			//TaskDialog.Show(owner, TaskDialogCommonIcon.Information, "XML REPORT", reportXML.ToString());
 
 			var uri = new Uri("http://twpol.dyndns.org/projects/jgrmsts/reports/upload?uid=" + UID);
 			var wc = new WebClient();
@@ -146,10 +171,6 @@ namespace Jgr.Gui {
 			}
 
 			TaskDialog.Show(owner, TaskDialogCommonIcon.Information, "Feedback sent successfully.", "");
-
-			using (var key = Registry.CurrentUser.CreateSubKey(@"Software\JGR\" + ApplicationName, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
-				key.SetValue("Email", Email);
-			}
 		}
 
 		const string uidChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -160,6 +181,11 @@ namespace Jgr.Gui {
 				uid.Append(uidChars[rand.Next(uidChars.Length)]);
 			}
 			return uid.ToString();
+		}
+
+		string PrettyStackFrame(StackFrame frame) {
+			return frame.GetMethod().DeclaringType.FullName + "." + frame.GetMethod().Name;
+			// + " (" + frame.GetFileName() + ":" + frame.GetFileLineNumber() + ":" + frame.GetFileColumnNumber() + ")";
 		}
 	}
 }

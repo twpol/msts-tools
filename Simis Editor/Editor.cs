@@ -120,10 +120,7 @@ namespace SimisEditor
 					SimisProvider = new SimisProvider(resourcesDirectory);
 				} catch (FileException ex) {
 					this.Invoke((MethodInvoker)(() => {
-						var report = new Feedback(ex);
-						if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
-							report.PromptAndSend(this);
-						}
+						new Feedback(ex, "loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'").PromptAndSend(this);
 					}));
 				}
 			});
@@ -187,10 +184,7 @@ namespace SimisEditor
 			try {
 				newFile.Read();
 			} catch (FileException ex) {
-				var report = new Feedback(ex);
-				if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem loading '" + Path.GetFileName(ex.FileName) + "'?", ex.ToString(), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
-					report.PromptAndSend(this);
-				}
+				new Feedback(ex, "loading '" + Path.GetFileName(ex.FileName) + "'").PromptAndSend(this);
 				return false;
 			}
 
@@ -886,13 +880,10 @@ namespace SimisEditor
 					var messages = new string[compileResults.Output.Count];
 					compileResults.Output.CopyTo(messages, 0);
 
-					var report = new Feedback("Code Generation Error", new Dictionary<string, string> {
+					new Feedback(FeedbackType.ApplicationFailure, "creating the edit object", new Dictionary<string, string> {
 							{ "", String.Join("\n", messages) },
 							{ "CreateEditObjectFor.cs", Encoding.Unicode.GetString(codeStream.ToArray()) },
-						});
-					if (TaskDialog.ShowYesNo(this, TaskDialogCommonIcon.Error, "Report problem creating the edit object?", String.Join("\n", messages), "Report Problem...", "Don't Report Problem") == DialogResult.Yes) {
-						report.PromptAndSend(this);
-					}
+						}).PromptAndSend(this);
 				}
 				return null;
 			}
