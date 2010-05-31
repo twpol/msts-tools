@@ -13,7 +13,7 @@ namespace Jgr.Msts {
 	public class TrackService {
 		public readonly SimisProvider SimisProvider;
 		public readonly FileFinder Files;
-		readonly SimisFile TSection;
+		readonly UndoRedoSimisFile TSection;
 		public readonly Dictionary<uint, TrackShape> TrackShapes;
 		public readonly Dictionary<string, TrackShape> TrackShapesByFileName;
 		public readonly Dictionary<uint, TrackSection> TrackSections;
@@ -26,8 +26,8 @@ namespace Jgr.Msts {
 			TrackShapesByFileName = new Dictionary<string, TrackShape>();
 			TrackSections = new Dictionary<uint, TrackSection>();
 
-			TSection = new SimisFile(Files[@"Global\tsection.dat"], SimisProvider);
-			TSection.ReadFile();
+			TSection = new UndoRedoSimisFile(Files[@"Global\tsection.dat"], SimisProvider);
+			TSection.Read();
 
 			foreach (var section in TSection.Tree["TrackSections"].Where(n => n.Type == "TrackSection")) {
 				if (section.Contains("SectionSize")) {

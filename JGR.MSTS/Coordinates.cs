@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 
 namespace Jgr.Msts {
+	[Immutable]
 	public class TileCoordinate {
 		public readonly int X;
 		public readonly int Z;
@@ -26,6 +27,7 @@ namespace Jgr.Msts {
 		}
 	}
 
+	[Immutable]
 	public class IghCoordinate {
 		public readonly double Line;
 		public readonly double Sample;
@@ -38,6 +40,7 @@ namespace Jgr.Msts {
 		}
 	}
 
+	[Immutable]
 	public class LatitudeLongitudeCoordinate {
 		public readonly double Latitude;
 		public readonly double Longitude;
@@ -50,7 +53,7 @@ namespace Jgr.Msts {
 		}
 	}
 
-	public class Coordinates {
+	public static class Coordinates {
 		// Tile Name -> MSTS Tile.
 		public static TileCoordinate ConvertToTile(string tileName) {
 			var depthRight = new List<bool>();
