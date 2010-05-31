@@ -5,12 +5,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
 using System.IO;
 
 namespace Jgr.IO {
+	[Immutable]
 	public class FileFinder {
 		public readonly IEnumerable<string> Paths;
 
