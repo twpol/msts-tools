@@ -143,13 +143,14 @@ namespace Normalize
 		static void ShowFormats() {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
-			var provider = new SimisProvider(resourcesDirectory);
+			SimisProvider provider;
 			try {
-				provider.Join();
+				provider = new SimisProvider(resourcesDirectory);
 			} catch (FileException ex) {
 				Console.WriteLine(ex.ToString());
 				return;
 			}
+
 			var outFormat = "{0,-40:S}  {1,-15:S}  {2,-15:S}";
 			Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, "Format Name", "File Type", "Internal Type"));
 			Console.WriteLine(String.Empty.PadLeft(40 + 2 + 15 + 2 + 15 + 2, '='));
@@ -161,9 +162,9 @@ namespace Normalize
 		static void RunDump(IEnumerable<string> files, bool verbose) {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
-			var provider = new SimisProvider(resourcesDirectory);
+			SimisProvider provider;
 			try {
-				provider.Join();
+				provider = new SimisProvider(resourcesDirectory);
 			} catch (FileException ex) {
 				Console.WriteLine(ex.ToString());
 				return;
@@ -210,9 +211,9 @@ namespace Normalize
 		static void RunTest(IEnumerable<string> files, bool verbose) {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
-			var provider = new SimisProvider(resourcesDirectory);
+			SimisProvider provider;
 			try {
-				provider.Join();
+				provider = new SimisProvider(resourcesDirectory);
 			} catch (FileException ex) {
 				Console.WriteLine(ex.ToString());
 				return;
