@@ -5,12 +5,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace Jgr.IO.Parser {
 	[Immutable]
-	[SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
 	public class SimisFile : DataTreeNode<SimisFile> {
 		public readonly string FileName;
 		public readonly SimisFormat SimisFormat;
