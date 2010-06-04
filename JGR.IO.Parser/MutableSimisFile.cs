@@ -24,7 +24,7 @@ namespace Jgr.IO.Parser {
 			SimisProvider = simisProvider;
 		}
 
-		public void Read() {
+		public virtual void Read() {
 			var simisFile = new SimisFile(FileName, SimisProvider);
 			SimisFormat = simisFile.SimisFormat;
 			StreamFormat = simisFile.StreamFormat;

@@ -83,6 +83,11 @@ namespace Jgr.IO.Parser {
 			}
 		}
 
+		public override void Read() {
+			base.Read();
+			ResetUndo();
+		}
+
 		public override void Read(Stream stream) {
 			base.Read(stream);
 			ResetUndo();
