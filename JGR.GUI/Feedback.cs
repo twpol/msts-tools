@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -95,7 +96,7 @@ namespace Jgr.Gui {
 				"Operating System: " + EnvironmentOS + "\n" +
 				"Processor Cores: " + EnvironmentCores + "\n" +
 				"Runtime Version: " + EnvironmentCLR + " (" + EnvironmentCLRBitness + "bit)" + "\n" +
-				"Time: " + Time.ToString("F") + "\n" +
+				"Time: " + Time.ToString("F", CultureInfo.CurrentCulture) + "\n" +
 				"Application: " + ApplicationName + " " + ApplicationVersion + "\n" +
 				"Source: " + FormatMethodName(Source) + "\n" +
 				"Type: " + FeedbackTypeNames[(int)Type] +
@@ -107,7 +108,7 @@ namespace Jgr.Gui {
 
 			using (var feedback = new FeedbackPrompt()) {
 				feedback.LabelFace.Text = FeedbackTypeFaces[(int)Type];
-				feedback.LabelIntro.Text = String.Format(FeedbackTypeIntros[(int)Type], Operation, ApplicationName);
+				feedback.LabelIntro.Text = String.Format(CultureInfo.CurrentCulture, FeedbackTypeIntros[(int)Type], Operation, ApplicationName);
 				feedback.TextApplication.Text = ApplicationName + " " + ApplicationVersion;
 				feedback.TextType.Text = FeedbackTypeNames[(int)Type];
 				feedback.TextEmail.Text = Email;
@@ -132,7 +133,7 @@ namespace Jgr.Gui {
 					new XElement(XName.Get("report"),
 						new XAttribute(XName.Get("version"), "1.0"),
 						new XAttribute(XName.Get("uid"), UID),
-						new XAttribute(XName.Get("time"), Time.ToString("O")),
+						new XAttribute(XName.Get("time"), Time.ToString("O", CultureInfo.InvariantCulture)),
 						new XAttribute(XName.Get("type"), Type),
 						new XAttribute(XName.Get("email"), Email),
 						new XElement(XName.Get("environment"),
@@ -142,7 +143,7 @@ namespace Jgr.Gui {
 							new XElement(XName.Get("processor"),
 								new XAttribute(XName.Get("cores"), EnvironmentCores)),
 							new XElement(XName.Get("clr"),
-								new XAttribute(XName.Get("bits"), EnvironmentCLRBitness.ToString()),
+								new XAttribute(XName.Get("bits"), EnvironmentCLRBitness.ToString(CultureInfo.InvariantCulture)),
 								new XAttribute(XName.Get("version"), EnvironmentCLR))),
 						new XElement(XName.Get("application"),
 							new XAttribute(XName.Get("version"), ApplicationVersion),
