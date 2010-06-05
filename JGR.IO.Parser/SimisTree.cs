@@ -18,8 +18,11 @@ namespace Jgr.IO.Parser {
 	[Immutable]
 	[DebuggerDisplay("{ToString()}")]
 	public class SimisTreeNode : ReadOnlyCollection<SimisTreeNode>, IDataTreeNode {
-		public readonly string Type;
-		public readonly string Name;
+		readonly string _type;
+		readonly string _name;
+
+		public string Type { get { return _type; } }
+		public string Name { get { return _name; } } 
 
 		/// <summary>
 		/// Constructs a new node with a given <see cref="Type"/>, <see cref="Name"/> and no children.
@@ -38,12 +41,12 @@ namespace Jgr.IO.Parser {
 		/// <param name="children">A collection of children for this node.</param>
 		public SimisTreeNode(string type, string name, IList<SimisTreeNode> children)
 			: base(children) {
-			Type = type;
-			Name = name;
+			_type = type;
+			_name = name;
 		}
 
 		public override string ToString() {
-			return "<" + Type + (Name.Length > 0 ? " \"" + Name + "\"" : "") + ">" + String.Join(", ", this.Select(n => n.ToString()).ToArray()) + "</" + Type + ">";
+			return "<" + Type + (_name.Length > 0 ? " \"" + _name + "\"" : "") + ">" + String.Join(", ", this.Select(n => n.ToString()).ToArray()) + "</" + _type + ">";
 		}
 
 		/// <summary>
@@ -54,7 +57,7 @@ namespace Jgr.IO.Parser {
 		public bool EqualsByValue(object value) {
 			if ((value == null) || (GetType() != value.GetType())) return false;
 			var stn = value as SimisTreeNode;
-			return (Type == stn.Type) && (Name == stn.Name);
+			return (_type == stn.Type) && (_name == stn._name);
 		}
 
 		/// <summary>
@@ -67,9 +70,9 @@ namespace Jgr.IO.Parser {
 			get {
 				foreach (var child in this) {
 					if (child is SimisTreeNodeValue) {
-						if (child.Name.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return child;
+						if (child._name.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return child;
 					} else {
-						if (child.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return child;
+						if (child._type.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return child;
 					}
 				}
 				throw new ArgumentException("No children of the given type (or name for values) were found.", "type");
@@ -79,9 +82,9 @@ namespace Jgr.IO.Parser {
 		public bool Contains(string type) {
 			foreach (var child in this) {
 				if (child is SimisTreeNodeValue) {
-					if (child.Name.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return true;
+					if (child._name.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return true;
 				} else {
-					if (child.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return true;
+					if (child._type.Equals(type, StringComparison.InvariantCultureIgnoreCase)) return true;
 				}
 			}
 			return false;
@@ -126,7 +129,7 @@ namespace Jgr.IO.Parser {
 		/// <param name="name">The new name for the node.</param>
 		/// <returns>The new <see cref="SimisTreeNode"/>.</returns>
 		public SimisTreeNode Rename(string name) {
-			return new SimisTreeNode(Type, name, this);
+			return new SimisTreeNode(_type, name, this);
 		}
 
 		/// <summary>
@@ -156,7 +159,7 @@ namespace Jgr.IO.Parser {
 		SimisTreeNode InsertChild(SimisTreeNode child, int index) {
 			var newChildren = new List<SimisTreeNode>(this);
 			newChildren.Insert(index, child);
-			return new SimisTreeNode(Type, Name, newChildren);
+			return new SimisTreeNode(_type, _name, newChildren);
 		}
 
 		/// <summary>
@@ -174,7 +177,7 @@ namespace Jgr.IO.Parser {
 		SimisTreeNode ReplaceChild(SimisTreeNode child, int index) {
 			var newChildren = new List<SimisTreeNode>(this);
 			newChildren[index] = child;
-			return new SimisTreeNode(Type, Name, newChildren);
+			return new SimisTreeNode(_type, _name, newChildren);
 		}
 
 		/// <summary>
@@ -191,7 +194,7 @@ namespace Jgr.IO.Parser {
 		SimisTreeNode RemoveChild(int index) {
 			var newChildren = new List<SimisTreeNode>(this);
 			newChildren.RemoveAt(index);
-			return new SimisTreeNode(Type, Name, newChildren);
+			return new SimisTreeNode(_type, _name, newChildren);
 		}
 
 		/// <summary>

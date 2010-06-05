@@ -13,25 +13,31 @@ using System.IO;
 
 namespace Jgr.Msts {
 	public class RouteTrack {
-		public readonly SimisProvider SimisProvider;
-		public readonly FileFinder Files;
-		public readonly string FileName;
-		readonly UndoRedoSimisFile TrackDB;
-		public readonly Dictionary<uint, RouteTrackNode> TrackNodes;
-		public readonly Dictionary<uint, RouteTrackVectors> TrackVectors;
+		readonly SimisProvider _simisProvider;
+		readonly FileFinder _files;
+		readonly string _fileName;
+		readonly Dictionary<uint, RouteTrackNode> _trackNodes;
+		readonly Dictionary<uint, RouteTrackVectors> _trackVectors;
+		readonly UndoRedoSimisFile _trackDB;
+
+		public SimisProvider SimisProvider { get { return _simisProvider; } }
+		public FileFinder Files { get { return _files; } }
+		public string FileName { get { return _fileName; } }
+		public Dictionary<uint, RouteTrackNode> TrackNodes { get { return _trackNodes; } }
+		public Dictionary<uint, RouteTrackVectors> TrackVectors { get { return _trackVectors; } }
 
 		public RouteTrack(string fileName, FileFinder files, SimisProvider simisProvider) {
-			FileName = fileName;
-			Files = files;
-			SimisProvider = simisProvider;
+			_fileName = fileName;
+			_files = files;
+			_simisProvider = simisProvider;
 
-			TrackNodes = new Dictionary<uint, RouteTrackNode>();
-			TrackVectors = new Dictionary<uint, RouteTrackVectors>();
+			_trackNodes = new Dictionary<uint, RouteTrackNode>();
+			_trackVectors = new Dictionary<uint, RouteTrackVectors>();
 
-			TrackDB = new UndoRedoSimisFile(Files[FileName + ".tdb"], SimisProvider);
-			TrackDB.Read();
+			_trackDB = new UndoRedoSimisFile(_files[_fileName + ".tdb"], _simisProvider);
+			_trackDB.Read();
 
-			foreach (var node in TrackDB.Tree["TrackDB"]["TrackNodes"].Where(n => n.Type == "TrackNode")) {
+			foreach (var node in _trackDB.Tree["TrackDB"]["TrackNodes"].Where(n => n.Type == "TrackNode")) {
 				if (node.Contains("TrJunctionNode") || node.Contains("TrEndNode")) {
 					var uid = node["UiD"];
 					var tileX = uid[4].ToValue<int>();
@@ -40,7 +46,7 @@ namespace Jgr.Msts {
 					var y = uid[7].ToValue<float>();
 					var z = uid[8].ToValue<float>();
 					var rtNode = new RouteTrackNode(node[0].ToValue<uint>(), tileX, tileZ, x, y, z);
-					TrackNodes.Add(rtNode.ID, rtNode);
+					_trackNodes.Add(rtNode.ID, rtNode);
 				} else if (node.Contains("TrVectorNode")) {
 					var sections = node["TrVectorNode"]["TrVectorSections"];
 					var sectionCount = sections[0].ToValue<uint>();
@@ -55,7 +61,7 @@ namespace Jgr.Msts {
 					}
 					if (node["TrPins"].Count != 4) throw new InvalidDataException("Track DB node does not have exactly 2 pins.");
 					var rtVectors = new RouteTrackVectors(node[0].ToValue<uint>(), vectors, node["TrPins"][2][0].ToValue<uint>(), node["TrPins"][3][0].ToValue<uint>());
-					TrackVectors.Add(rtVectors.ID, rtVectors);
+					_trackVectors.Add(rtVectors.ID, rtVectors);
 				} else {
 					throw new InvalidDataException("Track DB contains track node with no obvious type.");
 				}
@@ -65,43 +71,56 @@ namespace Jgr.Msts {
 
 	[Immutable]
 	public class RouteTrackVector {
-		public readonly int TileX;
-		public readonly uint TileZ;
-		public readonly double X;
-		public readonly double Y;
-		public readonly double Z;
+		readonly int _tileX;
+		readonly uint _tileZ;
+		readonly double _x;
+		readonly double _y;
+		readonly double _z;
+
+		public int TileX { get { return _tileX; } }
+		public uint TileZ { get { return _tileZ; } }
+		public double X { get { return _x; } }
+		public double Y { get { return _y; } }
+		public double Z { get { return _z; } }
 
 		public RouteTrackVector(int tileX, uint tileZ, double x, double y, double z) {
-			TileX = tileX;
-			TileZ = tileZ;
-			X = x;
-			Y = y;
-			Z = z;
+			_tileX = tileX;
+			_tileZ = tileZ;
+			_x = x;
+			_y = y;
+			_z = z;
 		}
 	}
 
 	[Immutable]
 	public class RouteTrackNode : RouteTrackVector {
-		public readonly uint ID;
+		readonly uint _id;
+
+		public uint ID { get { return _id; } }
 
 		public RouteTrackNode(uint id, int tileX, uint tileZ, double x, double y, double z)
 			: base(tileX, tileZ, x, y, z) {
-			ID = id;
+			_id = id;
 		}
 	}
 
 	[Immutable]
 	public class RouteTrackVectors {
-		public readonly uint ID;
-		public readonly IEnumerable<RouteTrackVector> Vectors;
-		public readonly uint PinStart;
-		public readonly uint PinEnd;
+		readonly uint _id;
+		readonly IEnumerable<RouteTrackVector> _vectors;
+		readonly uint _pinStart;
+		readonly uint _pinEnd;
+
+		public uint ID { get { return _id; } }
+		public IEnumerable<RouteTrackVector> Vectors { get { return _vectors; } }
+		public uint PinStart { get { return _pinStart; } }
+		public uint PinEnd { get { return _pinEnd; } }
 
 		public RouteTrackVectors(uint id, IEnumerable<RouteTrackVector> vectors, uint pinStart, uint pinEnd) {
-			ID = id;
-			Vectors = vectors;
-			PinStart = pinStart;
-			PinEnd = pinEnd;
+			_id = id;
+			_vectors = vectors;
+			_pinStart = pinStart;
+			_pinEnd = pinEnd;
 		}
 	}
 }

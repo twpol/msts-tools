@@ -12,21 +12,24 @@ using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
 	public class RouteService {
-		public readonly string BasePath;
-		public readonly SimisProvider SimisProvider;
+		readonly string _basePath;
+		readonly SimisProvider _simisProvider;
+
+		public string BasePath { get { return _basePath; } }
+		public SimisProvider SimisProvider { get { return _simisProvider; } }
 
 		public RouteService(string basePath, SimisProvider simisProvider) {
-			BasePath = basePath;
-			SimisProvider = simisProvider;
+			_basePath = basePath;
+			_simisProvider = simisProvider;
 		}
 
 		public IEnumerable<Route> Routes {
 			get {
-				var filesLevel1 = Directory.GetFiles(BasePath, "*.trk", SearchOption.TopDirectoryOnly).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase));
+				var filesLevel1 = Directory.GetFiles(_basePath, "*.trk", SearchOption.TopDirectoryOnly).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase));
 				if (filesLevel1.Count() == 1) {
 					Route route = null;
 					try {
-						route = new Route(filesLevel1.First(), SimisProvider);
+						route = new Route(filesLevel1.First(), _simisProvider);
 					} catch (FileException) {
 					}
 					if (route != null) {
@@ -34,7 +37,7 @@ namespace Jgr.Msts {
 						yield break;
 					}
 				}
-				var path = BasePath;
+				var path = _basePath;
 				if (Directory.Exists(Path.Combine(path, "Routes"))) {
 					path = Path.Combine(path, "Routes");
 				}
@@ -44,7 +47,7 @@ namespace Jgr.Msts {
 					if (filesLevel2.Count() == 1) {
 						Route route = null;
 						try {
-							route = new Route(filesLevel2.First(), SimisProvider);
+							route = new Route(filesLevel2.First(), _simisProvider);
 						} catch (FileException) {
 						}
 						if (route != null) {
@@ -56,10 +59,10 @@ namespace Jgr.Msts {
 				if (found) {
 					yield break;
 				}
-				foreach (var trackFile in Directory.GetFiles(BasePath, "*.trk", SearchOption.AllDirectories).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase))) {
+				foreach (var trackFile in Directory.GetFiles(_basePath, "*.trk", SearchOption.AllDirectories).Where(name => name.EndsWith(".trk", StringComparison.InvariantCultureIgnoreCase))) {
 					Route route = null;
 					try {
-						route = new Route(trackFile, SimisProvider);
+						route = new Route(trackFile, _simisProvider);
 					} catch (FileException) {
 					}
 					if (route != null) {
