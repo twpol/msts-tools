@@ -11,62 +11,52 @@ using System.Globalization;
 namespace Jgr.Msts {
 	[Immutable]
 	public class TileCoordinate {
-		readonly int _x;
-		readonly int _z;
-		readonly int _size;
-
-		public int X { get { return _x; } }
-		public int Z { get { return _z; } }
-		public int Size { get { return _size; } } 
+		public int X { get; private set; }
+		public int Z { get; private set; }
+		public int Size { get; private set; }
 
 		public TileCoordinate(int x, int z)
 			: this(x, z, 1) {
 		}
 
 		public TileCoordinate(int x, int z, int size) {
-			_x = x;
-			_z = z;
-			_size = size;
+			X = x;
+			Z = z;
+			Size = size;
 		}
 
 		public override string ToString() {
-			return "TILE{" + _x + " " + _z + " " + _size + "}";
+			return "TILE{" + X + " " + Z + " " + Size + "}";
 		}
 	}
 
 	[Immutable]
 	public class IghCoordinate {
-		readonly double _line;
-		readonly double _sample;
-
-		public double Line { get { return _line; } }
-		public double Sample { get { return _sample; } }
+		public double Line { get; private set; }
+		public double Sample { get; private set; }
 
 		public IghCoordinate(double line, double sample) {
-			_line = line;
-			_sample = sample;
+			Line = line;
+			Sample = sample;
 		}
 
 		public override string ToString() {
-			return "IGH{" + _line + " " + _sample + "}";
+			return "IGH{" + Line + " " + Sample + "}";
 		}
 	}
 
 	[Immutable]
 	public class LatitudeLongitudeCoordinate {
-		readonly double _latitude;
-		readonly double _longitude;
-
-		public double Latitude { get { return _latitude; } }
-		public double Longitude { get { return _longitude; } }
+		public double Latitude { get; private set; }
+		public double Longitude { get; private set; }
 
 		public LatitudeLongitudeCoordinate(double latitude, double longitude) {
-			_latitude = latitude;
-			_longitude = longitude;
+			Latitude = latitude;
+			Longitude = longitude;
 		}
 
 		public override string ToString() {
-			return "LL{" + _latitude + " " + _longitude + "}";
+			return "LL{" + Latitude + " " + Longitude + "}";
 		}
 	}
 

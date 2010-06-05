@@ -17,72 +17,56 @@ using System.Globalization;
 namespace Jgr.Msts {
 	[Immutable]
 	class TileObject {
-		readonly double _x;
-		readonly double _y;
-		readonly double _z;
-
-		public double X { get { return _x; } }
-		public double Y { get { return _y; } }
-		public double Z { get { return _z; } }
+		public double X { get; private set; }
+		public double Y { get; private set; }
+		public double Z { get; private set; }
 
 		protected TileObject(double x, double y, double z) {
-			_x = x;
-			_y = y;
-			_z = z;
+			X = x;
+			Y = y;
+			Z = z;
 		}
 	}
 
 	[Immutable]
 	class TileLabeledObject : TileObject {
-		readonly string _label;
-
-		public string Label { get { return _label; } }
+		public string Label { get; private set; }
 
 		protected TileLabeledObject(double x, double y, double z, string label)
 			: base(x, y, z) {
-			_label = label;
+			Label = label;
 		}
 	}
 
 	[Immutable]
 	class TileTrackSection : TileLabeledObject {
-		readonly double _dw;
-		readonly double _dx;
-		readonly double _dy;
-		readonly double _dz;
-		readonly TrackShape _track;
-
-		public double DW { get { return _dw; } }
-		public double DX { get { return _dx; } }
-		public double DY { get { return _dy; } }
-		public double DZ { get { return _dz; } }
-		public TrackShape Track { get { return _track; } } 
+		public double DW { get; private set; }
+		public double DX { get; private set; }
+		public double DY { get; private set; }
+		public double DZ { get; private set; }
+		public TrackShape Track { get; private set; }
 
 		protected TileTrackSection(double x, double y, double z, string label, double dw, double dx, double dy, double dz, TrackShape track)
 			: base(x, y, z, label) {
-			_dw = dw;
-			_dx = dx;
-			_dy = dy;
-			_dz = dz;
-			_track = track;
+			DW = dw;
+			DX = dx;
+			DY = dy;
+			DZ = dz;
+			Track = track;
 		}
 	}
 
 	[Immutable]
 	class TileTrackNode : TileLabeledObject {
-		readonly bool _isRoad;
-		readonly uint _id;
-		readonly List<TileObject> _vectors;
+		public bool IsRoad { get; private set; }
+		public uint Id { get; private set; }
+		public IEnumerable<TileObject> Vectors { get; private set; }
 
-		public bool IsRoad { get { return _isRoad; } }
-		public uint ID { get { return _id; } }
-		public List<TileObject> Vectors { get { return _vectors; } } 
-		
-		protected TileTrackNode(double x, double y, double z, string label, bool isRoad, uint id, List<TileObject> vectors)
+		protected TileTrackNode(double x, double y, double z, string label, bool isRoad, uint id, IEnumerable<TileObject> vectors)
 			: base(x, y, z, label) {
-			_isRoad = isRoad;
-			_id = id;
-			_vectors = vectors;
+			IsRoad = isRoad;
+			Id = id;
+			Vectors = vectors;
 		}
 	}
 

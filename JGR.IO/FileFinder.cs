@@ -10,7 +10,7 @@ using System.IO;
 namespace Jgr.IO {
 	[Immutable]
 	public class FileFinder {
-		public readonly IEnumerable<string> Paths;
+		public IEnumerable<string> Paths { get; private set; }
 
 		public FileFinder(IEnumerable<string> paths) {
 			Paths = paths;
