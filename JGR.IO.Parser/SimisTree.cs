@@ -120,32 +120,6 @@ namespace Jgr.IO.Parser {
 			return -1;
 		}
 
-		public SimisTreeNodePath Path(params object[] pathSteps) {
-			Debug.Assert(pathSteps.Length > 0);
-			var path = new List<SimisTreeNode>(pathSteps.Length);
-			var pathNode = this;
-			foreach (var step in pathSteps) {
-				pathNode = step is string ? pathNode[(string)step] : step is int ? pathNode[(int)step] : null;
-				path.Add(pathNode);
-			}
-			return new SimisTreeNodePath(this, path);
-		}
-
-		public SimisTreeNode Apply(IList<SimisTreeNode> path, Func<SimisTreeNode, SimisTreeNode> action) {
-			return Apply(path, 0, action);
-		}
-
-		SimisTreeNode Apply(IList<SimisTreeNode> path, int pathStart, Func<SimisTreeNode, SimisTreeNode> action) {
-			if (pathStart >= path.Count()) {
-				return action(this);
-			}
-			var childIndex = LastIndexOf(path[pathStart]);
-			if (childIndex == -1) throw new InvalidDataException("Cannot find child node specified by path[" + pathStart + "].");
-			var newChild = this[childIndex].Apply(path, pathStart + 1, action);
-			path[pathStart] = newChild;
-			return ReplaceChild(newChild, childIndex);
-		}
-
 		/// <summary>
 		/// Creates a new <see cref="SimisTreeNode"/> with a different <see cref="Name"/>.
 		/// </summary>
@@ -239,30 +213,30 @@ namespace Jgr.IO.Parser {
 			if (name is string) {
 				return this[(string)name];
 			}
+			if (name is SimisTreeNode) {
+				if (!Contains((SimisTreeNode)name)) throw new InvalidDataException("Cannot GetChildNode a node which is not a child of this node.");
+				return (IDataTreeNode)name;
+			}
 			return this[(int)name];
+		}
+
+		public IDataTreeNode AppendChildNode(IDataTreeNode child) {
+			return AppendChild((SimisTreeNode)child);
+		}
+
+		public IDataTreeNode InsertChildNode(IDataTreeNode child, IDataTreeNode before) {
+			return InsertChild((SimisTreeNode)child, (SimisTreeNode)before);
 		}
 
 		public IDataTreeNode ReplaceChildNode(IDataTreeNode child, object name, IDataTreeNode oldChild) {
 			return ReplaceChild((SimisTreeNode)child, (SimisTreeNode)oldChild);
 		}
 
+		public IDataTreeNode RemoveChildNode(IDataTreeNode child) {
+			return RemoveChild((SimisTreeNode)child);
+		}
+
 		#endregion
-	}
-
-	[Immutable]
-	public class SimisTreeNodePath : ReadOnlyCollection<SimisTreeNode> {
-		public readonly SimisTreeNode Root;
-
-		public SimisTreeNodePath(SimisTreeNode root, IList<SimisTreeNode> path)
-			: base(path) {
-			Root = root;
-		}
-
-		public SimisTreeNodePath Apply(Func<SimisTreeNode, SimisTreeNode> action) {
-			var path = new List<SimisTreeNode>(this);
-			var root = Root.Apply(path, action);
-			return new SimisTreeNodePath(root, path);
-		}
 	}
 
 	/// <summary>

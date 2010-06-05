@@ -547,29 +547,25 @@ namespace SimisEditor
 			switch (action) {
 				case "insertbefore":
 				case "insertafter":
-					var targetNode = blockPathList.Last();
-					blockPathList.Remove(targetNode);
 					if (action == "insertafter") {
-						targetNode = blockPathList.Last().GetNextSibling(targetNode);
+						blockPathList[blockPathList.Count - 1] = blockPathList[blockPathList.Count - 2].GetNextSibling(blockPathList[blockPathList.Count - 1]);
 					}
 					foreach (var newNode in newNodes) {
-						File.Tree = File.Tree.Apply(blockPathList, n => n.InsertChild(newNode, targetNode));
+						File.Tree = File.Tree.GetPathList(blockPathList).Insert(newNode);
 					}
 					break;
 				case "childbefore":
-					targetNode = blockPathList.Last().GetFirstChild();
+					var targetNode = blockPathList.Last().GetFirstChild();
 					foreach (var newNode in newNodes) {
-						File.Tree = File.Tree.Apply(blockPathList, n => n.InsertChild(newNode, targetNode));
+						File.Tree = File.Tree.GetPathList(blockPathList).AddPath(targetNode).Insert(newNode);
 					}
 					break;
 				case "childafter":
 					foreach (var newNode in newNodes) {
-						File.Tree = File.Tree.Apply(blockPathList, n => n.AppendChild(newNode));
+						File.Tree = File.Tree.GetPathList(blockPathList).Append(newNode);
 					}
 					break;
 			}
-
-			// TODO: New Simis nodes need filling in with the minimum path through the BNF!
 
 			ResyncSimisNodes();
 			SelectNode(SimisTree.SelectedNode);
@@ -595,19 +591,19 @@ namespace SimisEditor
 
 			var blockPathList = new List<SimisTreeNode>(blockPath);
 			if (child is SimisTreeNodeValueString) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueString(child.Type, child.Name, (string)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueString(child.Type, child.Name, (string)value));
 			} else if (child is SimisTreeNodeValueIntegerUnsigned) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerUnsigned(child.Type, child.Name, (uint)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueIntegerUnsigned(child.Type, child.Name, (uint)value));
 			} else if (child is SimisTreeNodeValueIntegerSigned) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerSigned(child.Type, child.Name, (int)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueIntegerSigned(child.Type, child.Name, (int)value));
 			} else if (child is SimisTreeNodeValueIntegerDWord) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerDWord(child.Type, child.Name, (uint)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueIntegerDWord(child.Type, child.Name, (uint)value));
 			} else if (child is SimisTreeNodeValueIntegerWord) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerWord(child.Type, child.Name, (ushort)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueIntegerWord(child.Type, child.Name, (ushort)value));
 			} else if (child is SimisTreeNodeValueIntegerByte) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueIntegerByte(child.Type, child.Name, (byte)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueIntegerByte(child.Type, child.Name, (byte)value));
 			} else if (child is SimisTreeNodeValueFloat) {
-				File.Tree = File.Tree.Apply(blockPathList, n => n.ReplaceChild(new SimisTreeNodeValueFloat(child.Type, child.Name, (float)value), child));
+				File.Tree = File.Tree.GetPathList(blockPathList).AddPath(child).Set(new SimisTreeNodeValueFloat(child.Type, child.Name, (float)value));
 			}
 
 			ResyncSimisNodes();

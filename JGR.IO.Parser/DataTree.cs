@@ -4,18 +4,22 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Linq;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace Jgr.IO.Parser {
 	public interface IDataTreeNode {
 		bool HasChildNodes();
 		IDataTreeNode GetChildNode(object name);
+		IDataTreeNode AppendChildNode(IDataTreeNode child);
+		IDataTreeNode InsertChildNode(IDataTreeNode child, IDataTreeNode before);
 		IDataTreeNode ReplaceChildNode(IDataTreeNode child, object name, IDataTreeNode oldChild);
+		IDataTreeNode RemoveChildNode(IDataTreeNode child);
 	}
 
 	public interface IDataTreeNode<T> : IDataTreeNode where T : class, IDataTreeNode {
@@ -143,10 +147,22 @@ namespace Jgr.IO.Parser {
 			return (IDataTreeNode)field.GetValue(this);
 		}
 
+		public IDataTreeNode AppendChildNode(IDataTreeNode child) {
+			throw new NotImplementedException();
+		}
+
+		public IDataTreeNode InsertChildNode(IDataTreeNode child, IDataTreeNode before) {
+			throw new NotImplementedException();
+		}
+
 		public IDataTreeNode ReplaceChildNode(IDataTreeNode child, object name, IDataTreeNode oldChild) {
 			if (name == null) throw new InvalidOperationException("DataTreeNode is not a container and cannot contain children.");
 			Debug.Assert(name is string);
 			return (IDataTreeNode)Set(new DataTreeNodeSet((string)name, _ => child));
+		}
+
+		public IDataTreeNode RemoveChildNode(IDataTreeNode child) {
+			throw new NotImplementedException();
 		}
 
 		#endregion
@@ -172,30 +188,90 @@ namespace Jgr.IO.Parser {
 	}
 
 	public static class DataTreeExtensions {
-		public static DataTreePath GetPath(this IDataTreeNode self, params object[] steps) {
-			var path = new List<DataTreePathStep>(steps.Length);
+		public static DataTreePath<T> GetPathList<T>(this T self, IEnumerable steps) where T : class, IDataTreeNode {
+			var node = (IDataTreeNode)self;
+			var path = new List<DataTreePathStep>();
 			path.Add(new DataTreePathStep(null, self));
 			foreach (var step in steps) {
-				self = self.GetChildNode(step);
-				path.Add(new DataTreePathStep(step, self));
+				node = node.GetChildNode(step);
+				path.Add(new DataTreePathStep(step, node));
 			}
-			return new DataTreePath(path);
+			return new DataTreePath<T>(path);
+		}
+
+		public static DataTreePath<T> GetPath<T>(this T self, params object[] steps) where T : class, IDataTreeNode {
+			return self.GetPathList(steps);
+		}
+
+		public static DataTreePath<T> AddPathList<T>(this DataTreePath<T> self, IEnumerable steps) where T : class, IDataTreeNode {
+			var node = self.Last().Node;
+			var path = new List<DataTreePathStep>(self);
+			foreach (var step in steps) {
+				node = node.GetChildNode(step);
+				path.Add(new DataTreePathStep(step, node));
+			}
+			return new DataTreePath<T>(path);
+		}
+
+		public static DataTreePath<T> AddPath<T>(this DataTreePath<T> self, params object[] steps) where T : class, IDataTreeNode {
+			return self.AddPathList(steps);
 		}
 	}
 
 	[Immutable]
-	public class DataTreePath : ReadOnlyCollection<DataTreePathStep> {
+	public class DataTreePath<T> : ReadOnlyCollection<DataTreePathStep> {
 		public DataTreePath(IList<DataTreePathStep> path)
 			: base(path) {
 		}
 
-		public object Set<T>(T newValue) where T : class, IDataTreeNode {
+		public T Set<U>(U newValue) where U : class, IDataTreeNode {
 			var path = new List<IDataTreeNode>(this.Select(s => s.Node));
 			path[Count - 1] = newValue;
 			for (var i = Count - 2; i >= 0; i--) {
 				path[i] = path[i].ReplaceChildNode(path[i + 1], this[i + 1].Name, this[i + 1].Node);
 			}
-			return path[0];
+			return (T)path[0];
+		}
+
+		/// <summary>
+		/// Appends <paramref name="child"/> to the last step in the <see cref="DataTreePath"/>.
+		/// </summary>
+		/// <param name="child">The child to append.</param>
+		/// <returns>The new root of the tree.</returns>
+		public T Append<U>(U child) where U : class, IDataTreeNode {
+			var path = new List<IDataTreeNode>(this.Select(s => s.Node));
+			path[Count - 1] = path[Count - 1].AppendChildNode(child);
+			for (var i = Count - 2; i >= 0; i--) {
+				path[i] = path[i].ReplaceChildNode(path[i + 1], this[i + 1].Name, this[i + 1].Node);
+			}
+			return (T)path[0];
+		}
+
+		/// <summary>
+		/// Inserts <paramref name="child"/> before the last step in the <see cref="DataTreePath"/>.
+		/// </summary>
+		/// <param name="child">The child to insert.</param>
+		/// <returns>The new root of the tree.</returns>
+		public T Insert<U>(U child) where U : class, IDataTreeNode {
+			var path = new List<IDataTreeNode>(this.Select(s => s.Node));
+			path[Count - 2] = path[Count - 2].InsertChildNode(child, path[Count - 1]);
+			for (var i = Count - 3; i >= 0; i--) {
+				path[i] = path[i].ReplaceChildNode(path[i + 1], this[i + 1].Name, this[i + 1].Node);
+			}
+			return (T)path[0];
+		}
+
+		/// <summary>
+		/// Removes the last step in the <see cref="DataTreePath"/> from its parent.
+		/// </summary>
+		/// <returns>The new root of the tree.</returns>
+		public T Remove() {
+			var path = new List<IDataTreeNode>(this.Select(s => s.Node));
+			path[Count - 2] = path[Count - 2].RemoveChildNode(path[Count - 1]);
+			for (var i = Count - 3; i >= 0; i--) {
+				path[i] = path[i].ReplaceChildNode(path[i + 1], this[i + 1].Name, this[i + 1].Node);
+			}
+			return (T)path[0];
 		}
 	}
 

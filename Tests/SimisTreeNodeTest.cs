@@ -88,7 +88,7 @@ namespace Tests {
 			SimisTreeNode child2 = new SimisTreeNode("child2type", "child2name");
 			SimisTreeNode child1 = new SimisTreeNode("child1type", "child1name", new[] { child2 });
 			SimisTreeNode target = new SimisTreeNode("targettype", "targetname", new[] { child1 });
-			target = target.Apply(new[] { child1, child2 }, n => n.AppendChild(child3));
+			target = target.GetPath(child1, child2).Append(child3);
 			Assert.AreEqual("targettype", target.Type);
 			Assert.AreEqual("targetname", target.Name);
 			Assert.AreEqual(1, target.Count);
