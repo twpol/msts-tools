@@ -105,7 +105,7 @@ namespace Jgr.Gui {
 		public uint Width;
 	};
 
-	internal class NativeMethods {
+	internal static class NativeMethods {
 		[DllImport("kernel32.dll")]
 		public static extern int GetCurrentThreadId();
 

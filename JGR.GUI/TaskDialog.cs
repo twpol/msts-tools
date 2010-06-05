@@ -5,7 +5,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Security.Permissions;
 using System.Windows.Forms;
 
 namespace Jgr.Gui {
@@ -34,7 +36,10 @@ namespace Jgr.Gui {
 			}
 		}
 
+		[SecurityPermission(SecurityAction.Demand)]
 		static int Show(Form owner, string title, TaskDialogCommonIcon icon, string mainInstruction, string content, TaskDialogCommonButtons commonButtons, TaskDialogButton[] buttons) {
+			if (buttons.Length > 10) throw new ArgumentOutOfRangeException("buttons", "Maximum number of buttons is 10.");
+
 			var tdConfig = new TaskDialogConfig();
 			tdConfig.Size = (uint)Marshal.SizeOf(tdConfig);
 			Debug.Assert(tdConfig.Size == 160);
@@ -62,7 +67,7 @@ namespace Jgr.Gui {
 				var radioButton = 0;
 				var verificationFlag = false;
 				var rv = NativeMethods.TaskDialogIndirect(ref tdConfig, out button, out radioButton, out verificationFlag);
-				if (rv != 0) throw new InvalidOperationException("TaskDialogIndirect failed: " + rv.ToString("X8"));
+				if (rv != 0) throw new InvalidOperationException("TaskDialogIndirect failed: " + rv.ToString("X8", CultureInfo.CurrentCulture));
 				return button;
 			} finally {
 				if (buttons.Length > 0) {
@@ -76,7 +81,7 @@ namespace Jgr.Gui {
 				Show(owner, GetMessageBoxTitle(), icon, mainInstruction, content, TaskDialogCommonButtons.None, new TaskDialogButton[0]);
 			} else {
 				using (new AutoCenterWindows(owner, AutoCenterWindowsMode.FirstWindowOnly)) {
-					MessageBox.Show(owner, String.Join("\n\n", new string[] { mainInstruction, content }), GetMessageBoxTitle(), 0, GetMessageBoxIcon(icon));
+					MessageBox.Show(owner, String.Join("\n\n", new string[] { mainInstruction, content }), GetMessageBoxTitle(), 0, GetMessageBoxIcon(icon), 0, owner.RightToLeft == RightToLeft.Yes ? MessageBoxOptions.RtlReading : 0);
 				}
 			}
 		}
@@ -87,7 +92,7 @@ namespace Jgr.Gui {
 				button = (DialogResult)Show(owner, GetMessageBoxTitle(), icon, mainInstruction, content, TaskDialogCommonButtons.None, new TaskDialogButton[] { new TaskDialogButton() { ButtonID = (int)DialogResult.Yes, ButtonText = yes }, new TaskDialogButton() { ButtonID = (int)DialogResult.No, ButtonText = no } });
 			} else {
 				using (new AutoCenterWindows(owner, AutoCenterWindowsMode.FirstWindowOnly)) {
-					button = MessageBox.Show(owner, String.Join("\n\n", new string[] { mainInstruction, content }), GetMessageBoxTitle(), MessageBoxButtons.YesNo, GetMessageBoxIcon(icon));
+					button = MessageBox.Show(owner, String.Join("\n\n", new string[] { mainInstruction, content }), GetMessageBoxTitle(), MessageBoxButtons.YesNo, GetMessageBoxIcon(icon), 0, owner.RightToLeft == RightToLeft.Yes ? MessageBoxOptions.RtlReading : 0);
 				}
 			}
 			return (DialogResult)button;
@@ -99,7 +104,7 @@ namespace Jgr.Gui {
 				button = (DialogResult)Show(owner, GetMessageBoxTitle(), icon, mainInstruction, content, TaskDialogCommonButtons.None, new TaskDialogButton[] { new TaskDialogButton() { ButtonID = (int)DialogResult.Yes, ButtonText = yes }, new TaskDialogButton() { ButtonID = (int)DialogResult.No, ButtonText = no }, new TaskDialogButton() { ButtonID = (int)DialogResult.Cancel, ButtonText = cancel } });
 			} else {
 				using (new AutoCenterWindows(owner, AutoCenterWindowsMode.FirstWindowOnly)) {
-					button = MessageBox.Show(owner, String.Join("\n\n", new string[] { mainInstruction, content }), GetMessageBoxTitle(), MessageBoxButtons.YesNoCancel, GetMessageBoxIcon(icon));
+					button = MessageBox.Show(owner, String.Join("\n\n", new string[] { mainInstruction, content }), GetMessageBoxTitle(), MessageBoxButtons.YesNoCancel, GetMessageBoxIcon(icon), 0, owner.RightToLeft == RightToLeft.Yes ? MessageBoxOptions.RtlReading : 0);
 				}
 			}
 			return (DialogResult)button;

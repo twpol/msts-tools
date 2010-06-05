@@ -89,6 +89,7 @@ namespace Jgr.Gui {
 		/// </summary>
 		public void Dispose() {
 			UnsetHook();
+			GC.SuppressFinalize(this);
 		}
 
 		#endregion
