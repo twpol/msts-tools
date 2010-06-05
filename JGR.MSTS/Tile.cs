@@ -15,41 +15,104 @@ using Jgr.IO.Parser;
 using System.Globalization;
 
 namespace Jgr.Msts {
+	[Immutable]
 	class TileObject {
-		public double X;
-		public double Y;
-		public double Z;
+		readonly double _x;
+		readonly double _y;
+		readonly double _z;
+
+		public double X { get { return _x; } }
+		public double Y { get { return _y; } }
+		public double Z { get { return _z; } }
+
+		protected TileObject(double x, double y, double z) {
+			_x = x;
+			_y = y;
+			_z = z;
+		}
 	}
 
+	[Immutable]
 	class TileLabeledObject : TileObject {
-		public string Label;
+		readonly string _label;
+
+		public string Label { get { return _label; } }
+
+		protected TileLabeledObject(double x, double y, double z, string label)
+			: base(x, y, z) {
+			_label = label;
+		}
 	}
 
+	[Immutable]
 	class TileTrackSection : TileLabeledObject {
-		public double DW;
-		public double DX;
-		public double DY;
-		public double DZ;
-		public TrackShape Track;
+		readonly double _dw;
+		readonly double _dx;
+		readonly double _dy;
+		readonly double _dz;
+		readonly TrackShape _track;
+
+		public double DW { get { return _dw; } }
+		public double DX { get { return _dx; } }
+		public double DY { get { return _dy; } }
+		public double DZ { get { return _dz; } }
+		public TrackShape Track { get { return _track; } } 
+
+		protected TileTrackSection(double x, double y, double z, string label, double dw, double dx, double dy, double dz, TrackShape track)
+			: base(x, y, z, label) {
+			_dw = dw;
+			_dx = dx;
+			_dy = dy;
+			_dz = dz;
+			_track = track;
+		}
 	}
 
+	[Immutable]
 	class TileTrackNode : TileLabeledObject {
-		public bool IsRoad;
-		public uint ID;
-		public List<TileObject> Vectors;
+		readonly bool _isRoad;
+		readonly uint _id;
+		readonly List<TileObject> _vectors;
+
+		public bool IsRoad { get { return _isRoad; } }
+		public uint ID { get { return _id; } }
+		public List<TileObject> Vectors { get { return _vectors; } } 
+		
+		protected TileTrackNode(double x, double y, double z, string label, bool isRoad, uint id, List<TileObject> vectors)
+			: base(x, y, z, label) {
+			_isRoad = isRoad;
+			_id = id;
+			_vectors = vectors;
+		}
 	}
 
+	[Immutable]
 	class TilePlatform : TileLabeledObject {
+		TilePlatform(double x, double y, double z, string label)
+			: base(x, y, z, label) {
+		}
 	}
 
+	[Immutable]
 	class TileSiding : TileLabeledObject {
+		TileSiding(double x, double y, double z, string label)
+			: base(x, y, z, label) {
+		}
 	}
 
+	[Immutable]
 	class TileSignal : TileLabeledObject {
 		// TODO: Need an orientation for a signal!
+		TileSignal(double x, double y, double z, string label)
+			: base(x, y, z, label) {
+		}
 	}
 
+	[Immutable]
 	class TileMarker : TileLabeledObject {
+		internal TileMarker(double x, double y, double z, string label)
+			: base(x, y, z, label) {
+		}
 	}
 
 	public enum TileLayer {
@@ -68,29 +131,34 @@ namespace Jgr.Msts {
 	}
 
 	public class Tile {
-		public Route Route;
-		public readonly SimisProvider SimisProvider;
-		public readonly string TileName;
-		public readonly TileCoordinate TileCoordinate;
-		Image TerrainImage;
-		List<TileTrackSection> TrackSections;
-		List<TileTrackNode> TrackNodes;
-		List<TilePlatform> Platforms;
-		List<TileSiding> Sidings;
-		List<TileSignal> Signals;
-		List<TileMarker> Markers;
+		Route _route;
+		readonly SimisProvider _simisProvider;
+		readonly string _tileName;
+		readonly TileCoordinate _tileCoordinate;
+		Image _terrainImage;
+		List<TileTrackSection> _trackSections;
+		List<TileTrackNode> _trackNodes;
+		List<TilePlatform> _platforms;
+		List<TileSiding> _sidings;
+		List<TileSignal> _signals;
+		List<TileMarker> _markers;
+
+		public Route Route { get { return _route; } set { _route = value; } }
+		public SimisProvider SimisProvider { get { return _simisProvider; } }
+		public string TileName { get { return _tileName; } }
+		public TileCoordinate TileCoordinate { get { return _tileCoordinate; } } 
 
 		public Tile(string tileName, Route route, SimisProvider simisProvider) {
-			TileName = tileName;
-			Route = route;
-			SimisProvider = simisProvider;
-			TileCoordinate = Coordinates.ConvertToTile(TileName);
-			TrackSections = new List<TileTrackSection>();
-			TrackNodes = new List<TileTrackNode>();
-			Platforms = new List<TilePlatform>();
-			Sidings = new List<TileSiding>();
-			Signals = new List<TileSignal>();
-			Markers = new List<TileMarker>();
+			_tileName = tileName;
+			_route = route;
+			_simisProvider = simisProvider;
+			_tileCoordinate = Coordinates.ConvertToTile(_tileName);
+			_trackSections = new List<TileTrackSection>();
+			_trackNodes = new List<TileTrackNode>();
+			_platforms = new List<TilePlatform>();
+			_sidings = new List<TileSiding>();
+			_signals = new List<TileSignal>();
+			_markers = new List<TileMarker>();
 		}
 
 		public void PrepareLayer(TileLayer layer) {
@@ -98,10 +166,10 @@ namespace Jgr.Msts {
 				case TileLayer.Tiles:
 					break;
 				case TileLayer.Terrain:
-					string tileElevation = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_y.raw", Route.RoutePath, TileName);
-					string tileShadow = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_n.raw", Route.RoutePath, TileName);
-					string tileUnknown = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_e.raw", Route.RoutePath, TileName);
-					string tileFile = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}.t", Route.RoutePath, TileName);
+					string tileElevation = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_y.raw", _route.RoutePath, _tileName);
+					string tileShadow = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_n.raw", _route.RoutePath, _tileName);
+					string tileUnknown = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}_e.raw", _route.RoutePath, _tileName);
+					string tileFile = String.Format(CultureInfo.InvariantCulture, @"{0}\Tiles\{1}.t", _route.RoutePath, _tileName);
 
 					var image = new Bitmap(256, 256);
 					using (var g = Graphics.FromImage(image)) {
@@ -110,7 +178,7 @@ namespace Jgr.Msts {
 						var terrainFloor = 0f;
 						var terrainScale = 1f;
 						try {
-							var tile = new UndoRedoSimisFile(tileFile, SimisProvider);
+							var tile = new UndoRedoSimisFile(tileFile, _simisProvider);
 							tile.Read();
 							terrainWidth = terrainHeight = (int)tile.Tree["terrain"]["terrain_samples"]["terrain_nsamples"][0].ToValue<uint>();
 							Debug.Assert(terrainWidth == 256);
@@ -124,7 +192,7 @@ namespace Jgr.Msts {
 							Debug.Assert(terrain_sample_size == 8 || terrain_sample_size == 16 || terrain_sample_size == 32);
 						} catch (Exception e) {
 							g.DrawString(e.ToString(), SystemFonts.CaptionFont, Brushes.Black, 0, 0);
-							TerrainImage = image;
+							_terrainImage = image;
 							return;
 						}
 
@@ -152,7 +220,7 @@ namespace Jgr.Msts {
 						//g.DrawString(Coordinates.ConvertToLatLon(Coordinates.ConvertToIgh(TileCoordinate, 0, 1)).ToString(), SystemFonts.CaptionFont, Brushes.White, 0, image.Height - 1 * 15);
 					}
 
-					TerrainImage = image;
+					_terrainImage = image;
 					break;
 				case TileLayer.Roads:
 					// TODO: Roads and track use the same basic data, can we split anything out here?
@@ -170,10 +238,10 @@ namespace Jgr.Msts {
 					//}
 					break;
 				case TileLayer.Markers:
-					string markersFile = String.Format(CultureInfo.InvariantCulture, @"{0}\{1}.mkr", Route.RoutePath, Route.FileName);
+					string markersFile = String.Format(CultureInfo.InvariantCulture, @"{0}\{1}.mkr", _route.RoutePath, _route.FileName);
 
 					if (File.Exists(markersFile)) {
-						var markers = new UndoRedoSimisFile(markersFile, SimisProvider);
+						var markers = new UndoRedoSimisFile(markersFile, _simisProvider);
 						try {
 							markers.Read();
 						} catch (FileException) {
@@ -183,8 +251,8 @@ namespace Jgr.Msts {
 							var tileX = 0d;
 							var tileZ = 0d;
 							var tileCoordinate = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(marker[1].ToValue<float>(), marker[0].ToValue<float>())), out tileX, out tileZ);
-							if ((tileCoordinate.X == TileCoordinate.X) && (tileCoordinate.Z == TileCoordinate.Z)) {
-								Markers.Add(new TileMarker() { X = tileX, Z = tileZ, Label = marker[2].ToValue<string>() });
+							if ((tileCoordinate.X == _tileCoordinate.X) && (tileCoordinate.Z == _tileCoordinate.Z)) {
+								_markers.Add(new TileMarker(tileX, 0, tileZ, marker[2].ToValue<string>()));
 							}
 						}
 					}
@@ -212,13 +280,13 @@ namespace Jgr.Msts {
 					graphics.DrawRectangle(Pens.LightGray, x, y, w, h);
 					break;
 				case TileLayer.Terrain:
-					if (TerrainImage != null) {
-						graphics.DrawImage(TerrainImage, x, y, w, h);
+					if (_terrainImage != null) {
+						graphics.DrawImage(_terrainImage, x, y, w, h);
 					}
 					break;
 				case TileLayer.Roads:
 				case TileLayer.Track:
-					foreach (var trackNode in TrackNodes) {
+					foreach (var trackNode in _trackNodes) {
 						if (layer != (trackNode.IsRoad ? TileLayer.Roads : TileLayer.Track)) {
 							continue;
 						}
@@ -349,7 +417,7 @@ namespace Jgr.Msts {
 					//}
 					break;
 				case TileLayer.Markers:
-					foreach (var marker in Markers) {
+					foreach (var marker in _markers) {
 						var mx = (int)(x + w * marker.X);
 						var my = (int)(y + h * marker.Z);
 						var fm = graphics.MeasureString(marker.Label, SystemFonts.CaptionFont);
@@ -360,7 +428,7 @@ namespace Jgr.Msts {
 					}
 					break;
 				case TileLayer.Platforms:
-					foreach (var platform in Platforms) {
+					foreach (var platform in _platforms) {
 						var mx = (int)(x + w * (1024 + platform.X) / 2048);
 						var my = (int)(y + h * (1024 - platform.Z) / 2048);
 						graphics.FillPolygon(Brushes.DarkBlue, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
@@ -370,7 +438,7 @@ namespace Jgr.Msts {
 				case TileLayer.PlatformNames:
 					break;
 				case TileLayer.Sidings:
-					foreach (var siding in Sidings) {
+					foreach (var siding in _sidings) {
 						var mx = (int)(x + w * (1024 + siding.X) / 2048);
 						var my = (int)(y + h * (1024 - siding.Z) / 2048);
 						graphics.FillPolygon(Brushes.DarkGreen, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
@@ -380,7 +448,7 @@ namespace Jgr.Msts {
 				case TileLayer.SidingNames:
 					break;
 				case TileLayer.Signals:
-					foreach (var signal in Signals) {
+					foreach (var signal in _signals) {
 						var mx = (int)(x + w * (1024 + signal.X) / 2048);
 						var my = (int)(y + h * (1024 - signal.Z) / 2048);
 						graphics.FillEllipse(Brushes.DarkRed, mx - 3, my - 3, 6, 6);

@@ -11,45 +11,62 @@ using System.Globalization;
 namespace Jgr.Msts {
 	[Immutable]
 	public class TileCoordinate {
-		public readonly int X;
-		public readonly int Z;
-		public readonly int Size;
+		readonly int _x;
+		readonly int _z;
+		readonly int _size;
+
+		public int X { get { return _x; } }
+		public int Z { get { return _z; } }
+		public int Size { get { return _size; } } 
+
 		public TileCoordinate(int x, int z)
 			: this(x, z, 1) {
 		}
+
 		public TileCoordinate(int x, int z, int size) {
-			X = x;
-			Z = z;
-			Size = size;
+			_x = x;
+			_z = z;
+			_size = size;
 		}
+
 		public override string ToString() {
-			return "TILE{" + X + " " + Z + " " + Size + "}";
+			return "TILE{" + _x + " " + _z + " " + _size + "}";
 		}
 	}
 
 	[Immutable]
 	public class IghCoordinate {
-		public readonly double Line;
-		public readonly double Sample;
+		readonly double _line;
+		readonly double _sample;
+
+		public double Line { get { return _line; } }
+		public double Sample { get { return _sample; } }
+
 		public IghCoordinate(double line, double sample) {
-			Line = line;
-			Sample = sample;
+			_line = line;
+			_sample = sample;
 		}
+
 		public override string ToString() {
-			return "IGH{" + Line + " " + Sample + "}";
+			return "IGH{" + _line + " " + _sample + "}";
 		}
 	}
 
 	[Immutable]
 	public class LatitudeLongitudeCoordinate {
-		public readonly double Latitude;
-		public readonly double Longitude;
+		readonly double _latitude;
+		readonly double _longitude;
+
+		public double Latitude { get { return _latitude; } }
+		public double Longitude { get { return _longitude; } }
+
 		public LatitudeLongitudeCoordinate(double latitude, double longitude) {
-			Latitude = latitude;
-			Longitude = longitude;
+			_latitude = latitude;
+			_longitude = longitude;
 		}
+
 		public override string ToString() {
-			return "LL{" + Latitude + " " + Longitude + "}";
+			return "LL{" + _latitude + " " + _longitude + "}";
 		}
 	}
 
@@ -137,6 +154,7 @@ namespace Jgr.Msts {
 			return new TileCoordinate((int)Math.Floor(x) - 16384, 16384 - (int)Math.Floor(z) - 1);
 		}
 
+		// IGH without sub-position -> MSTS Tile
 		public static TileCoordinate ConvertToTile(IghCoordinate coordinates) {
 			double tileX;
 			double tileZ;
@@ -355,7 +373,7 @@ namespace Jgr.Msts {
 			return igh;
 		}
 
-		private static double adjust_lon(double temp) {
+		static double adjust_lon(double temp) {
 			if (Math.Abs(temp) >= Math.PI) {
 				return temp - Math.Sign(temp) * 2 * Math.PI;
 			}
