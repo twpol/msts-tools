@@ -62,18 +62,30 @@ namespace Jgr.IO.Parser {
 				if (TypeDataCache.ContainsKey(type.FullName)) return;
 				Console.WriteLine("SetUpCloneData(" + type.FullName + "):");
 
-				var fields = type.GetFields(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				// Collect all public and non-public fields.
+				var fields = type.GetFields(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+					.Select(f => new { Name = f.Name.StartsWith("<") && f.Name.EndsWith(">k__BackingField") ? f.Name.Substring(1, f.Name.Length - 17) : f.Name, Type = f.FieldType.FullName, Field = f });
 				Console.WriteLine("  Fields (type):");
-				foreach (var field in fields) Console.WriteLine("    " + field.Name + " (" + field.FieldType.FullName + ")");
+				foreach (var field in fields) Console.WriteLine("    " + field.Name + " (" + field.Type + ")");
 
-				var dataNames = fields.Select(f => f.Name);
+				// Find the constructors!
 				var ctors = type.GetConstructors(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				foreach (var ctor in ctors) {
 					var parameters = ctor.GetParameters();
+					Console.WriteLine("  Constructor(" + String.Join(", ", parameters.Select(p => p.Name).ToArray()) + ")");
+
 					// Constructor must have the same number of parameters as there are fields.
-					if (parameters.Length != fields.Length) continue;
+					if (parameters.Length != fields.Count()) {
+						Console.WriteLine("    Wrong number of parameters.");
+						continue;
+					}
+
 					// Constructor's parameters must be named the same (modulo case) as the fields.
-					if (dataNames.Intersect(parameters.Select(p => p.Name), StringComparer.InvariantCultureIgnoreCase).Count() != fields.Length) continue;
+					if (fields.Select(f => f.Name).Intersect(parameters.Select(p => p.Name), StringComparer.InvariantCultureIgnoreCase).Count() != fields.Count()) {
+						Console.WriteLine("    Wrong parameter names.");
+						continue;
+					}
+
 					// Set up containers for this constructor.
 					var cloneConstructor = ctor;
 					var cloneNames = new List<string>(parameters.Length);
@@ -83,12 +95,18 @@ namespace Jgr.IO.Parser {
 						// Find the field for this parameter.
 						var field = fields.FirstOrDefault(p => p.Name.Equals(parameters[i].Name, StringComparison.InvariantCultureIgnoreCase));
 						// Parameter and field types must match.
-						if ((field == null) || (field.FieldType.FullName != parameters[i].ParameterType.FullName)) {
+						if (field == null) {
 							cloneConstructor = null;
+							Console.WriteLine(String.Format("    Parameter '{0}' does not match any fields. This should never happen.'.", i));
+							break;
+						}
+						if (field.Type != parameters[i].ParameterType.FullName) {
+							cloneConstructor = null;
+							Console.WriteLine(String.Format("    Parameter '{0}' is not of type '{1}'.", i, field.Type));
 							break;
 						}
 						cloneNames.Add(field.Name);
-						cloneFields[field.Name] = field;
+						cloneFields[field.Name] = field.Field;
 					}
 					if (cloneConstructor != null) {
 						Console.WriteLine("  Immutable Copy constructor:");

@@ -22,18 +22,18 @@ namespace Jgr.Gui {
 
 	public class Feedback {
 		readonly string UID;
-		public readonly string EnvironmentOS;
-		public readonly Version EnvironmentOSVersion;
-		public readonly int EnvironmentCores;
-		public readonly Version EnvironmentCLR;
-		public readonly int EnvironmentCLRBitness;
-		public readonly DateTime Time;
-		public readonly string ApplicationName;
-		public readonly string ApplicationVersion;
-		public readonly StackFrame Source;
-		public readonly FeedbackType Type;
-		public readonly string Operation;
-		public readonly IDictionary<string, string> Details;
+		readonly string EnvironmentOS;
+		readonly Version EnvironmentOSVersion;
+		readonly int EnvironmentCores;
+		readonly Version EnvironmentCLR;
+		readonly int EnvironmentCLRBitness;
+		readonly DateTime Time;
+		readonly string ApplicationName;
+		readonly string ApplicationVersion;
+		readonly StackFrame Source;
+		readonly FeedbackType Type;
+		readonly string Operation;
+		readonly IDictionary<string, string> Details;
 		string Email;
 		string Comments;
 
