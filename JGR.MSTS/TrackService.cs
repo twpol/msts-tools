@@ -10,61 +10,56 @@ using Jgr.IO;
 using Jgr.IO.Parser;
 
 namespace Jgr.Msts {
+	[Immutable]
 	public class TrackService {
-		readonly SimisProvider _simisProvider;
-		readonly FileFinder _files;
-		readonly Dictionary<uint, TrackShape> _trackShapes;
-		readonly Dictionary<string, TrackShape> _trackShapesByFileName;
-		readonly Dictionary<uint, TrackSection> _trackSections;
-		readonly UndoRedoSimisFile _tSection;
-
-		public SimisProvider SimisProvider { get { return _simisProvider; } }
-		public FileFinder Files { get { return _files; } }
-		public Dictionary<uint, TrackShape> TrackShapes { get { return _trackShapes; } }
-		public Dictionary<string, TrackShape> TrackShapesByFileName { get { return _trackShapesByFileName; } }
-		public Dictionary<uint, TrackSection> TrackSections { get { return _trackSections; } }
+		public SimisProvider SimisProvider { get; private set; }
+		public FileFinder Files { get; private set; }
+		public IDictionary<uint, TrackShape> TrackShapes { get; private set; }
+		public IDictionary<string, TrackShape> TrackShapesByFileName { get; private set; }
+		public IDictionary<uint, TrackSection> TrackSections { get; private set; }
+		UndoRedoSimisFile TSection { get; set; }
 
 		public TrackService(FileFinder files, SimisProvider simisProvider) {
-			_files = files;
-			_simisProvider = simisProvider;
+			Files = files;
+			SimisProvider = simisProvider;
 
-			_trackShapes = new Dictionary<uint, TrackShape>();
-			_trackShapesByFileName = new Dictionary<string, TrackShape>();
-			_trackSections = new Dictionary<uint, TrackSection>();
+			TrackShapes = new Dictionary<uint, TrackShape>();
+			TrackShapesByFileName = new Dictionary<string, TrackShape>();
+			TrackSections = new Dictionary<uint, TrackSection>();
 
-			_tSection = new UndoRedoSimisFile(_files[@"Global\tsection.dat"], _simisProvider);
-			_tSection.Read();
+			TSection = new UndoRedoSimisFile(Files[@"Global\tsection.dat"], SimisProvider);
+			TSection.Read();
 
-			foreach (var section in _tSection.Tree["TrackSections"].Where(n => n.Type == "TrackSection")) {
+			foreach (var section in TSection.Tree["TrackSections"].Where(n => n.Type == "TrackSection")) {
 				if (section.Contains("SectionSize")) {
 					var sectionSize = section["SectionSize"];
 					if (section.Contains("SectionCurve")) {
 						var sectionCurve = section["SectionCurve"];
 						var ts = new TrackSection(section[0].ToValue<uint>(), sectionSize[0].ToValue<float>(), sectionSize[1].ToValue<float>(), true, sectionCurve[0].ToValue<float>(), sectionCurve[1].ToValue<float>());
-						_trackSections.Add(ts.ID, ts);
+						TrackSections.Add(ts.Id, ts);
 					} else {
 						var ts = new TrackSection(section[0].ToValue<uint>(), sectionSize[0].ToValue<float>(), sectionSize[1].ToValue<float>());
-						_trackSections.Add(ts.ID, ts);
+						TrackSections.Add(ts.Id, ts);
 					}
 				}
 			}
 
-			foreach (var shape in _tSection.Tree["TrackShapes"].Where(n => n.Type == "TrackShape")) {
+			foreach (var shape in TSection.Tree["TrackShapes"].Where(n => n.Type == "TrackShape")) {
 				var tpaths = new List<TrackPath>();
 				foreach (var path in shape.Where(n => n.Type == "SectionIdx")) {
 					var count = path[0].ToValue<uint>();
 					var tsections = new List<TrackSection>();
 					for (var i = 0; i < count; i++) {
-						tsections.Add(_trackSections[path[5 + i].ToValue<uint>()]);
+						tsections.Add(TrackSections[path[5 + i].ToValue<uint>()]);
 					}
 					tpaths.Add(new TrackPath(path[1].ToValue<float>(), path[2].ToValue<float>(), path[3].ToValue<float>(), path[4].ToValue<float>(), tsections));
 				}
 				var ts = new TrackShape(shape[0].ToValue<uint>(), shape["FileName"][0].ToValue<string>().ToLowerInvariant(), shape.Contains("ClearanceDist") ? shape["ClearanceDist"][0].ToValue<float>() : 0, shape.Contains("TunnelShape"), shape.Contains("RoadShape"), tpaths, shape.Contains("MainRoute") ? (int)shape["MainRoute"][0].ToValue<uint>() : -1);
-				_trackShapes.Add(ts.ID, ts);
-				if (_trackShapesByFileName.ContainsKey(ts.FileName)) {
-					_trackShapesByFileName[ts.FileName] = ts;
+				TrackShapes.Add(ts.Id, ts);
+				if (TrackShapesByFileName.ContainsKey(ts.FileName)) {
+					TrackShapesByFileName[ts.FileName] = ts;
 				} else {
-					_trackShapesByFileName.Add(ts.FileName, ts);
+					TrackShapesByFileName.Add(ts.FileName, ts);
 				}
 			}
 		}
@@ -80,7 +75,7 @@ namespace Jgr.Msts {
 		readonly IEnumerable<TrackPath> _paths;
 		readonly int _mainRoute;
 
-		public uint ID { get { return _id; } }
+		public uint Id { get { return _id; } }
 		public string FileName { get { return _fileName; } }
 		public double ClearanceDistance { get { return _clearanceDistance; } }
 		public bool IsTunnelShape { get { return _isTunnelShape; } }
@@ -125,26 +120,26 @@ namespace Jgr.Msts {
 	[Immutable]
 	public class TrackSection {
 		readonly uint _id;
-		readonly double _guage;
+		readonly double _gauge;
 		readonly double _length;
 		readonly bool _isCurve;
 		readonly double _radius;
 		readonly double _angle;
 
-		public uint ID { get { return _id; } }
-		public double Guage { get { return _guage; } }
+		public uint Id { get { return _id; } }
+		public double Gauge { get { return _gauge; } }
 		public double Length { get { return _length; } }
 		public bool IsCurve { get { return _isCurve; } }
 		public double Radius { get { return _radius; } }
 		public double Angle { get { return _angle; } }
 
-		public TrackSection(uint id, double guage, double length)
-			: this(id, guage, length, false, 0, 0) {
+		public TrackSection(uint id, double gauge, double length)
+			: this(id, gauge, length, false, 0, 0) {
 		}
 
-		public TrackSection(uint id, double guage, double length, bool isCurve, double radius, double angle) {
+		public TrackSection(uint id, double gauge, double length, bool isCurve, double radius, double angle) {
 			_id = id;
-			_guage = guage;
+			_gauge = gauge;
 			_length = length;
 			_isCurve = isCurve;
 			_radius = radius;

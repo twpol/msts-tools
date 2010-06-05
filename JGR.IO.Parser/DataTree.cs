@@ -39,10 +39,10 @@ namespace Jgr.IO.Parser {
 
 		[Immutable]
 		protected class TypeData {
-			public readonly string Name;
-			public readonly ConstructorInfo CloneConstructor;
-			public readonly IList<string> CloneNames;
-			public readonly IDictionary<string, FieldInfo> CloneFields;
+			public string Name { get; private set; }
+			public ConstructorInfo CloneConstructor { get; private set; }
+			public IList<string> CloneNames { get; private set; }
+			public IDictionary<string, FieldInfo> CloneFields { get; private set; }
 
 			public TypeData(string name, ConstructorInfo cloneConstructor, IList<string> cloneNames, IDictionary<string, FieldInfo> cloneFields) {
 				Name = name;
@@ -178,8 +178,8 @@ namespace Jgr.IO.Parser {
 
 	[Immutable]
 	public class DataTreeNodeSet {
-		public readonly string Name;
-		public readonly Func<object, object> Func;
+		public string Name { get; private set; }
+		public Func<object, object> Func { get; private set; }
 
 		public DataTreeNodeSet(string name, Func<object, object> func) {
 			Name = name;
@@ -277,8 +277,8 @@ namespace Jgr.IO.Parser {
 
 	[Immutable]
 	public class DataTreePathStep {
-		public readonly object Name;
-		public readonly IDataTreeNode Node;
+		public object Name { get; private set; }
+		public IDataTreeNode Node { get; private set; }
 
 		public DataTreePathStep(object name, IDataTreeNode node) {
 			Name = name;

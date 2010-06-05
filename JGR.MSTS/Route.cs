@@ -11,28 +11,23 @@ using Jgr.IO.Parser;
 namespace Jgr.Msts {
 	[Immutable]
 	public class Route : DataTreeNode<Route> {
-		readonly SimisProvider _simisProvider;
-		readonly string _routePath;
-		readonly FileFinder _files;
-		readonly SimisFile _trackFile;
+		public SimisProvider SimisProvider { get; private set; }
+		public string RoutePath { get; private set; }
+		public FileFinder Files { get; private set; }
+		public SimisFile TrackFile { get; private set; }
 		//TrackService _TrackService;
 		//RouteTrack _RouteTrack;
 
-		public SimisProvider SimisProvider { get { return _simisProvider; } }
-		public string RoutePath { get { return _routePath; } }
-		public FileFinder Files { get { return _files; } }
-		public SimisFile TrackFile { get { return _trackFile; } } 
-
 		internal Route(SimisProvider simisProvider, string routePath, FileFinder files, SimisFile trackFile) {
-			_simisProvider = simisProvider;
-			_routePath = routePath;
-			_files = files;
-			_trackFile = trackFile;
+			SimisProvider = simisProvider;
+			RoutePath = routePath;
+			Files = files;
+			TrackFile = trackFile;
 		}
 
 		public Route(string trackFile, SimisProvider simisProvider) {
-			_routePath = Path.GetDirectoryName(trackFile);
-			_simisProvider = simisProvider;
+			RoutePath = Path.GetDirectoryName(trackFile);
+			SimisProvider = simisProvider;
 			// We can find things relative to the following:
 			// +-<msts>   <-- here
 			//   +-Global   <-- here
@@ -42,14 +37,14 @@ namespace Jgr.Msts {
 			// * Allowed for route-specific global files; this is a feature for Open Rails Train Simulator (ORTS).
 			// Paths used to access files will usually contain 1 directory above, e.g. "activities\foo.act", to avoid
 			// unexpected and undesired collisions between files in <msts>, <msts>\Global and <msts>\Routes\<route>.
-			var mstsPath = Path.GetDirectoryName(Path.GetDirectoryName(_routePath));
-			_files = new FileFinder(new string[] { _routePath, Path.Combine(_routePath, "Global"), mstsPath, Path.Combine(mstsPath, "Global") });
+			var mstsPath = Path.GetDirectoryName(Path.GetDirectoryName(RoutePath));
+			Files = new FileFinder(new string[] { RoutePath, Path.Combine(RoutePath, "Global"), mstsPath, Path.Combine(mstsPath, "Global") });
 
-			_trackFile = new SimisFile(trackFile, _simisProvider);
+			TrackFile = new SimisFile(trackFile, SimisProvider);
 		}
 
 		protected override void SetArgument(string name, object value, ref Dictionary<string, object> arguments, ref DataTreeNode<Route>.TypeData typeData) {
-			var trackFile = arguments.ContainsKey("TrackFile") ? (SimisFile)arguments["TrackFile"] : _trackFile;
+			var trackFile = arguments.ContainsKey("TrackFile") ? (SimisFile)arguments["TrackFile"] : TrackFile;
 			switch (name) {
 				case "Name":
 					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "Name", 0).Set(new SimisTreeNodeValueString("string", "", (string)value));
@@ -65,19 +60,19 @@ namespace Jgr.Msts {
 
 		public string Name {
 			get {
-				return _trackFile.Tree["Tr_RouteFile"]["Name"][0].ToValue<string>();
+				return TrackFile.Tree["Tr_RouteFile"]["Name"][0].ToValue<string>();
 			}
 		}
 
 		public string Description {
 			get {
-				return _trackFile.Tree["Tr_RouteFile"]["Description"][0].ToValue<string>().Replace("\n", "\r\n");
+				return TrackFile.Tree["Tr_RouteFile"]["Description"][0].ToValue<string>().Replace("\n", "\r\n");
 			}
 		}
 
 		public string FileName {
 			get {
-				return _trackFile.Tree["Tr_RouteFile"]["FileName"][0].ToValue<string>();
+				return TrackFile.Tree["Tr_RouteFile"]["FileName"][0].ToValue<string>();
 			}
 		}
 
