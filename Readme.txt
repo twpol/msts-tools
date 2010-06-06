@@ -2,7 +2,7 @@ JGR MSTS Editors & Tools
 ************************
 
 Website: http://jgrmsts.codeplex.com/
-License: Microsoft Public License.
+License: New BSD License (BSD).
 
 
 Getting Started
@@ -13,11 +13,11 @@ Getting Started
     * Included with Windows 7 and later.
 2. Extract all files to an empty location of your choice.
 3. Run the tools.
-    * Simis Editor v0.3
+    * Simis Editor v0.4
     * Simis File
 
 
-Tools - Simis Editor v0.3
+Tools - Simis Editor v0.4
 =========================
 
 Graphical editor for individual Simis files.
@@ -29,11 +29,12 @@ Graphical editor for individual Simis files.
   * Help > Reload Simis Resources - reloads all files from the "Resources" subdirectory (useful for testing).
   * All blocks and values in a file can be seen in the main tree view. 
   * Values can be edited by selecting the block or value in the tree and using the Property Grid on the right.
+  * Allowed blocks can be added to the tree by right-clicking and using the context-menu.
   * Indirect file opening - dropping a supported file on "SimisEditor.exe" or the application window will open it.
 * What Doesn't Work (Yet):
   * Creating new files.
   * Opening other similar game files. More will be supported in future releases.
-  * Editing the tree structure of files.
+  * Removing or replacing blocks in the tree structure of files.
 
 
 Tools - Simis File
@@ -71,36 +72,37 @@ Performs operations on individual or collections of Simis files.
 Support File Types
 ==================
 
-* Activity (.act)
+* Activity (.act)                        
 * Activity Save (.asv)                   [Uses :buffer type]
-* Environment (.env)
-* Hazard (.haz)
-* IOM (.iom)
-* Material Palette (.pal)
-* Path (.pat)
-* Route (.trk)
-* Route Database (.rdb)
-* Route Items (.rit)
-* Route Markers (.mkr)
-* Route REF (.ref)
-* Service (.srv)
-* Shape (.s)
-* Shape Detail (.sd)
-* Sound Management (.sms)
-* Sound Sources (ssource.dat)
-* Telegraph Poles (telepole.dat)
+* Environment (.env)                     
+* Global Track Sections (tsection.dat)   [Updated]
+* IOM (.iom)                             
+* Material Palette (.pal)                
+* Route (.trk)                           
+* Route Car Spawn (carspawn.dat)         
+* Route Hazard (.haz)                    
+* Route Markers (.mkr)                   
+* Route REF (.ref)                       
+* Route Road Database (.rdb)             
+* Route Road Items (.rit)                
+* Route Telegraph Poles (telepole.dat)   
+* Route Track Database (.tdb)            [Updated]
+* Route Track Items (.tit)               
+* Route Track Sections (tsection.dat)    
+* Route Traffic Pattern (.trf)           
+* Route Train Path (.pat)                
+* Route Train Service (.srv)             
+* Shape (.s)                             
+* Shape Detail (.sd)                     
+* Sound Management (.sms)                
+* Sound Sources (ssource.dat)            
 * Terrain (.t)                           [Uses :buffer type]
-* Track Database (.tdb)                  [Updated]
-* Track Items (.tit)
-* Track Sections (Global) (tsection.dat) [Updated]
-* Track Sections (Route) (tsection.dat)
-* Traffic Pattern (.trf)
-* Train (Consist) (.con)
-* Train (Consist) Cab View (.cvf)
-* Train (Consist) Engine (.eng)
-* Train (Consist) Wagon (.wag)
+* Train Cab View (.cvf)                  
+* Train Consist (.con)                   
+* Train Engine (.eng)                    
+* Train Wagon (.wag)                     
 * World (.w)                             [Updated]
-* World Sound (.ws)
+* World Sound (.ws)                      
 
 Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
 
@@ -109,6 +111,7 @@ Version History
 ===============
 
 --- ????????????? 2010 ---
+* All code relicensed from Microsoft Public License (Ms-PL) to New BSD License (BSD).
 * Simis Editor v0.4
   * Open and Save dialogs support full filename filters from BNFs (e.g. "tsection.dat").
   * Added statusbar and menu help text.
@@ -120,16 +123,24 @@ Version History
   * Problems loading *.bnf files and loading or saving Simis files are all offered for reporting online.
 * Simis File
 * Libraries
-  * BNFs: Track Database updated to support CrossoverItem.
-  * BNFs: Track Database updated to label some values.
-  * BNFs: Track Sections (Global) updated.
-  * BNFs: World updated to label some values.
-  * BNFs: Labels updated from TileY to TileZ to match MSTS's coordinate system.
+  * BNFs: many renamed to better match what the store.
+  * BNFs: all labels updated from TileY to TileZ to match MSTS's coordinate system.
+  * BNFs: Global Track Sections updated.
+  * BNFs: Route updated to label some values.
+  * BNFs: Route Road Database updated to label some values.
+  * BNFs: Route Road Items updated to label some values.
+  * BNFs: Route Track Database updated to label some values and support :CrossoverItem.
+  * BNFs: World updated to label some values and work with more files.
   * Jgr.Grammar: BNF and FSM now enforce the structure of the FILE definition in *.bnf files.
   * Jgr.Gui: Feedback class added for collecting data, prompting user via FeedbackPrompt and reporting problems online.
   * Jgr.Gui: FeedbackPrompt class added for prompting user about submission of comments/exceptions.
-  * Jgr.Gui: TaskDialog class added for Vista+ task dialogs, with fallback to message boxes on XP.
+  * Jgr.Gui: TaskDialog class added for Vista+ task dialogs, with fallback to normal message boxes on XP.
   * Jgr.IO: FileFinder class added to scan a list of directories and return the first containing a given file.
+  * Jgr.IO.Parser: DataTree class added to provide common functions for editing immutable trees.
+  * Jgr.IO.Parser: SimisFile is now immutable and loads all data during construction.
+  * Jgr.IO.Parser: MutableSimisFile class added to store modifiable Simis file data.
+  * Jgr.IO.Parser: UndoRedoSimisFile class added to handle undo/redo operations on MutableSimisFile.
+  * Jgr.IO.Parser: SimisProvider is now immutable and does all its work during construction instead of forcing threading on the caller.
   * Jgr.IO.Parser: SimisReader now parses text files case-insensitively.
   * Jgr.IO.Parser: SimisReader treats -1 read as an unsigned int as if it was signed (thus giving -1).
   * Jgr.IO.Parser: bool SimisTreeNode.Contains(string) added for easier checking of existence of children.
