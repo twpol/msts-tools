@@ -60,29 +60,29 @@ namespace Jgr.IO.Parser {
 			lock (TypeDataCache) {
 				var type = GetType();
 				if (TypeDataCache.ContainsKey(type.FullName)) return;
-				Console.WriteLine("SetUpCloneData(" + type.FullName + "):");
+				Debug.WriteLine("SetUpCloneData(" + type.FullName + "):");
 
 				// Collect all public and non-public fields.
 				var fields = type.GetFields(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 					.Select(f => new { Name = f.Name.StartsWith("<") && f.Name.EndsWith(">k__BackingField") ? f.Name.Substring(1, f.Name.Length - 17) : f.Name, Type = f.FieldType.FullName, Field = f });
-				Console.WriteLine("  Fields (type):");
-				foreach (var field in fields) Console.WriteLine("    " + field.Name + " (" + field.Type + ")");
+				Debug.WriteLine("  Fields (type):");
+				foreach (var field in fields) Debug.WriteLine("    " + field.Name + " (" + field.Type + ")");
 
 				// Find the constructors!
 				var ctors = type.GetConstructors(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				foreach (var ctor in ctors) {
 					var parameters = ctor.GetParameters();
-					Console.WriteLine("  Constructor(" + String.Join(", ", parameters.Select(p => p.Name).ToArray()) + ")");
+					Debug.WriteLine("  Constructor(" + String.Join(", ", parameters.Select(p => p.Name).ToArray()) + ")");
 
 					// Constructor must have the same number of parameters as there are fields.
 					if (parameters.Length != fields.Count()) {
-						Console.WriteLine("    Wrong number of parameters.");
+						Debug.WriteLine("    Wrong number of parameters.");
 						continue;
 					}
 
 					// Constructor's parameters must be named the same (modulo case) as the fields.
 					if (fields.Select(f => f.Name).Intersect(parameters.Select(p => p.Name), StringComparer.InvariantCultureIgnoreCase).Count() != fields.Count()) {
-						Console.WriteLine("    Wrong parameter names.");
+						Debug.WriteLine("    Wrong parameter names.");
 						continue;
 					}
 
@@ -97,21 +97,21 @@ namespace Jgr.IO.Parser {
 						// Parameter and field types must match.
 						if (field == null) {
 							cloneConstructor = null;
-							Console.WriteLine(String.Format("    Parameter '{0}' does not match any fields. This should never happen.'.", i));
+							Debug.WriteLine(String.Format("    Parameter '{0}' does not match any fields. This should never happen.'.", i));
 							break;
 						}
 						if (field.Type != parameters[i].ParameterType.FullName) {
 							cloneConstructor = null;
-							Console.WriteLine(String.Format("    Parameter '{0}' is not of type '{1}'.", i, field.Type));
+							Debug.WriteLine(String.Format("    Parameter '{0}' is not of type '{1}'.", i, field.Type));
 							break;
 						}
 						cloneNames.Add(field.Name);
 						cloneFields[field.Name] = field.Field;
 					}
 					if (cloneConstructor != null) {
-						Console.WriteLine("  Immutable Copy constructor:");
+						Debug.WriteLine("  Immutable Copy constructor:");
 						foreach (var name in cloneNames) {
-							Console.WriteLine("    " + cloneFields[name].Name + " (" + cloneFields[name].FieldType.FullName + ")");
+							Debug.WriteLine("    " + cloneFields[name].Name + " (" + cloneFields[name].FieldType.FullName + ")");
 						}
 						TypeDataCache[type.FullName] = new DataTreeNode<T>.TypeData(type.FullName, cloneConstructor, cloneNames, cloneFields);
 						return;

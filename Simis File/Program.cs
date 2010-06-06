@@ -172,8 +172,7 @@ namespace Normalize
 
 			foreach (var inputFile in files) {
 				try {
-					var parsedFile = new UndoRedoSimisFile(inputFile, provider);
-					parsedFile.Read();
+					var parsedFile = new SimisFile(inputFile, provider.GetForPath(inputFile));
 					Console.WriteLine(inputFile);
 					PrintSimisTree(0, parsedFile.Tree);
 				} catch (Exception ex) {
@@ -235,13 +234,14 @@ namespace Normalize
 				};
 
 				var success = true;
-				var newFile = new MutableSimisFile(file, provider);
+				SimisProvider fileProvider = provider.GetForPath(file);
+				SimisFile newFile = null;
 				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
 				Stream saveStream = new MemoryStream();
 
 				{
 					totalCount.Total++;
-					var reader = new SimisReader(readStream, provider.GetForPath(file));
+					var reader = new SimisReader(readStream, fileProvider);
 					try {
 						reader.ReadToken();
 					} catch (ReaderException) {
@@ -259,7 +259,7 @@ namespace Normalize
 				if (success) {
 					try {
 						try {
-							newFile.Read(readStream);
+							newFile = new SimisFile(readStream, fileProvider);
 						} catch (Exception e) {
 							throw new FileException(file, e);
 						}

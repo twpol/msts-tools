@@ -24,7 +24,7 @@ namespace Jgr.IO.Parser {
 		/// <param name="simisProvider">A <see cref="SimisProvider"/> within which the appropriate <see cref="Bnf"/> for parsing can be found.</param>
 		public SimisFile(string fileName, SimisProvider simisProvider) {
 			FileName = fileName;
-			SimisProvider = simisProvider.GetForPath(FileName);
+			SimisProvider = simisProvider;
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
 					ReadStream(fileStream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
@@ -60,7 +60,7 @@ namespace Jgr.IO.Parser {
 			StreamFormat = streamFormat;
 			StreamCompressed = streamCompressed;
 			Tree = tree;
-			SimisProvider = simisProvider.GetForPath(fileName);
+			SimisProvider = simisProvider;
 		}
 
 		void ReadStream(Stream stream, out SimisFormat simisFormat, out SimisStreamFormat streamFormat, out bool streamCompressed, out SimisTreeNode tree) {

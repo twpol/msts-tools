@@ -134,17 +134,59 @@ namespace Jgr.IO.Parser
 							inWhitespace = !inString;
 						}
 					} else {
-						if ((bite == '+') || (bite == '-') || (bite == '0') || (bite == '1') || (bite == '2') || (bite == '3') || (bite == '4') || (bite == '5') || (bite == '6') || (bite == '7') || (bite == '8') || (bite == '9')) {
+						if ("+-.0123456789aAbBcCdDeEfF".Contains(bite)) {
 							var biteStart = bite;
 							var numberStart = binaryReader.BaseStream.Position;
 							var numberString = "";
-							while ((bite == '+') || (bite == '-') || (bite == 'e') || (bite == 'E') || (bite == '.') || (bite == '0') || (bite == '1') || (bite == '2') || (bite == '3') || (bite == '4') || (bite == '5') || (bite == '6') || (bite == '7') || (bite == '8') || (bite == '9')) {
+
+							var isHex = true;
+							var hasDP = false;
+							var hasExp = false;
+
+							if ((bite == '+') || (bite == '-')) {
 								numberString += bite;
+								isHex = false;
 								bite = binaryReader.ReadChar();
 							}
-							double value;
-							if (((bite == '\t') || (bite == '\n') || (bite == '\r') || (bite == ':') || (bite == ' ') || (bite == ')')) && double.TryParse(numberString, out value)) {
-								if (value.ToString("G6", CultureInfo.InvariantCulture).IndexOf("E", StringComparison.OrdinalIgnoreCase) >= 0) {
+
+							var allowed = isHex ? ".0123456789aAbBcCdDeEfF" : ".0123456789eE";
+							while (allowed.Contains(bite)) {
+								numberString += bite;
+								if (numberString.Length > 8) isHex = false;
+								if (".".Contains(bite)) {
+									isHex = false;
+									hasDP = true;
+									allowed = "0123456789eE";
+								} else if ("eE".Contains(bite)) {
+									hasExp = true;
+									allowed = isHex ? "0123456789aAbBcCdDeEfF" : "0123456789";
+								} else if ("aAbBcCdDeEfF".Contains(bite)) {
+									allowed = "0123456789aAbBcCdDeEfF";
+								}
+								bite = binaryReader.ReadChar();
+							}
+
+							if (numberString.Length != 8) isHex = false;
+
+							var value = 0d;
+							if ("\t\n\r: )".Contains(bite)) {
+								if (isHex) {
+									var valueH = 0;
+									if (!int.TryParse(numberString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out valueH)) numberString = "";
+									value = valueH;
+								} else {
+									if (!double.TryParse(numberString, out value)) numberString = "";
+								}
+							} else {
+								numberString = "";
+							}
+
+							if (numberString.Length > 0) {
+								if (isHex) {
+									binaryWriter.Write(((long)value).ToString("X8", CultureInfo.InvariantCulture).ToCharArray());
+								} else if (!hasDP && !hasExp) {
+									binaryWriter.Write(value.ToString("F0", CultureInfo.InvariantCulture).ToCharArray());
+								} else if (hasExp) {
 									binaryWriter.Write(value.ToString("0.#####e000", CultureInfo.InvariantCulture).ToCharArray());
 								} else {
 									binaryWriter.Write(value.ToString("G6", CultureInfo.InvariantCulture).ToCharArray());

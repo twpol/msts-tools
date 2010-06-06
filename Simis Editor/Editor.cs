@@ -180,7 +180,7 @@ namespace SimisEditor
 
 		bool OpenFile(string filename) {
 			if (!WaitForSimisProvider()) return false;
-			var newFile = new UndoRedoSimisFile(filename, SimisProvider);
+			var newFile = new UndoRedoSimisFile(filename, SimisProvider.GetForPath(filename));
 			try {
 				newFile.Read();
 			} catch (FileException ex) {
