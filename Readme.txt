@@ -79,7 +79,7 @@ Support File Types
 * IOM (.iom)                             
 * Material Palette (.pal)                
 * Route (.trk)                           
-* Route Car Spawn (carspawn.dat)         
+* Route Car Spawn (carspawn.dat)         [New]
 * Route Hazard (.haz)                    
 * Route Markers (.mkr)                   
 * Route REF (.ref)                       
@@ -90,7 +90,7 @@ Support File Types
 * Route Track Items (.tit)               
 * Route Track Sections (tsection.dat)    
 * Route Traffic Pattern (.trf)           
-* Route Train Path (.pat)                
+* Route Train Path (.pat)                [Updated]
 * Route Train Service (.srv)             
 * Shape (.s)                             
 * Shape Detail (.sd)                     
