@@ -40,7 +40,7 @@ namespace Jgr.Msts {
 			var mstsPath = Path.GetDirectoryName(Path.GetDirectoryName(RoutePath));
 			Files = new FileFinder(new string[] { RoutePath, Path.Combine(RoutePath, "Global"), mstsPath, Path.Combine(mstsPath, "Global") });
 
-			TrackFile = new SimisFile(trackFile, SimisProvider);
+			TrackFile = new SimisFile(trackFile, SimisProvider.GetForPath(trackFile));
 		}
 
 		protected override void SetArgument(string name, object value, ref Dictionary<string, object> arguments, ref DataTreeNode<Route>.TypeData typeData) {
