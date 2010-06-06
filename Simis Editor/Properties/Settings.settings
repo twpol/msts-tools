@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="UpdateCheckCodePlexReleaseDate" Type="System.DateTime" Scope="Application">
-      <Value Profile="(Default)">2010-02-28</Value>
+      <Value Profile="(Default)">2010-06-13</Value>
     </Setting>
     <Setting Name="UpdateCheckCodePlexProjectUrl" Type="System.String" Scope="Application">
       <Value Profile="(Default)">jgrmsts</Value>

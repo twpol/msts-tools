@@ -25,7 +25,7 @@ namespace SimisEditor.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2010-02-28")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2010-06-13")]
         public global::System.DateTime UpdateCheckCodePlexReleaseDate {
             get {
                 return ((global::System.DateTime)(this["UpdateCheckCodePlexReleaseDate"]));
