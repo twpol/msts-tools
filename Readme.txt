@@ -110,7 +110,7 @@ Note: Formats which use the :buffer type can be loaded but are not completely pa
 Version History
 ===============
 
---- ????????????? 2010 ---
+--- 6th June 2010 ---
 * All code relicensed from Microsoft Public License (Ms-PL) to New BSD License (BSD).
 * Simis Editor v0.4
   * Open and Save dialogs support full filename filters from BNFs (e.g. "tsection.dat").
