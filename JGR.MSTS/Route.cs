@@ -52,9 +52,73 @@ namespace Jgr.Msts {
 				case "Description":
 					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "Description", 0).Set(new SimisTreeNodeValueString("string", "", ((string)value).Replace("\r\n", "\n")));
 					break;
+				case "SpeedLimit":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "SpeedLimit", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					break;
+				case "SpeedLimitRestricted":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "TempRestrictedSpeed", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					break;
+				case "TerrainErrorScale":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "TerrainErrorScale", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					break;
+				case "HasLowResolutionTerrain":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "Mountains", 0).Set(new SimisTreeNodeValueIntegerDWord("dword", "", (bool)value ? 1u : 0));
+					break;
+				case "GravityScale":
+					if ((float)value == 1.0f) {
+						if (TrackFile.Tree["Tr_RouteFile"].Contains("GravityScale")) {
+							arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "GravityScale").Remove();
+						}
+					} else if (TrackFile.Tree["Tr_RouteFile"].Contains("GravityScale")) {
+						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "GravityScale", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					} else {
+						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile").Append(new SimisTreeNode("GravityScale", "", new[] { new SimisTreeNodeValueFloat("float", "", (float)value) }));
+					}
+					break;
+				case "TimetableTollerance":
+					if ((float)value == 0.0f) {
+						if (TrackFile.Tree["Tr_RouteFile"].Contains("TimetableTollerance")) arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "TimetableTollerance").Remove();
+					} else if (TrackFile.Tree["Tr_RouteFile"].Contains("TimetableTollerance")) {
+						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "TimetableTollerance", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					} else {
+						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile").Append(new SimisTreeNode("TimetableTollerance", "", new[] { new SimisTreeNodeValueFloat("float", "", (float)value) }));
+					}
+					break;
+				case "HasUnitsMetric":
+				case "HasUnitsImperial":
+					if (name == "HasUnitsImperial") value = !(bool)value;
+					if ((bool)value) {
+						if (!TrackFile.Tree["Tr_RouteFile"].Contains("MilepostUnitsKilometers")) arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile").Append(new SimisTreeNode("MilepostUnitsKilometers", ""));
+						if (TrackFile.Tree["Tr_RouteFile"].Contains("MilepostUnitsMiles")) arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "MilepostUnitsMiles").Remove();
+					} else {
+						if (TrackFile.Tree["Tr_RouteFile"].Contains("MilepostUnitsKilometers")) arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "MilepostUnitsKilometers").Remove();
+						if (!TrackFile.Tree["Tr_RouteFile"].Contains("MilepostUnitsMiles")) arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile").Append(new SimisTreeNode("MilepostUnitsMiles", ""));
+					}
+					break;
+				case "ElectrificationType":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "Electrified", 0).Set(new SimisTreeNodeValueIntegerDWord("dword", "", (uint)value));
+					break;
+				case "ElectrificationWireHeight":
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "OverheadWireHeight", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					break;
+				case "ElectrificationMaxVoltage":
+					if ((float)value == 0.0f) {
+						if (TrackFile.Tree["Tr_RouteFile"].Contains("MaxLineVoltage")) arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "MaxLineVoltage").Remove();
+					} else if (TrackFile.Tree["Tr_RouteFile"].Contains("MaxLineVoltage")) {
+						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "MaxLineVoltage", 0).Set(new SimisTreeNodeValueFloat("float", "", (float)value));
+					} else {
+						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile").Append(new SimisTreeNode("MaxLineVoltage", "", new[] { new SimisTreeNodeValueFloat("float", "", (float)value) }));
+					}
+					break;
 				default:
 					base.SetArgument(name, value, ref arguments, ref typeData);
 					break;
+			}
+		}
+
+		public string FileName {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["FileName"][0].ToValue<string>();
 			}
 		}
 
@@ -70,25 +134,71 @@ namespace Jgr.Msts {
 			}
 		}
 
-		public string FileName {
+		public float SpeedLimit {
 			get {
-				return TrackFile.Tree["Tr_RouteFile"]["FileName"][0].ToValue<string>();
+				return TrackFile.Tree["Tr_RouteFile"]["SpeedLimit"][0].ToValue<float>();
 			}
 		}
 
-		//public Route Set(string name, string description, string fileName) {
-		//    var trackFileTree = TrackFile.Tree;
-		//    if (name != null) {
-		//        trackFileTree = trackFileTree.Path("Tr_RouteFile", "Name", 0).Apply(n => new SimisTreeNodeValueString("string", "", name)).Root;
-		//    }
-		//    if (description != null) {
-		//        trackFileTree = trackFileTree.Path("Tr_RouteFile", "Description", 0).Apply(n => new SimisTreeNodeValueString("string", "", description)).Root;
-		//    }
-		//    if (fileName != null) {
-		//        trackFileTree = trackFileTree.Path("Tr_RouteFile", "FileName", 0).Apply(n => new SimisTreeNodeValueString("string", "", fileName)).Root;
-		//    }
-		//    return new Route(SimisProvider, RoutePath, Files, new SimisFile(TrackFile.FileName, TrackFile.SimisFormat, TrackFile.StreamFormat, TrackFile.StreamCompressed, trackFileTree, SimisProvider));
-		//}
+		public float SpeedLimitRestricted {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["TempRestrictedSpeed"][0].ToValue<float>();
+			}
+		}
+
+		public float TerrainErrorScale {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["TerrainErrorScale"][0].ToValue<float>();
+			}
+		}
+
+		public bool HasLowResolutionTerrain {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["Mountains"][0].ToValue<uint>() != 0;
+			}
+		}
+
+		public float GravityScale {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"].Contains("GravityScale") ? TrackFile.Tree["Tr_RouteFile"]["GravityScale"][0].ToValue<float>() : 1.0f;
+			}
+		}
+
+		public float TimetableTollerance {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"].Contains("TimetableTollerance") ? TrackFile.Tree["Tr_RouteFile"]["TimetableTollerance"][0].ToValue<float>() : 0.0f;
+			}
+		}
+
+		public bool HasUnitsMetric {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"].Contains("MilepostUnitsKilometers");
+			}
+		}
+
+		public bool HasUnitsImperial {
+			get {
+				return !HasUnitsMetric;
+			}
+		}
+
+		public uint ElectrificationType {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["Electrified"][0].ToValue<uint>();
+			}
+		}
+
+		public float ElectrificationWireHeight {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"]["OverheadWireHeight"][0].ToValue<float>();
+			}
+		}
+
+		public float ElectrificationMaxVoltage {
+			get {
+				return TrackFile.Tree["Tr_RouteFile"].Contains("MaxLineVoltage") ? TrackFile.Tree["Tr_RouteFile"]["MaxLineVoltage"][0].ToValue<float>() : 0.0f;
+			}
+		}
 
 		//public TrackService TrackService {
 		//    get {
