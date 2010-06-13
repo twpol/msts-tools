@@ -85,7 +85,7 @@ Support File Types
 * Route Gantry Sets (gantry.dat)         [New]
 * Route Hazard (.haz)                    
 * Route Markers (.mkr)                   
-* Route REF (.ref)                       
+* Route Reference (.ref)                 [Updated]
 * Route Road Database (.rdb)             
 * Route Road Items (.rit)                
 * Route Speed Post Sets (speedpost.dat)  [New]
@@ -103,7 +103,7 @@ Support File Types
 * Sound Sources (ssource.dat)            
 * Terrain (.t)                           [Uses :buffer type]
 * Train Cab View (.cvf)                  
-* Train Consist (.con)                   
+* Train Consist (.con)                   [Updated]
 * Train Engine (.eng)                    
 * Train Wagon (.wag)                     
 * World (.w)                             
@@ -114,6 +114,26 @@ Note: Formats which use the :buffer type can be loaded but are not completely pa
 
 Version History
 ===============
+
+--- ????????????? ---
+* Simis Editor v0.5
+* Simis File
+* Libraries
+  * BNFs added from Jeff:
+    * Cameras (camcfg.dat).
+    * Route Forests (forest.dat).
+    * Route Gantry Sets (gantry.dat).
+    * Route Speed Post Sets (speedpost.dat).
+    * Route Track Types (ttype.dat).
+  * BNFs: Activity updated with new labels from Jeff.
+  * BNFs: Route Reference updated with feedback from Jeff.
+  * BNFs: Route Train Path updated with new labels from Jeff.
+  * BNFs: Shape updates to allow slerp_rot animation rotations in addition to tcp_rot.
+  * BNFs: Train Consist updated with new labels from Jeff.
+  * BNFs: Train Engine updated with feedback from Jeff.
+  * BNFs: Train Wagon updated with feedback from Jeff.
+  * Jgr.IO.Parser: BNFFile now throws FileException on duplicate definitions/productions.
+  * Jgr.IO.Parser: SimisReader accepts //-style single-line comments in text files.
 
 --- 6th June 2010 ---
 * All code relicensed from Microsoft Public License (Ms-PL) to New BSD License (BSD).
