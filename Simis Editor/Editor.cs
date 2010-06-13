@@ -138,17 +138,17 @@ namespace SimisEditor
 			var generalName = "Train Simulator files";
 
 			var simisFormats = new List<List<string>>();
-			simisFormats.Add(new List<string>(new string[] { "All " + generalName }));
+			simisFormats.Add(new List<string>(new[] { "All " + generalName + " (*.*)" }));
 			foreach (var format in SimisProvider.Formats) {
 				var mask = format.Extension.Contains(".") ? format.Extension : "*." + format.Extension;
 				simisFormats[0].Add(mask);
-				simisFormats.Add(new List<string>(new string[] { format.Name + " files", mask }));
+				simisFormats.Add(new List<string>(new[] { format.Name + " files", mask }));
 			}
-			simisFormats.Add(new List<string>(new string[] { "All files", "*.*" }));
+			simisFormats.Add(new List<string>(new[] { "All files", "*.*" }));
 			openFileDialog.Filter = String.Join("|", simisFormats.Select(l => l[0] + "|" + String.Join(";", l.ToArray(), 1, l.Count - 1)).ToArray());
 
-			var streamFormats = new string[] { "Text", "Binary", "Compressed Binary" };
-			saveFileDialog.Filter = String.Join("|", streamFormats.Select(s => s + " " + generalName + "|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
+			var streamFormats = new[] { "Text", "Binary", "Compressed Binary" };
+			saveFileDialog.Filter = String.Join("|", streamFormats.Select(s => s + " " + generalName + " (*.*)|" + String.Join(";", simisFormats[0].ToArray(), 1, simisFormats[0].Count - 1)).ToArray());
 
 			return true;
 		}
