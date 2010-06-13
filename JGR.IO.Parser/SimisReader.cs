@@ -233,7 +233,7 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			if ((token.ToUpperInvariant() == "SKIP") || (token.ToUpperInvariant() == "_SKIP") || (token.ToUpperInvariant() == "_INFO") || (token.ToUpperInvariant() == "COMMENT")) {
+			if (token.StartsWith("_", StringComparison.InvariantCulture) || (token.ToUpperInvariant() == "SKIP") || (token.ToUpperInvariant() == "COMMENT")) {
 				var blockCount = 0;
 				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
 					if (BinaryReader.PeekChar() == '(') blockCount++;
