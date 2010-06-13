@@ -126,10 +126,12 @@ namespace Jgr.IO.Parser
 										BnfFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value, CultureInfo.InvariantCulture);
 									}
 								}
+								if (Bnf.Definitions.ContainsKey(rule.Symbol.Reference)) throw new FileException(FileName, "BNF contains multiple definitions for '" + rule.Symbol.Reference + "'.");
 								Bnf.Definitions.Add(rule.Symbol.Reference, ruleD);
 							}
 							var ruleP = rule as BnfProduction;
 							if (ruleP != null) {
+								if (Bnf.Productions.ContainsKey(rule.Symbol.Reference)) throw new FileException(FileName, "BNF contains multiple productions for '" + rule.Symbol.Reference + "'.");
 								Bnf.Productions.Add(rule.Symbol.Reference, ruleP);
 							}
 						}
