@@ -248,6 +248,16 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
+			if (token.ToUpperInvariant() == "//") {
+			    while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ('\n' != BinaryReader.PeekChar())) {
+			        token += BinaryReader.ReadChar();
+			    }
+				rv.String = token;
+				rv.Name = "Comment";
+				rv.Kind = SimisTokenKind.String;
+				return rv;
+			}
+
 			var validStates = BnfState.ValidStates;
 			if (validStates.Contains(token, StringComparer.InvariantCultureIgnoreCase)) {
 				// Token exactly matches a valid state transition, so let's use it.
