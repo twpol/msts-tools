@@ -72,23 +72,28 @@ Performs operations on individual or collections of Simis files.
 Support File Types
 ==================
 
-* Activity (.act)                        
+* Activity (.act)                        [Updated]
 * Activity Save (.asv)                   [Uses :buffer type]
+* Cameras (camcfg.dat)                   [New]
 * Environment (.env)                     
-* Global Track Sections (tsection.dat)   [Updated]
+* Global Track Sections (tsection.dat)   
 * IOM (.iom)                             
 * Material Palette (.pal)                
 * Route (.trk)                           
-* Route Car Spawn (carspawn.dat)         [New]
+* Route Car Spawn (carspawn.dat)         
+* Route Forests (forests.dat)            [New]
+* Route Gantry Sets (gantry.dat)         [New]
 * Route Hazard (.haz)                    
 * Route Markers (.mkr)                   
 * Route REF (.ref)                       
 * Route Road Database (.rdb)             
 * Route Road Items (.rit)                
+* Route Speed Post Sets (speedpost.dat)  [New]
 * Route Telegraph Poles (telepole.dat)   
-* Route Track Database (.tdb)            [Updated]
+* Route Track Database (.tdb)            
 * Route Track Items (.tit)               
 * Route Track Sections (tsection.dat)    
+* Route Track Types (ttype.dat)          [New!]
 * Route Traffic Pattern (.trf)           
 * Route Train Path (.pat)                [Updated]
 * Route Train Service (.srv)             
@@ -101,7 +106,7 @@ Support File Types
 * Train Consist (.con)                   
 * Train Engine (.eng)                    
 * Train Wagon (.wag)                     
-* World (.w)                             [Updated]
+* World (.w)                             
 * World Sound (.ws)                      
 
 Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
