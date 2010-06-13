@@ -93,12 +93,13 @@ Support File Types
 * Route Track Database (.tdb)            
 * Route Track Items (.tit)               
 * Route Track Sections (tsection.dat)    
-* Route Track Types (ttype.dat)          [New!]
+* Route Track Types (ttype.dat)          [New]
 * Route Traffic Pattern (.trf)           
 * Route Train Path (.pat)                [Updated]
 * Route Train Service (.srv)             
 * Shape (.s)                             
 * Shape Detail (.sd)                     
+* Signals (sigcfg.dat)                   [New]
 * Sound Management (.sms)                
 * Sound Sources (ssource.dat)            
 * Terrain (.t)                           [Uses :buffer type]
@@ -125,6 +126,7 @@ Version History
     * Route Gantry Sets (gantry.dat).
     * Route Speed Post Sets (speedpost.dat).
     * Route Track Types (ttype.dat).
+    * Signals (sigcfg.dat).
   * BNFs: Activity updated with new labels from Jeff.
   * BNFs: Route Reference updated with feedback from Jeff.
   * BNFs: Route Train Path updated with new labels from Jeff.
@@ -134,6 +136,7 @@ Version History
   * BNFs: Train Wagon updated with feedback from Jeff.
   * Jgr.IO.Parser: BNFFile now throws FileException on duplicate definitions/productions.
   * Jgr.IO.Parser: SimisReader accepts //-style single-line comments in text files.
+  * Jgr.IO.Parser: SimisReader skips all blocks with types starting with an underscore.
 
 --- 6th June 2010 ---
 * All code relicensed from Microsoft Public License (Ms-PL) to New BSD License (BSD).
