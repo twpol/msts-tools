@@ -145,7 +145,7 @@ Version History
   * Jgr.IO.Parser: BNFFile now throws FileException on duplicate definitions/productions.
   * Jgr.IO.Parser: SimisFile bug fix for when a file contains skipped content outside any blocks.
   * Jgr.IO.Parser: SimisReader accepts //-style single-line comments in text files.
-  * Jgr.IO.Parser: SimisReader skips all blocks with types starting with an underscore.
+  * Jgr.IO.Parser: SimisReader skips all blocks with types starting with an underscore iff the next token is "(".
   * Jgr.IO.Parser: SimisWriter now correctly handles skipped input.
 
 --- 6th June 2010 ---
