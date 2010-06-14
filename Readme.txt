@@ -77,6 +77,10 @@ Support File Types
 * Cameras (camcfg.dat)                   [New]
 * Environment (.env)                     
 * Global Track Sections (tsection.dat)   
+* GUI Bitmaps (bitmaps.dat)              [New]
+* GUI Dialogs (dialogs.dat)              [New]
+* GUI Driver Aids (driveraids.dat)       [New]
+* GUI Screens (screens.dat)              [New]
 * IOM (.iom)                             
 * Material Palette (.pal)                
 * Route (.trk)                           
@@ -122,6 +126,10 @@ Version History
 * Libraries
   * BNFs added from Jeff:
     * Cameras (camcfg.dat).
+    * GUI Bitmaps (bitmaps.dat).
+    * GUI Dialogs (dialogs.dat).
+    * GUI Driver Aids (driveraids.dat).
+    * GUI Screens (screens.dat).
     * Route Forests (forest.dat).
     * Route Gantry Sets (gantry.dat).
     * Route Speed Post Sets (speedpost.dat).
@@ -135,8 +143,10 @@ Version History
   * BNFs: Train Engine updated with feedback from Jeff.
   * BNFs: Train Wagon updated with feedback from Jeff.
   * Jgr.IO.Parser: BNFFile now throws FileException on duplicate definitions/productions.
+  * Jgr.IO.Parser: SimisFile bug fix for when a file contains skipped content outside any blocks.
   * Jgr.IO.Parser: SimisReader accepts //-style single-line comments in text files.
   * Jgr.IO.Parser: SimisReader skips all blocks with types starting with an underscore.
+  * Jgr.IO.Parser: SimisWriter now correctly handles skipped input.
 
 --- 6th June 2010 ---
 * All code relicensed from Microsoft Public License (Ms-PL) to New BSD License (BSD).
