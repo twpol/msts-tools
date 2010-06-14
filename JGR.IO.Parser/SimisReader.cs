@@ -235,9 +235,12 @@ namespace Jgr.IO.Parser
 
 			if (token.StartsWith("_", StringComparison.InvariantCulture) || (token.ToUpperInvariant() == "SKIP") || (token.ToUpperInvariant() == "COMMENT")) {
 				var oldPosition = BinaryReader.BaseStream.Position;
-				var nextToken = ReadTokenOrString();
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && WhitespaceChars.Contains((char)BinaryReader.PeekChar())) {
+					BinaryReader.ReadChar();
+				}
+				var nextToken = BinaryReader.PeekChar();
 				BinaryReader.BaseStream.Position = oldPosition;
-				if (nextToken == "(") {
+				if (nextToken == (int)'(') {
 					var blockCount = 0;
 					while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
 						if (BinaryReader.PeekChar() == '(') blockCount++;
