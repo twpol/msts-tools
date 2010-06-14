@@ -234,18 +234,23 @@ namespace Jgr.IO.Parser
 			}
 
 			if (token.StartsWith("_", StringComparison.InvariantCulture) || (token.ToUpperInvariant() == "SKIP") || (token.ToUpperInvariant() == "COMMENT")) {
-				var blockCount = 0;
-				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
-					if (BinaryReader.PeekChar() == '(') blockCount++;
-					if (BinaryReader.PeekChar() == ')') blockCount--;
+				var oldPosition = BinaryReader.BaseStream.Position;
+				var nextToken = ReadTokenOrString();
+				BinaryReader.BaseStream.Position = oldPosition;
+				if (nextToken == "(") {
+					var blockCount = 0;
+					while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ((')' != BinaryReader.PeekChar()) || (blockCount > 1))) {
+						if (BinaryReader.PeekChar() == '(') blockCount++;
+						if (BinaryReader.PeekChar() == ')') blockCount--;
+						token += BinaryReader.ReadChar();
+					}
+					if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected ')'; got EOF.");
 					token += BinaryReader.ReadChar();
+					rv.String = token;
+					rv.Name = "Comment";
+					rv.Kind = SimisTokenKind.String;
+					return rv;
 				}
-				if (BinaryReader.BaseStream.Position >= BinaryReader.BaseStream.Length) throw new ReaderException(BinaryReader, false, 0, "SimisReader expected ')'; got EOF.");
-				token += BinaryReader.ReadChar();
-				rv.String = token;
-				rv.Name = "Comment";
-				rv.Kind = SimisTokenKind.String;
-				return rv;
 			}
 
 			if (token.ToUpperInvariant() == "//") {
