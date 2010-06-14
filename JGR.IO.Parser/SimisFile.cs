@@ -133,32 +133,37 @@ namespace Jgr.IO.Parser {
 		/// <param name="stream">The <see cref="Stream"/> to write to.</param>
 		public void Write(Stream stream) {
 			var writer = new SimisWriter(stream, SimisProvider, SimisFormat, StreamFormat, StreamCompressed);
-			foreach (var child in Tree) {
-				WriteBlock(writer, child);
-			}
+			WriteBlockChildren(writer, Tree);
 			writer.WriteEnd();
 		}
 
 		void WriteBlock(SimisWriter writer, SimisTreeNode block) {
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, Name = block.Name });
-			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
+			if (block.Type.Length > 0) {
+				writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
+				WriteBlockChildren(writer, block);
+				writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockEnd });
+			}
+		}
+
+		void WriteBlockChildren(SimisWriter writer, SimisTreeNode block) {
 			foreach (var child in block) {
 				var childValue = child as SimisTreeNodeValue;
 				if (childValue != null) {
 					if (child is SimisTreeNodeValueIntegerUnsigned) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerUnsigned, IntegerUnsigned = (uint)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerUnsigned, Type = child.Type, Name = child.Name, IntegerUnsigned = (uint)childValue.Value });
 					} else if (child is SimisTreeNodeValueIntegerSigned) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerSigned, IntegerSigned = (int)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerSigned, Type = child.Type, Name = child.Name, IntegerSigned = (int)childValue.Value });
 					} else if (child is SimisTreeNodeValueIntegerDWord) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerDWord, IntegerDWord = (uint)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerDWord, Type = child.Type, Name = child.Name, IntegerDWord = (uint)childValue.Value });
 					} else if (child is SimisTreeNodeValueIntegerWord) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerWord, IntegerDWord = (ushort)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerWord, Type = child.Type, Name = child.Name, IntegerDWord = (ushort)childValue.Value });
 					} else if (child is SimisTreeNodeValueIntegerByte) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerByte, IntegerDWord = (byte)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.IntegerByte, Type = child.Type, Name = child.Name, IntegerDWord = (byte)childValue.Value });
 					} else if (child is SimisTreeNodeValueFloat) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Float = (float)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Float, Type = child.Type, Name = child.Name, Float = (float)childValue.Value });
 					} else if (child is SimisTreeNodeValueString) {
-						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.String, String = (string)childValue.Value });
+						writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.String, Type = child.Type, Name = child.Name, String = (string)childValue.Value });
 					} else {
 						throw new InvalidDataException("Simis tree node " + child + " is not a known SimisTreeNodeValue descendant.");
 					}
@@ -166,7 +171,6 @@ namespace Jgr.IO.Parser {
 					WriteBlock(writer, child);
 				}
 			}
-			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockEnd });
 		}
 	}
 }

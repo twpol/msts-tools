@@ -55,7 +55,9 @@ namespace Jgr.IO.Parser
 						if (BnfState == null) {
 							BnfState = new BnfState(SimisFormat.Bnf);
 						}
-						BnfState.MoveTo(token.Type);
+						if (token.Type.Length > 0) {
+							BnfState.MoveTo(token.Type);
+						}
 						if (!TextBlocked) {
 							BinaryWriter.Write("\r\n".ToCharArray());
 						}
@@ -88,7 +90,7 @@ namespace Jgr.IO.Parser
 						TextBlocked = true;
 						break;
 					case SimisTokenKind.IntegerUnsigned:
-						BnfState.MoveTo("uint");
+						BnfState.MoveTo(token.Type);
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -101,7 +103,7 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.IntegerSigned:
-						BnfState.MoveTo("sint");
+						BnfState.MoveTo(token.Type);
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -116,7 +118,7 @@ namespace Jgr.IO.Parser
 					case SimisTokenKind.IntegerDWord:
 					case SimisTokenKind.IntegerWord:
 					case SimisTokenKind.IntegerByte:
-						BnfState.MoveTo(token.Kind == SimisTokenKind.IntegerDWord ? "dword" : token.Kind == SimisTokenKind.IntegerWord ? "word" : "byte");
+						BnfState.MoveTo(token.Type);
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -129,7 +131,7 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.Float:
-						BnfState.MoveTo("float");
+						BnfState.MoveTo(token.Type);
 						if (TextBlocked) {
 							for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 						} else {
@@ -146,8 +148,8 @@ namespace Jgr.IO.Parser
 						TextBlockEmpty = false;
 						break;
 					case SimisTokenKind.String:
-						// Special-case SKIP(...), _SKIP(...), _INFO(...) and COMMENT(...) blocks which are not parsed.
-						if (token.String.Replace(" ", "").StartsWith("SKIP(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("_SKIP(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("_INFO(", StringComparison.OrdinalIgnoreCase) || token.String.Replace(" ", "").StartsWith("COMMENT(", StringComparison.OrdinalIgnoreCase)) {
+						// If the token has no type, it was a specially-skipped input (comment, SKIP(...) block etc.).
+						if (token.Type.Length == 0) {
 							if (!TextBlocked) {
 								BinaryWriter.Write("\r\n".ToCharArray());
 							}
@@ -157,7 +159,7 @@ namespace Jgr.IO.Parser
 							TextBlocked = true;
 							TextBlockEmpty = true;
 						} else {
-							BnfState.MoveTo("string");
+							BnfState.MoveTo(token.Type);
 							if (TextBlocked) {
 								for (var i = 0; i < TextIndent; i++) BinaryWriter.Write('\t');
 							} else {
