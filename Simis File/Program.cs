@@ -25,6 +25,13 @@ namespace Normalize
 		public int WriteSuccess;
 	}
 
+	class ProcessFileResults {
+		public bool Total;
+		public bool ReadSuccess;
+		public bool WriteSuccess;
+		public SimisFormat SimisFormat;
+	}
+
 	class Program
 	{
 		static void Main(string[] args) {
@@ -33,7 +40,14 @@ namespace Normalize
 			// "/" or "-" alone is ignored.
 			var flags = args.Where(s => (s.Length > 1) && (s.StartsWith("/", StringComparison.Ordinal) || s.StartsWith("-", StringComparison.Ordinal))).Select(s => s.Substring(1));
 			var items = args.Where(s => !s.StartsWith("/", StringComparison.Ordinal) && !s.StartsWith("-", StringComparison.Ordinal));
+
 			var verbose = flags.Any(s => "verbose".StartsWith(s, StringComparison.OrdinalIgnoreCase));
+
+			var jFlag = flags.LastOrDefault(s => s.StartsWith("j", StringComparison.OrdinalIgnoreCase));
+			var threading = 1;
+			if (jFlag != null) {
+				threading = jFlag.Length > 1 ? int.Parse(jFlag.Substring(1)) : Environment.ProcessorCount;
+			}
 
 			if (flags.Contains("?") || flags.Contains("h")) {
 				ShowHelp();
@@ -44,7 +58,7 @@ namespace Normalize
 			} else if (flags.Any(s => "normalize".StartsWith(s, StringComparison.OrdinalIgnoreCase))) {
 				RunNormalize(ExpandFilesAndDirectories(items), verbose);
 			} else if (flags.Any(s => "test".StartsWith(s, StringComparison.OrdinalIgnoreCase))) {
-				RunTest(ExpandFilesAndDirectories(items), verbose);
+				RunTest(ExpandFilesAndDirectories(items), verbose, threading);
 			} else {
 				ShowHelp();
 			}
@@ -62,7 +76,7 @@ namespace Normalize
 			Console.WriteLine();
 			Console.WriteLine("  SIMISFILE /N[ORMALIZE] [file ...]");
 			Console.WriteLine();
-			Console.WriteLine("  SIMISFILE /T[EST] [/V[ERBOSE]] [file ...] [dir ...]");
+			Console.WriteLine("  SIMISFILE /T[EST] [/V[ERBOSE]] [/J[threads]] [file ...] [dir ...]");
 			Console.WriteLine();
 			//                 12345678901234567890123456789012345678901234567890123456789012345678901234567890
 			Console.WriteLine("  /FORMATS  Displays a list of the supported Simis file formats.");
@@ -79,6 +93,9 @@ namespace Normalize
 			Console.WriteLine("            changed. A report of read/write success by file type is produced.");
 			Console.WriteLine("  /VERBOSE  Produces more output. For /DUMP and /TEST, displays the individual");
 			Console.WriteLine("            failures encountered while reading or writing files.");
+			Console.WriteLine("  /J        Uses multiple threads for running the operation. By default, the");
+			Console.WriteLine("            number of threads equals the number of logical processors.");
+			Console.WriteLine("  threads   Explicitly specifies the number of threads to use.");
 			Console.WriteLine("  file      One or more Simis files to process.");
 			Console.WriteLine("  dir       One or more directories containing Simis files. These will be");
 			Console.WriteLine("            scanned recursively.");
@@ -207,7 +224,7 @@ namespace Normalize
 			}
 		}
 
-		static void RunTest(IEnumerable<string> files, bool verbose) {
+		static void RunTest(IEnumerable<string> files, bool verbose, int threading) {
 			var resourcesDirectory = Application.ExecutablePath;
 			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
 			SimisProvider provider;
@@ -223,120 +240,175 @@ namespace Normalize
 			var formatCounts = new Dictionary<string, TestFormatCount>();
 			var timeStart = DateTime.Now;
 
-			foreach (var file in files) {
-				var formatCount = new TestFormatCount();
-				Func<SimisFormat, TestFormatCount> GetFormatFor = (simisFormat) => {
-					var formatName = simisFormat.Name;
-					if (!formatCounts.ContainsKey(formatName)) {
-						formatCounts[formatName] = new TestFormatCount() { FormatName = formatName, SortKey = formatName };
-					}
-					return formatCounts[formatName];
-				};
+			Func<SimisFormat, TestFormatCount> GetFormatFor = (simisFormat) => {
+				var formatName = simisFormat.Name;
+				if (!formatCounts.ContainsKey(formatName)) {
+					formatCounts[formatName] = new TestFormatCount() { FormatName = formatName, SortKey = formatName };
+				}
+				return formatCounts[formatName];
+			};
 
-				var success = true;
-				SimisProvider fileProvider = provider.GetForPath(file);
+			Func<string, ProcessFileResults> ProcessFile = (file) => {
+				if (verbose && (threading > 1)) {
+					lock (formatCounts) {
+						Console.WriteLine(String.Format("[Thread {0}] {1}", Thread.CurrentThread.ManagedThreadId, file));
+					}
+				}
+
+				var result = new ProcessFileResults();
+				var formatCount = new TestFormatCount();
+				var fileProvider = provider.GetForPath(file);
 				SimisFile newFile = null;
 				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
 				Stream saveStream = new MemoryStream();
 
 				{
-					totalCount.Total++;
+					result.Total = true;
 					var reader = new SimisReader(readStream, fileProvider);
 					try {
 						reader.ReadToken();
 					} catch (ReaderException) {
 					}
 					if (reader.SimisFormat == null) {
-						continue;
+						return result;
 					}
 					readStream.Position = 0;
-					formatCount = GetFormatFor(reader.SimisFormat);
-					supportedCount.Total++;
-					formatCount.Total++;
+					result.SimisFormat = reader.SimisFormat;
 				}
 
 				// First, read the file in.
-				if (success) {
+				try {
 					try {
-						try {
-							newFile = new SimisFile(readStream, fileProvider);
-						} catch (Exception e) {
-							throw new FileException(file, e);
-						}
-						totalCount.ReadSuccess++;
-						supportedCount.ReadSuccess++;
-						formatCount.ReadSuccess++;
-					} catch (FileException ex) {
-						success = false;
-						if (verbose) {
+						newFile = new SimisFile(readStream, fileProvider);
+					} catch (Exception e) {
+						throw new FileException(file, e);
+					}
+					result.ReadSuccess = true;
+				} catch (FileException ex) {
+					if (verbose) {
+						lock (formatCounts) {
 							Console.WriteLine("Read: " + ex + "\n");
 						}
 					}
+					return result;
 				}
 
 				// Second, write the file out into memory.
-				if (success) {
+				try {
 					try {
-						try {
-							newFile.Write(saveStream);
-						} catch (Exception e) {
-							throw new FileException(file, e);
-						}
-						// WriteSuccess is delayed until after the comparison. We won't claim write support without comparison support.
-					} catch (FileException ex) {
-						success = false;
-						if (verbose) {
+						newFile.Write(saveStream);
+					} catch (Exception e) {
+						throw new FileException(file, e);
+					}
+					// WriteSuccess is delayed until after the comparison. We won't claim write support without comparison support.
+				} catch (FileException ex) {
+					if (verbose) {
+						lock (formatCounts) {
 							Console.WriteLine("Write: " + ex + "\n");
 						}
 					}
+					return result;
 				}
 
 				// Third, verify that the output is the same as the input.
-				if (success) {
-					readStream.Seek(0, SeekOrigin.Begin);
-					saveStream.Seek(0, SeekOrigin.Begin);
-					var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
-					var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
-					while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
-						var oldPos = readReader.BaseStream.Position;
-						var fileChar = readReader.ReadChar();
-						var saveChar = saveReader.ReadChar();
-						if (fileChar != saveChar) {
-							success = false;
-							var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
-							var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
-							if (verbose) {
+				readStream.Seek(0, SeekOrigin.Begin);
+				saveStream.Seek(0, SeekOrigin.Begin);
+				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
+					var oldPos = readReader.BaseStream.Position;
+					var fileChar = readReader.ReadChar();
+					var saveChar = saveReader.ReadChar();
+					if (fileChar != saveChar) {
+						var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+						var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+						if (verbose) {
+							lock (formatCounts) {
 								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
 							}
-							break;
 						}
+						return result;
 					}
-					if (success && (readReader.BaseStream.Length != saveReader.BaseStream.Length)) {
-						success = false;
-						var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
-						var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
-						if (verbose) {
+				}
+				if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
+					var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+					var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+					if (verbose) {
+						lock (formatCounts) {
 							Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
 						}
 					}
+					return result;
 				}
 
 				// It all worked!
-				if (success) {
-					totalCount.WriteSuccess++;
-					supportedCount.WriteSuccess++;
-					formatCount.WriteSuccess++;
+				result.WriteSuccess = true;
+				return result;
+			};
+
+			if (threading > 1) {
+				var filesEnumerator = files.GetEnumerator();
+				var filesFinished = false;
+				var threads = new List<Thread>(threading);
+				for (var i = 0; i < threading; i++) {
+					threads.Add(new Thread(() => {
+						var file = "";
+						var results = new List<ProcessFileResults>();
+						while (true) {
+							lock (filesEnumerator) {
+								if (filesFinished || !filesEnumerator.MoveNext()) {
+									filesFinished = true;
+									break;
+								}
+								file = filesEnumerator.Current;
+							}
+							results.Add(ProcessFile(file));
+						}
+						lock (totalCount) {
+							foreach (var result in results) {
+								if (result.Total) totalCount.Total++;
+								if (result.ReadSuccess) totalCount.ReadSuccess++;
+								if (result.WriteSuccess) totalCount.WriteSuccess++;
+								if (result.SimisFormat != null) {
+									var formatCount = GetFormatFor(result.SimisFormat);
+									if (result.Total) supportedCount.Total++;
+									if (result.ReadSuccess) supportedCount.ReadSuccess++;
+									if (result.WriteSuccess) supportedCount.WriteSuccess++;
+									if (result.Total) formatCount.Total++;
+									if (result.ReadSuccess) formatCount.ReadSuccess++;
+									if (result.WriteSuccess) formatCount.WriteSuccess++;
+								}
+							}
+						}
+					}));
+				}
+				foreach (var thread in threads) {
+					thread.Start();
+				}
+				foreach (var thread in threads) {
+					thread.Join();
+				}
+			} else {
+				foreach (var file in files) {
+					var result = ProcessFile(file);
+					if (result.Total) totalCount.Total++;
+					if (result.ReadSuccess) totalCount.ReadSuccess++;
+					if (result.WriteSuccess) totalCount.WriteSuccess++;
+					if (result.SimisFormat != null) {
+						var formatCount = GetFormatFor(result.SimisFormat);
+						if (result.Total) supportedCount.Total++;
+						if (result.ReadSuccess) supportedCount.ReadSuccess++;
+						if (result.WriteSuccess) supportedCount.WriteSuccess++;
+						if (result.Total) formatCount.Total++;
+						if (result.ReadSuccess) formatCount.ReadSuccess++;
+						if (result.WriteSuccess) formatCount.WriteSuccess++;
+					}
 				}
 			}
 
 			supportedCount.FormatName = "(Total supported files of " + totalCount.Total + ")";
 			supportedCount.SortKey = "ZZZ";
 			formatCounts[""] = supportedCount;
-
-			//{
-			//    var timeTaken = DateTime.Now - timeStart;
-			//    messageLog.MessageAccept("Test", BufferedMessageSource.LevelInformation, String.Format("Tested {0} files; {1} passed ({2:F0}%). Took {3:F0} minutes.", supportedCount.Total, supportedCount.WriteSuccess, ((double)100 * supportedCount.WriteSuccess / supportedCount.Total), timeTaken.TotalMinutes));
-			//}
 
 			var outFormat = "{0,-40:S} {1,1:S}{2,-7:D} {3,1:S}{4,-7:D} {5,1:S}{6,-7:D}";
 			Console.WriteLine(String.Format(CultureInfo.CurrentCulture, outFormat, "Format Name", "", "Total", "", "Read", "", "Write"));
@@ -348,10 +420,6 @@ namespace Normalize
 						formatCount.Total == formatCount.ReadSuccess ? "*" : "", formatCount.ReadSuccess,
 						formatCount.Total == formatCount.WriteSuccess ? "*" : formatCount.ReadSuccess == formatCount.WriteSuccess ? "+" : "", formatCount.WriteSuccess));
 			}
-
-			//Console.WriteLine("Tested " + totalCount.Total + " files; " + totalCount.CompareSuccess + " passed (" + ((double)100 * totalCount.CompareSuccess / totalCount.Total).ToString("F0") + "%).");
-			//Messages = new Messages();
-			//messageLog.RegisterMessageSink(Messages);
 		}
 	}
 }
