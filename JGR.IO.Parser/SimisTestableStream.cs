@@ -134,7 +134,7 @@ namespace Jgr.IO.Parser
 							inWhitespace = !inString;
 						}
 					} else {
-						if ("+-.0123456789aAbBcCdDeEfF".Contains(bite)) {
+						if (inWhitespace && "+-.0123456789aAbBcCdDeEfF".Contains(bite)) {
 							var biteStart = bite;
 							var numberStart = binaryReader.BaseStream.Position;
 							var numberString = "";
@@ -183,7 +183,7 @@ namespace Jgr.IO.Parser
 
 							if (numberString.Length > 0) {
 								if (isHex) {
-									binaryWriter.Write(((long)value).ToString("X8", CultureInfo.InvariantCulture).ToCharArray());
+									binaryWriter.Write(((uint)value).ToString("X8", CultureInfo.InvariantCulture).ToCharArray());
 								} else if (!hasDP && !hasExp) {
 									binaryWriter.Write(value.ToString("F0", CultureInfo.InvariantCulture).ToCharArray());
 								} else if (hasExp) {

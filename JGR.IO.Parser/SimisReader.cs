@@ -256,10 +256,13 @@ namespace Jgr.IO.Parser
 				}
 			}
 
-			if (token.ToUpperInvariant() == "//") {
-			    while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ('\n' != BinaryReader.PeekChar())) {
-			        token += BinaryReader.ReadChar();
-			    }
+			if (token.StartsWith("//", StringComparison.InvariantCulture)) {
+				var blockCount = 0;
+				while ((BinaryReader.BaseStream.Position < BinaryReader.BaseStream.Length) && ('\n' != BinaryReader.PeekChar()) && ((')' != BinaryReader.PeekChar()) || (blockCount > 0))) {
+					if (BinaryReader.PeekChar() == '(') blockCount++;
+					if (BinaryReader.PeekChar() == ')') blockCount--;
+					token += BinaryReader.ReadChar();
+				}
 				rv.String = token;
 				rv.Name = "Comment";
 				rv.Kind = SimisTokenKind.String;

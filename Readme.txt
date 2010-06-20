@@ -77,9 +77,8 @@ Support File Types
 * Cameras (camcfg.dat)                   [New]
 * Environment (.env)                     
 * Global Track Sections (tsection.dat)   
+* GUI (.dat)                             [New]
 * GUI Bitmaps (bitmaps.dat)              [New]
-* GUI Dialogs (dialogs.dat)              [New]
-* GUI Driver Aids (driveraids.dat)       [New]
 * GUI Screens (screens.dat)              [New]
 * IOM (.iom)                             
 * Material Palette (.pal)                
@@ -94,6 +93,8 @@ Support File Types
 * Route Road Items (.rit)                
 * Route Speed Post Sets (speedpost.dat)  [New]
 * Route Telegraph Poles (telepole.dat)   
+* Route Tile Definition (.td)            [New]
+* Route Tile Definition Low (.tdl)       [New]
 * Route Track Database (.tdb)            
 * Route Track Items (.tit)               
 * Route Track Sections (tsection.dat)    
@@ -126,13 +127,14 @@ Version History
 * Libraries
   * BNFs added from Jeff:
     * Cameras (camcfg.dat).
+    * GUI (.dat).
     * GUI Bitmaps (bitmaps.dat).
-    * GUI Dialogs (dialogs.dat).
-    * GUI Driver Aids (driveraids.dat).
     * GUI Screens (screens.dat).
     * Route Forests (forest.dat).
     * Route Gantry Sets (gantry.dat).
     * Route Speed Post Sets (speedpost.dat).
+    * Route Tile Definition (.td)
+    * Route Tile Definition Low (.tdl)
     * Route Track Types (ttype.dat).
     * Signals (sigcfg.dat).
   * BNFs: Activity updated with new labels from Jeff.
@@ -146,6 +148,8 @@ Version History
   * Jgr.IO.Parser: SimisFile bug fix for when a file contains skipped content outside any blocks.
   * Jgr.IO.Parser: SimisReader accepts //-style single-line comments in text files.
   * Jgr.IO.Parser: SimisReader skips all blocks with types starting with an underscore iff the next token is "(".
+  * Jgr.IO.Parser: SimisTestableStream correctly normalizes hex numbers to 8 digits instead of 16.
+  * Jgr.IO.Parser: SimisTestableStream no longer parses numbers inside unquoted tokens.
   * Jgr.IO.Parser: SimisWriter now correctly handles skipped input.
 
 --- 6th June 2010 ---
