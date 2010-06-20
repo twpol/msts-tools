@@ -33,11 +33,11 @@
 			this.TextComments = new System.Windows.Forms.TextBox();
 			this.label1 = new System.Windows.Forms.Label();
 			this.TextType = new System.Windows.Forms.TextBox();
+			this.LabelFace = new System.Windows.Forms.Label();
 			this.ButtonYes = new System.Windows.Forms.Button();
 			this.ButtonNo = new System.Windows.Forms.Button();
 			this.LinkViewAll = new System.Windows.Forms.LinkLabel();
 			this.ButtonCancel = new System.Windows.Forms.Button();
-			this.LabelFace = new System.Windows.Forms.Label();
 			this.tableLayoutPanel1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -80,6 +80,7 @@
 			this.LabelIntro.Size = new System.Drawing.Size(359, 42);
 			this.LabelIntro.TabIndex = 9;
 			this.LabelIntro.Text = "XXX";
+			this.LabelIntro.UseMnemonic = false;
 			// 
 			// label3
 			// 
@@ -155,6 +156,17 @@
 			this.TextType.TabIndex = 8;
 			this.TextType.Text = "FIXME";
 			// 
+			// LabelFace
+			// 
+			this.LabelFace.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.LabelFace.Font = new System.Drawing.Font("Segoe UI", 27F);
+			this.LabelFace.Location = new System.Drawing.Point(3, 0);
+			this.LabelFace.Name = "LabelFace";
+			this.LabelFace.Size = new System.Drawing.Size(99, 48);
+			this.LabelFace.TabIndex = 10;
+			this.LabelFace.Text = "☹";
+			this.LabelFace.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+			// 
 			// ButtonYes
 			// 
 			this.ButtonYes.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
@@ -199,17 +211,6 @@
 			this.ButtonCancel.TabStop = false;
 			this.ButtonCancel.Text = "Cancel";
 			this.ButtonCancel.UseVisualStyleBackColor = true;
-			// 
-			// LabelFace
-			// 
-			this.LabelFace.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.LabelFace.Font = new System.Drawing.Font("Segoe UI", 27F);
-			this.LabelFace.Location = new System.Drawing.Point(3, 0);
-			this.LabelFace.Name = "LabelFace";
-			this.LabelFace.Size = new System.Drawing.Size(99, 48);
-			this.LabelFace.TabIndex = 10;
-			this.LabelFace.Text = "☹";
-			this.LabelFace.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 			// 
 			// FeedbackPrompt
 			// 
