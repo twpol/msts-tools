@@ -84,7 +84,7 @@ namespace SimisEditor
 		}
 
 		void toolStrip_Leave(object sender, EventArgs e) {
-			statusBarLabel.Text = "";
+			UpdateStatusbar();
 		}
 
 		void InitializeNewVersionCheck() {
@@ -196,6 +196,7 @@ namespace SimisEditor
 			SimisTree.ExpandAll();
 			if (SimisTree.Nodes.Count > 0) {
 				SimisTree.TopNode = SimisTree.Nodes[0];
+				SimisTree.SelectedNode = SimisTree.Nodes[0];
 			}
 			UpdateTitle();
 			UpdateMenu();
@@ -627,6 +628,16 @@ namespace SimisEditor
 			saveAsToolStripMenuItem.Enabled = File != null;
 		}
 
+		void UpdateStatusbar() {
+			if (File == null) {
+				statusBarLabel.Text = "";
+			} else if (SelectedNode == null) {
+				statusBarLabel.Text = String.Format("[{0}]", File.SimisFormat.Name);
+			} else {
+				statusBarLabel.Text = String.Format("[{0}] {1}", File.SimisFormat.Name, GetBnfLocation(File, SelectedNode));
+			}
+		}
+
 		void ResyncSimisNodes() {
 			undoToolStripMenuItem.Enabled = File.CanUndo;
 			redoToolStripMenuItem.Enabled = File.CanRedo;
@@ -695,13 +706,12 @@ namespace SimisEditor
         void SelectNode(TreeNode treeNode) {
 			if ((treeNode == null) || (treeNode.Tag == null)) {
 				SelectedNode = null;
-				statusBarLabel.Text = "";
 				SimisProperties.SelectedObject = null;
-				return;
+			} else {
+				SelectedNode = treeNode;
+				SimisProperties.SelectedObject = CreateEditObjectFor((SimisTreeNode)SelectedNode.Tag);
 			}
-			SelectedNode = treeNode;
-			statusBarLabel.Text = GetBnfLocation(File, SelectedNode);
-			SimisProperties.SelectedObject = CreateEditObjectFor((SimisTreeNode)SelectedNode.Tag);
+			UpdateStatusbar();
         }
 
 		static string BlockToNameString(SimisTreeNode block) {
