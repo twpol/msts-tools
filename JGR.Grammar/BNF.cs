@@ -33,25 +33,13 @@ namespace Jgr.Grammar
 
 	public class BnfStateException : DescriptiveException
 	{
-		public BnfStateException()
-			: base("") {
-		}
-
-		public BnfStateException(string message)
-			: base(message) {
-		}
-
-		public BnfStateException(string message, Exception innerException)
-			: base(message, innerException) {
-		}
-
 		static string FormatMessage(BnfState state, string message) {
-			if (message.Length == 0) return state.ToString();
-			return message + "\r\n\r\n" + state;
+			if (message.Length == 0) return state.Bnf.FileName + "\r\n\r\n" + state.ToString().Replace("\n", "\r\n\r\n");
+			return state.Bnf.FileName + "\r\n\r\n" + message + "\r\n\r\n" + state.ToString().Replace("\n", "\r\n\r\n");
 		}
 
 		public BnfStateException(BnfState state, string message)
-			: this(FormatMessage(state, message))
+			: base(FormatMessage(state, message))
 		{
 		}
 	}
@@ -186,8 +174,8 @@ namespace Jgr.Grammar
 
 		public override string ToString() {
 			return "Available states: " + String.Join(", ", ValidStates.Select(s => s.StartsWith("<", StringComparison.Ordinal) ? s : "'" + s + "'").ToArray()) + ".\n"
-				+ "Current rule: " + (Rules.Count == 0 ? "<none>." : "[" + Rules.Peek().Key.Symbol.Reference + "] " + Rules.Peek().Key.ExpressionFsm) + "\n"
-				+ "Current state: " + String.Join(" // ", Rules.Select(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray());
+				+ "Current rule state: " + String.Join(" // ", Rules.Select(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray()) + "\n"
+				+ "Current rule: " + (Rules.Count == 0 ? "<none>." : "[" + Rules.Peek().Key.Symbol.Reference + "] " + Rules.Peek().Key.ExpressionFsm);
 		}
 	}
 
