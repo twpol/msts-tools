@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Jgr.IO;
 using Jgr.IO.Parser;
 
@@ -110,6 +111,10 @@ namespace Jgr.Msts {
 						arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile").Append(new SimisTreeNode("MaxLineVoltage", "", new[] { new SimisTreeNodeValueFloat("float", "", (float)value) }));
 					}
 					break;
+				case "RouteStart":
+					var routeStart = value as PreciseTileCoordinate;
+					arguments["TrackFile"] = trackFile.GetPath("Tree", "Tr_RouteFile", "RouteStart").Set(new SimisTreeNode("RouteStart", "", new[] { new SimisTreeNodeValueFloat("int", "", routeStart.TileX), new SimisTreeNodeValueFloat("int", "", routeStart.TileZ), new SimisTreeNodeValueFloat("float", "", (float)(routeStart.X * 2048 - 1024)), new SimisTreeNodeValueFloat("float", "", (float)(routeStart.Z * 2048 - 1024)) }));
+					break;
 				default:
 					base.SetArgument(name, value, ref arguments, ref typeData);
 					break;
@@ -200,6 +205,13 @@ namespace Jgr.Msts {
 			}
 		}
 
+		public PreciseTileCoordinate RouteStart {
+			get {
+				var node = TrackFile.Tree["Tr_RouteFile"]["RouteStart"];
+				return new PreciseTileCoordinate(node[0].ToValue<int>(), node[1].ToValue<int>(), (node[2].ToValue<float>() + 1024) / 2048, (node[3].ToValue<float>() + 1024) / 2048);
+			}
+		}
+
 		//public TrackService TrackService {
 		//    get {
 		//        lock (this) {
@@ -224,12 +236,12 @@ namespace Jgr.Msts {
 		//    }
 		//}
 
-		//public IEnumerable<Tile> Tiles {
-		//    get {
-		//        // TODO: Cache the tiles by name or something. We should not be creating a new set every time!
-		//        return from tile in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
-		//               select new Tile(Path.GetFileNameWithoutExtension(tile), this, SimisProvider);
-		//    }
-		//}
+		public IEnumerable<string> Tiles {
+			get {
+				// TODO: Cache the tiles by name or something. We should not be creating a new set every time!
+				return from tile in Directory.GetFiles(RoutePath + @"\Tiles", "*.t")
+					   select Path.GetFileNameWithoutExtension(tile);
+			}
+		}
 	}
 }

@@ -17,7 +17,7 @@ namespace Jgr.Msts {
 		public IDictionary<uint, TrackShape> TrackShapes { get; private set; }
 		public IDictionary<string, TrackShape> TrackShapesByFileName { get; private set; }
 		public IDictionary<uint, TrackSection> TrackSections { get; private set; }
-		UndoRedoSimisFile TSection { get; set; }
+		public SimisFile TSection { get; private set; }
 
 		public TrackService(FileFinder files, SimisProvider simisProvider) {
 			Files = files;
@@ -27,8 +27,7 @@ namespace Jgr.Msts {
 			TrackShapesByFileName = new Dictionary<string, TrackShape>();
 			TrackSections = new Dictionary<uint, TrackSection>();
 
-			TSection = new UndoRedoSimisFile(Files[@"Global\tsection.dat"], SimisProvider);
-			TSection.Read();
+			TSection = new SimisFile(Files[@"Global\tsection.dat"], SimisProvider);
 
 			foreach (var section in TSection.Tree["TrackSections"].Where(n => n.Type == "TrackSection")) {
 				if (section.Contains("SectionSize")) {
@@ -67,83 +66,62 @@ namespace Jgr.Msts {
 
 	[Immutable]
 	public class TrackShape {
-		readonly uint _id;
-		readonly string _fileName;
-		readonly double _clearanceDistance;
-		readonly bool _isTunnelShape;
-		readonly bool _isRoadShape;
-		readonly IEnumerable<TrackPath> _paths;
-		readonly int _mainRoute;
-
-		public uint Id { get { return _id; } }
-		public string FileName { get { return _fileName; } }
-		public double ClearanceDistance { get { return _clearanceDistance; } }
-		public bool IsTunnelShape { get { return _isTunnelShape; } }
-		public bool IsRoadShape { get { return _isRoadShape; } }
-		public IEnumerable<TrackPath> Paths { get { return _paths; } }
-		public int MainRoute { get { return _mainRoute; } }
+		public uint Id { get; private set; }
+		public string FileName { get; private set; }
+		public double ClearanceDistance { get; private set; }
+		public bool IsTunnelShape { get; private set; }
+		public bool IsRoadShape { get; private set; }
+		public IEnumerable<TrackPath> Paths { get; private set; }
+		public int MainRoute { get; private set; }
 
 		public TrackShape(uint id, string fileName, double clearanceDistance, bool isTunnelShape, bool isRoadShape, IEnumerable<TrackPath> paths, int mainRoute) {
-			_id = id;
-			_fileName = fileName;
-			_clearanceDistance = clearanceDistance;
-			_isTunnelShape = isTunnelShape;
-			_isRoadShape = isRoadShape;
-			_paths = paths;
-			_mainRoute = mainRoute;
+			Id = id;
+			FileName = fileName;
+			ClearanceDistance = clearanceDistance;
+			IsTunnelShape = isTunnelShape;
+			IsRoadShape = isRoadShape;
+			Paths = paths;
+			MainRoute = mainRoute;
 		}
 	}
 
 	[Immutable]
 	public class TrackPath {
-		readonly double _x;
-		readonly double _y;
-		readonly double _z;
-		readonly double _rotation; // About Y (vertical?)
-		readonly IEnumerable<TrackSection> _sections;
-
-		public double X { get { return _x; } }
-		public double Y { get { return _y; } }
-		public double Z { get { return _z; } }
-		public double Rotation { get { return _rotation; } }
-		public IEnumerable<TrackSection> Sections { get { return _sections; } }
+		public double X { get; private set; }
+		public double Y { get; private set; }
+		public double Z { get; private set; }
+		public double Rotation { get; private set; }
+		public IEnumerable<TrackSection> Sections { get; private set; }
 
 		public TrackPath(double x, double y, double z, double rotation, IEnumerable<TrackSection> sections) {
-			_x = x;
-			_y = y;
-			_z = z;
-			_rotation = rotation;
-			_sections = sections;
+			X = x;
+			Y = y;
+			Z = z;
+			Rotation = rotation;
+			Sections = sections;
 		}
 	}
 
 	[Immutable]
 	public class TrackSection {
-		readonly uint _id;
-		readonly double _gauge;
-		readonly double _length;
-		readonly bool _isCurve;
-		readonly double _radius;
-		readonly double _angle;
-
-		public uint Id { get { return _id; } }
-		public double Gauge { get { return _gauge; } }
-		public double Length { get { return _length; } }
-		public bool IsCurve { get { return _isCurve; } }
-		public double Radius { get { return _radius; } }
-		public double Angle { get { return _angle; } }
+		public uint Id { get; private set; }
+		public double Gauge { get; private set; }
+		public double Length { get; private set; }
+		public bool IsCurve { get; private set; }
+		public double Radius { get; private set; }
+		public double Angle { get; private set; }
 
 		public TrackSection(uint id, double gauge, double length)
 			: this(id, gauge, length, false, 0, 0) {
 		}
 
 		public TrackSection(uint id, double gauge, double length, bool isCurve, double radius, double angle) {
-			_id = id;
-			_gauge = gauge;
-			_length = length;
-			_isCurve = isCurve;
-			_radius = radius;
-			_angle = angle;
+			Id = id;
+			Gauge = gauge;
+			Length = length;
+			IsCurve = isCurve;
+			Radius = radius;
+			Angle = angle;
 		}
 	}
 }

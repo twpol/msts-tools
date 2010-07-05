@@ -11,22 +11,44 @@ using System.Globalization;
 namespace Jgr.Msts {
 	[Immutable]
 	public class TileCoordinate {
-		public int X { get; private set; }
-		public int Z { get; private set; }
+		public int TileX { get; private set; }
+		public int TileZ { get; private set; }
 		public int Size { get; private set; }
 
-		public TileCoordinate(int x, int z)
-			: this(x, z, 1) {
+		public TileCoordinate(int tileX, int tileZ)
+			: this(tileX, tileZ, 1) {
 		}
 
 		public TileCoordinate(int x, int z, int size) {
-			X = x;
-			Z = z;
+			TileX = x;
+			TileZ = z;
 			Size = size;
 		}
 
 		public override string ToString() {
-			return "TILE{" + X + " " + Z + " " + Size + "}";
+			return "TILE{" + TileX + " " + TileZ + " " + Size + "}";
+		}
+	}
+
+	[Immutable]
+	public class PreciseTileCoordinate : TileCoordinate {
+		public double X { get; private set; }
+		public double Y { get; private set; }
+		public double Z { get; private set; }
+
+		public PreciseTileCoordinate(int tileX, int tileZ, double x, double z)
+			: this(tileX, tileZ, x, 0, z) {
+		}
+
+		public PreciseTileCoordinate(int tileX, int tileZ, double x, double y, double z)
+			: base(tileX, tileZ) {
+			X = x;
+			Y = y;
+			Z = z;
+		}
+
+		public override string ToString() {
+			return "TILE{" + TileX + " " + TileZ + " " + Size + "/" + X + " " + Y + " " + Z + "}";
 		}
 	}
 
@@ -98,8 +120,8 @@ namespace Jgr.Msts {
 
 		// MSTS Tile -> Tile Name.
 		public static string ConvertToTileName(TileCoordinate coordinates) {
-			var sample = coordinates.X + 16384;
-			var line = 16384 - coordinates.Z - 1;
+			var sample = coordinates.TileX + 16384;
+			var line = 16384 - coordinates.TileZ - 1;
 			var depthRight = new List<bool>();
 			var depthDown = new List<bool>();
 			for (var i = 14; (i >= 0) && (Math.Pow(2, i) >= coordinates.Size); i--) {
@@ -122,33 +144,39 @@ namespace Jgr.Msts {
 			return tileName;
 		}
 
+		// MSTS Precise Tile -> IGH
+		public static IghCoordinate ConvertToIgh(PreciseTileCoordinate coordinates) {
+			return ConvertToIgh(coordinates, coordinates.X, coordinates.Z);
+		}
+
 		// MSTS Tile -> IGH
-		public static IghCoordinate ConvertToIgh(TileCoordinate coordinates, double tileX, double tileZ) {
-			Debug.Assert(tileZ >= 0, "tileZ is off the top");
-			Debug.Assert(tileZ <= 1, "tileZ is off the bottom");
-			Debug.Assert(tileX >= 0, "tileX is off the left");
-			Debug.Assert(tileX <= 1, "tileX is off the right");
-			return new IghCoordinate(2048 * (16384 - coordinates.Z - 1 + tileZ), 2048 * (coordinates.X + 16384 + tileX));
+		public static IghCoordinate ConvertToIgh(TileCoordinate coordinates, double x, double z) {
+			Debug.Assert(z >= 0, "tileZ is off the top");
+			Debug.Assert(z <= 1, "tileZ is off the bottom");
+			Debug.Assert(x >= 0, "tileX is off the left");
+			Debug.Assert(x <= 1, "tileX is off the right");
+			return new IghCoordinate(2048 * (16384 - coordinates.TileZ - 1 + z), 2048 * (coordinates.TileX + 16384 + x));
+		}
+
+		// IGH -> MSTS Precise Tile
+		public static PreciseTileCoordinate ConvertToTile(IghCoordinate coordinates) {
+			var tileX = coordinates.Sample / 2048;
+			var tileZ = coordinates.Line / 2048;
+			var x = tileX - Math.Floor(tileX);
+			var z = tileZ - Math.Floor(tileZ);
+			Debug.Assert(z >= 0, "tileZ is off the top");
+			Debug.Assert(z <= 1, "tileZ is off the bottom");
+			Debug.Assert(x >= 0, "tileX is off the left");
+			Debug.Assert(x <= 1, "tileX is off the right");
+			return new PreciseTileCoordinate((int)Math.Floor(tileX) - 16384, 16384 - (int)Math.Floor(tileZ) - 1, x, z);
 		}
 
 		// IGH -> MSTS Tile
-		public static TileCoordinate ConvertToTile(IghCoordinate coordinates, out double tileX, out double tileZ) {
-			var x = coordinates.Sample / 2048;
-			var z = coordinates.Line / 2048;
-			tileX = x - Math.Floor(x);
-			tileZ = z - Math.Floor(z);
-			Debug.Assert(tileZ >= 0, "tileZ is off the top");
-			Debug.Assert(tileZ <= 1, "tileZ is off the bottom");
-			Debug.Assert(tileX >= 0, "tileX is off the left");
-			Debug.Assert(tileX <= 1, "tileX is off the right");
-			return new TileCoordinate((int)Math.Floor(x) - 16384, 16384 - (int)Math.Floor(z) - 1);
-		}
-
-		// IGH without sub-position -> MSTS Tile
-		public static TileCoordinate ConvertToTile(IghCoordinate coordinates) {
-			double tileX;
-			double tileZ;
-			return ConvertToTile(coordinates, out tileX, out tileZ);
+		public static TileCoordinate ConvertToTile(IghCoordinate coordinates, out double x, out double z) {
+			var coord = ConvertToTile(coordinates);
+			x = coord.X;
+			z = coord.Z;
+			return coord;
 		}
 
 		// Original calculations:
