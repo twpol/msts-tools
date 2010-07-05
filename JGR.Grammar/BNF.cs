@@ -128,11 +128,9 @@ namespace Jgr.Grammar
 		/// <exception cref="BnfStateException">Thrown if the given reference is not found or moving to a new reference is not valid at this time.</exception>
 		public void MoveTo(string reference) {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state '" + reference + "'.");
-			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
-			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got reference '" + reference + "'.");
-			var targets = ValidReferences;
-			var target = targets.FirstOrDefault(s => ((ReferenceOperator)s.Operator).Reference == reference);
-			if (target == null) throw new BnfStateException(this, "BNF cannot move to reference '" + reference + "', no valid state transitions found.");
+			if (IsCompleted) throw new BnfStateException(this, "BNF has completed; got '" + reference + "'.");
+			var target = ValidReferences.FirstOrDefault(s => ((ReferenceOperator)s.Operator).Reference == reference);
+			if (IsEnterBlockTime || (target == null)) throw new BnfStateException(this, "BNF expected " + String.Join(", ", ValidStates.Select(s => s.StartsWith("<", StringComparison.Ordinal) ? s : "'" + s + "'").ToArray()) + "; got '" + reference + "'.");
 			var rop = (ReferenceOperator)target.Operator;
 			var old = Rules.Pop();
 			Rules.Push(new KeyValuePair<BnfRule, FsmState>(old.Key, target));
@@ -148,8 +146,8 @@ namespace Jgr.Grammar
 		/// </summary>
 		public void EnterBlock() {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state <begin-block>.");
-			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
-			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected end-block, reference or literal; got begin-block.");
+			if (IsCompleted) throw new BnfStateException(this, "BNF has completed; got <begin-block>.");
+			if (!IsEnterBlockTime) throw new BnfStateException(this, "BNF expected " + String.Join(", ", ValidStates.Select(s => s.StartsWith("<", StringComparison.Ordinal) ? s : "'" + s + "'").ToArray()) + "; got <begin-block>.");
 			IsEnterBlockTime = false;
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
 		}
@@ -159,9 +157,8 @@ namespace Jgr.Grammar
 		/// </summary>
 		public void LeaveBlock() {
 			if (Bnf.TraceSwitch.TraceInfo) Trace.WriteLine("Moving BNF to state <end-block>.");
-			if (IsCompleted) throw new BnfStateException(this, "BNF has completed.");
-			if (IsEnterBlockTime) throw new BnfStateException(this, "BNF expected begin-block; got end-block.");
-			if (!IsEndBlockTime) throw new BnfStateException(this, "BNF expected begin-block, reference or literal; got end-block.");
+			if (IsCompleted) throw new BnfStateException(this, "BNF has completed; got <end-block>.");
+			if (IsEnterBlockTime || !IsEndBlockTime) throw new BnfStateException(this, "BNF expected " + String.Join(", ", ValidStates.Select(s => s.StartsWith("<", StringComparison.Ordinal) ? s : "'" + s + "'").ToArray()) + "; got <end-block>.");
 			Rules.Pop();
 			if (Bnf.TraceSwitch.TraceVerbose) Trace.WriteLine(ToString() + "\n");
 		}
@@ -173,8 +170,7 @@ namespace Jgr.Grammar
 		}
 
 		public override string ToString() {
-			return "Available states: " + String.Join(", ", ValidStates.Select(s => s.StartsWith("<", StringComparison.Ordinal) ? s : "'" + s + "'").ToArray()) + ".\n"
-				+ "Current rule state: " + String.Join(" // ", Rules.Select(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray()) + "\n"
+			return "Current state: " + String.Join(" // ", Rules.Select(kvp => "[" + kvp.Key.Symbol.Reference + "] " + kvp.Value).ToArray()) + "\n"
 				+ "Current rule: " + (Rules.Count == 0 ? "<none>." : "[" + Rules.Peek().Key.Symbol.Reference + "] " + Rules.Peek().Key.ExpressionFsm);
 		}
 	}

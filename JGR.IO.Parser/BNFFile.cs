@@ -13,7 +13,7 @@ using Jgr.Grammar;
 
 namespace Jgr.IO.Parser
 {
-	public class InvalidBnfFormatException : FileException
+	public class InvalidBnfFormatException : DescriptiveException
 	{
 		static string FormatMessage(BufferedInMemoryTextReader reader, long alreadyRead, string message) {
 			var beforeError = Math.Min(128, reader.Position - alreadyRead);
@@ -47,8 +47,8 @@ namespace Jgr.IO.Parser
 			return sourceText;
 		}
 
-		public InvalidBnfFormatException(string fileName, BufferedInMemoryTextReader reader, long alreadyRead, string message)
-			: base(fileName, FormatMessage(reader, alreadyRead, message))
+		public InvalidBnfFormatException(BufferedInMemoryTextReader reader, long alreadyRead, string message)
+			: base(FormatMessage(reader, alreadyRead, message))
 		{
 		}
 	}
@@ -81,70 +81,78 @@ namespace Jgr.IO.Parser
 
 		public void ReadFile() {
 			MessageSend(LevelInformation, "Loading '" + FileName + "'...");
-			using (var fileStream = File.OpenRead(FileName)) {
-				using (var bufferedFileStream = new BufferedInMemoryStream(fileStream)) {
-					using (var reader = new StreamReader(bufferedFileStream, true)) {
-						var parser = new BnfParser(this, reader);
-						while (true) {
-							var rule = parser.NextRule();
-							if (rule == null) break;
-							MessageSend(LevelDebug, rule.ToString());
+			try {
+				using (var fileStream = File.OpenRead(FileName)) {
+					using (var bufferedFileStream = new BufferedInMemoryStream(fileStream)) {
+						using (var reader = new StreamReader(bufferedFileStream, true)) {
+							var parser = new BnfParser(this, reader);
+							while (true) {
+								var rule = parser.NextRule();
+								if (rule == null) break;
+								MessageSend(LevelDebug, rule.ToString());
 
-							var ruleD = rule as BnfDefinition;
-							if (ruleD != null) {
-								if (rule.Symbol.Reference == "FILE") {
-									Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan = null;
-									scan = (op, finder) => {
-										var uop = op as UnaryOperator;
-										if (uop != null) {
-											return scan(uop.Right, finder);
-										}
-										var lop = op as BinaryOperator;
-										if (lop != null) {
-											return scan(lop.Left, finder).Concat(scan(lop.Right, finder));
-										}
-										return finder(op);
-									};
-
-									BnfFileRoots = new List<string>(
-										scan(rule.Expression, op => {
-											var rop = op as ReferenceOperator;
-											if (rop != null) {
-												return new string[] { rop.Reference };
+								var ruleD = rule as BnfDefinition;
+								if (ruleD != null) {
+									if (rule.Symbol.Reference == "FILE") {
+										Func<Operator, Func<Operator, IEnumerable<string>>, IEnumerable<string>> scan = null;
+										scan = (op, finder) => {
+											var uop = op as UnaryOperator;
+											if (uop != null) {
+												return scan(uop.Right, finder);
 											}
-											return new string[] { };
-										})
-									);
-								} else if ((rule.Symbol.Reference == "FILE_NAME") && (rule.Expression is StringOperator)) {
-									BnfFileName = ((StringOperator)rule.Expression).Value;
-								} else if ((rule.Symbol.Reference == "FILE_EXT") && (rule.Expression is StringOperator)) {
-									BnfFileExtension = ((StringOperator)rule.Expression).Value;
-								} else if ((rule.Symbol.Reference == "FILE_TYPE") && (rule.Expression is StringOperator)) {
-									BnfFileType = ((StringOperator)rule.Expression).Value;
-								} else if ((rule.Symbol.Reference == "FILE_TYPE_VER") && (rule.Expression is StringOperator)) {
-									if (((StringOperator)rule.Expression).Value.Length > 0) {
-										BnfFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value, CultureInfo.InvariantCulture);
-									}
-								}
-								if (Bnf.Definitions.ContainsKey(rule.Symbol.Reference)) throw new FileException(FileName, "BNF contains multiple definitions for '" + rule.Symbol.Reference + "'.");
-								Bnf.Definitions.Add(rule.Symbol.Reference, ruleD);
-							}
-							var ruleP = rule as BnfProduction;
-							if (ruleP != null) {
-								if (Bnf.Productions.ContainsKey(rule.Symbol.Reference)) throw new FileException(FileName, "BNF contains multiple productions for '" + rule.Symbol.Reference + "'.");
-								Bnf.Productions.Add(rule.Symbol.Reference, ruleP);
-							}
-						}
+											var lop = op as BinaryOperator;
+											if (lop != null) {
+												return scan(lop.Left, finder).Concat(scan(lop.Right, finder));
+											}
+											return finder(op);
+										};
 
-						Debug.Assert(reader.BaseStream.Position >= reader.BaseStream.Length, "Parser " + parser.ToString() + " failed to consume all input for <" + FileName + ">.");
+										BnfFileRoots = new List<string>(
+											scan(rule.Expression, op => {
+												var rop = op as ReferenceOperator;
+												if (rop != null) {
+													return new string[] { rop.Reference };
+												}
+												return new string[] { };
+											})
+										);
+									} else if ((rule.Symbol.Reference == "FILE_NAME") && (rule.Expression is StringOperator)) {
+										BnfFileName = ((StringOperator)rule.Expression).Value;
+									} else if ((rule.Symbol.Reference == "FILE_EXT") && (rule.Expression is StringOperator)) {
+										BnfFileExtension = ((StringOperator)rule.Expression).Value;
+									} else if ((rule.Symbol.Reference == "FILE_TYPE") && (rule.Expression is StringOperator)) {
+										BnfFileType = ((StringOperator)rule.Expression).Value;
+									} else if ((rule.Symbol.Reference == "FILE_TYPE_VER") && (rule.Expression is StringOperator)) {
+										if (((StringOperator)rule.Expression).Value.Length > 0) {
+											BnfFileTypeVersion = int.Parse(((StringOperator)rule.Expression).Value, CultureInfo.InvariantCulture);
+										}
+									}
+									if (Bnf.Definitions.ContainsKey(rule.Symbol.Reference)) throw new FileException(FileName, "BNF file contains multiple definitions for '" + rule.Symbol.Reference + "'.");
+									Bnf.Definitions.Add(rule.Symbol.Reference, ruleD);
+								}
+								var ruleP = rule as BnfProduction;
+								if (ruleP != null) {
+									if (Bnf.Productions.ContainsKey(rule.Symbol.Reference)) throw new FileException(FileName, "BNF file contains multiple productions for '" + rule.Symbol.Reference + "'.");
+									Bnf.Productions.Add(rule.Symbol.Reference, ruleP);
+								}
+							}
+
+							Debug.Assert(reader.BaseStream.Position >= reader.BaseStream.Length, "Parser " + parser.ToString() + " failed to consume all input for <" + FileName + ">.");
+						}
 					}
 				}
+			} catch (InvalidBnfFormatException ex) {
+				throw new FileException(FileName, ex);
 			}
 			MessageSend(LevelInformation, "Done.");
-			if (BnfFileName.Length == 0) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a name.");
-			if (BnfFileExtension.Length == 0) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a file extension.");
-			if (BnfFileType.Length == 0) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format.");
-			if (BnfFileTypeVersion == -1) throw new InvalidDataException("BNF File <" + FileName + "> does not specify a valid Simis Format Version.");
+			try {
+				if (BnfFileName.Length == 0) throw new InvalidDataException("BNF file does not specify a name.");
+				if (BnfFileExtension.Length == 0) throw new InvalidDataException("BNF file does not specify a file extension.");
+				if (BnfFileType.Length == 0) throw new InvalidDataException("BNF file does not specify a valid Simis Format.");
+				if (BnfFileTypeVersion == -1) throw new InvalidDataException("BNF file does not specify a valid Simis Format Version.");
+			} catch (InvalidDataException ex) {
+				throw new FileException(FileName, ex);
+			}
 		}
 	}
 
@@ -252,11 +260,11 @@ namespace Jgr.IO.Parser
 				}
 				EatWhitespace();
 				if (Reader.Peek() == -1) return null;
-				if ('=' != Reader.Read()) throw new InvalidBnfFormatException(File.FileName, Reader, 1, "BNF parser expected '='.");
+				if ('=' != Reader.Read()) throw new InvalidBnfFormatException(Reader, 1, "BNF parser expected '='.");
 				var production = ('=' == Reader.Peek());
 				if (production) {
-					if ('=' != Reader.Read()) throw new InvalidBnfFormatException(File.FileName, Reader, 2, "BNF parser expected '==>'.");
-					if ('>' != Reader.Read()) throw new InvalidBnfFormatException(File.FileName, Reader, 3, "BNF parser expected '==>'.");
+					if ('=' != Reader.Read()) throw new InvalidBnfFormatException(Reader, 2, "BNF parser expected '==>'.");
+					if ('>' != Reader.Read()) throw new InvalidBnfFormatException(Reader, 3, "BNF parser expected '==>'.");
 				}
 
 				var stackEx = new Stack<Operator>();
@@ -265,23 +273,23 @@ namespace Jgr.IO.Parser
 					var op = stackOp.Pop();
 					switch (op) {
 						case ']':
-							if (stackEx.Count < 1) throw new InvalidBnfFormatException(File.FileName, Reader, 0, "BNF parser found unmatched '['.");
+							if (stackEx.Count < 1) throw new InvalidBnfFormatException(Reader, 0, "BNF parser found unmatched '['.");
 							var right = stackEx.Pop();
 							stackEx.Push(new OptionalOperator(right));
 							break;
 						case '}':
-							if (stackEx.Count < 1) throw new InvalidBnfFormatException(File.FileName, Reader, 0, "BNF parser found unmatched '{'.");
+							if (stackEx.Count < 1) throw new InvalidBnfFormatException(Reader, 0, "BNF parser found unmatched '{'.");
 							right = stackEx.Pop();
 							stackEx.Push(new RepeatOperator(right));
 							break;
 						case '|':
-							if (stackEx.Count < 2) throw new InvalidBnfFormatException(File.FileName, Reader, 0, "BNF parser found unbalanced '|'.");
+							if (stackEx.Count < 2) throw new InvalidBnfFormatException(Reader, 0, "BNF parser found unbalanced '|'.");
 							right = stackEx.Pop();
 							var left = stackEx.Pop();
 							stackEx.Push(new LogicalOrOperator(left, right));
 							break;
 						case ' ':
-							if (stackEx.Count < 2) throw new InvalidBnfFormatException(File.FileName, Reader, 0, "BNF parser found unbalanced ' '.");
+							if (stackEx.Count < 2) throw new InvalidBnfFormatException(Reader, 0, "BNF parser found unbalanced ' '.");
 							right = stackEx.Pop();
 							left = stackEx.Pop();
 							stackEx.Push(new LogicalAndOperator(left, right));
@@ -308,20 +316,20 @@ namespace Jgr.IO.Parser
 					if ('"' == Reader.Peek()) {
 						var value = "";
 						streamPosition = Reader.Position;
-						if (!EatString(out value)) throw new InvalidBnfFormatException(File.FileName, Reader, Reader.Position - streamPosition, "BNF parser expected string.");
+						if (!EatString(out value)) throw new InvalidBnfFormatException(Reader, Reader.Position - streamPosition, "BNF parser expected string.");
 						ex = new StringOperator(value);
 					} else if ('.' == Reader.Peek()) {
 						Reader.Read();
 						if ((stackOp.Count > 0) && (' ' == stackOp.Peek())) stackOp.Pop();
 						while (stackOp.Count > 0) stackProcessOp();
-						if (stackEx.Count > 1) throw new InvalidBnfFormatException(File.FileName, Reader, 1, "BNF parser expected ']' and/or '}' but found '.'.");
+						if (stackEx.Count > 1) throw new InvalidBnfFormatException(Reader, 1, "BNF parser expected ']' and/or '}' but found '.'.");
 						Reader.ReadLine();
 						break;
 					} else {
-						if (':' != Reader.Read()) throw new InvalidBnfFormatException(File.FileName, Reader, 1, "BNF parser expected ':'.");
+						if (':' != Reader.Read()) throw new InvalidBnfFormatException(Reader, 1, "BNF parser expected ':'.");
 						var token = "";
 						streamPosition = Reader.Position;
-						if (!EatSymbol(out token)) throw new InvalidBnfFormatException(File.FileName, Reader, Reader.Position - streamPosition, "BNF parser expected token.");
+						if (!EatSymbol(out token)) throw new InvalidBnfFormatException(Reader, Reader.Position - streamPosition, "BNF parser expected token.");
 						ex = new ReferenceOperator(token);
 
 						EatWhitespace();
@@ -331,7 +339,7 @@ namespace Jgr.IO.Parser
 							var tokenName = "";
 							EatWhitespace();
 							streamPosition = Reader.Position;
-							if (!EatSymbol(out tokenName)) throw new InvalidBnfFormatException(File.FileName, Reader, Reader.Position - streamPosition, "BNF parser expected token name.");
+							if (!EatSymbol(out tokenName)) throw new InvalidBnfFormatException(Reader, Reader.Position - streamPosition, "BNF parser expected token name.");
 							ex = new NamedReferenceOperator(tokenName, token);
 						}
 					}
@@ -342,7 +350,7 @@ namespace Jgr.IO.Parser
 					while (new char[]{ ']', '}' }.Contains<char>((char)Reader.Peek())) {
 						var endOp = (char)Reader.Read();
 						while ((stackOp.Count > 0) && (stackOp.Peek() != endOp)) stackProcessOp();
-						if (stackOp.Count == 0) throw new InvalidBnfFormatException(File.FileName, Reader, 0, "BNF parser found unmatched '" + endOp + "'.");
+						if (stackOp.Count == 0) throw new InvalidBnfFormatException(Reader, 0, "BNF parser found unmatched '" + endOp + "'.");
 						stackProcessOp();
 						EatWhitespace();
 					}

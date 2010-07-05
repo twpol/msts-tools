@@ -309,7 +309,15 @@ namespace Jgr.IO.Parser
 						return false;
 				}
 			}).ToArray();
-			if (validDataTypeStates.Length == 0) throw new ReaderException(BinaryReader, false, PinReaderChanged(), "SimisReader found no data types available for parsing of token '" + token + "'.", new BnfStateException(BnfState, ""));
+
+			if (validDataTypeStates.Length == 0) {
+				try {
+					// This is *expected* to throw! We're doing this so that we get a proper BNF exception from the failed state.
+					BnfState.MoveTo(token);
+				} catch (BnfStateException ex) {
+					throw new ReaderException(BinaryReader, false, PinReaderChanged(), "", ex);
+				}
+			}
 
 			rv.Type = validDataTypeStates[0];
 			switch (rv.Type) {

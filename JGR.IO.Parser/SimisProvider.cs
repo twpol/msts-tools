@@ -49,9 +49,12 @@ namespace Jgr.IO.Parser {
 				var BNF = new BnfFile(filename);
 				try {
 					BNF.ReadFile();
-				} catch (InvalidDataException) {
-					// BNF didn't specify all required stuff, skip it.
-					continue;
+				} catch (FileException ex) {
+					if (ex.InnerException is InvalidDataException) {
+						// BNF didn't specify all required stuff, skip it.
+						continue;
+					}
+					throw ex;
 				}
 				var simisFormat = new SimisFormat(BNF);
 				formats.Add(simisFormat);

@@ -39,8 +39,8 @@ namespace Tests {
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(tileName);
-			Assert.AreEqual(expected.X, actual.X);
-			Assert.AreEqual(expected.Z, actual.Z);
+			Assert.AreEqual(expected.TileX, actual.TileX);
+			Assert.AreEqual(expected.TileZ, actual.TileZ);
 		}
 
 		/// <summary>
@@ -65,8 +65,8 @@ namespace Tests {
 			var y = int.Parse(testContextInstance.DataRow["Y"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new TileCoordinate(x, y), 0, 0));
-			Assert.AreEqual(expected.X, actual.X);
-			Assert.AreEqual(expected.Z, actual.Z);
+			Assert.AreEqual(expected.TileX, actual.TileX);
+			Assert.AreEqual(expected.TileZ, actual.TileZ);
 		}
 
 		/// <summary>
@@ -95,8 +95,8 @@ namespace Tests {
 			var lon = double.Parse(testContextInstance.DataRow["Lon"].ToString(), CultureInfo.InvariantCulture);
 			var expected = new TileCoordinate(x, y);
 			var actual = Coordinates.ConvertToTile(Coordinates.ConvertToIgh(new LatitudeLongitudeCoordinate(lat, lon)));
-			Assert.AreEqual(expected.X, actual.X);
-			Assert.AreEqual(expected.Z, actual.Z);
+			Assert.AreEqual(expected.TileX, actual.TileX);
+			Assert.AreEqual(expected.TileZ, actual.TileZ);
 		}
 	}
 }
