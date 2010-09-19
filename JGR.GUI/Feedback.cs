@@ -20,6 +20,9 @@ namespace Jgr.Gui {
 		UserComment,
 	}
 
+	/// <summary>
+	/// Simple interface for collecting and sending user feedback and application errors to a central store.
+	/// </summary>
 	public class Feedback {
 		readonly string UID;
 		readonly string EnvironmentOS;
@@ -78,18 +81,36 @@ namespace Jgr.Gui {
 			}
 		}
 
+		/// <summary>
+		/// Prepares a feedback report of a specific <see cref="FeedbackType"/> for the given <paramref name="operation"/>.
+		/// </summary>
+		/// <param name="type">The type of feedback being collected.</param>
+		/// <param name="operation">The operation that failed if <paramref name="type"/> is <see cref="FeedbackType.ApplicationFailure"/>.</param>
+		/// <param name="details">Any associated data to send with the report.</param>
 		public Feedback(FeedbackType type, string operation, IDictionary<string, string> details)
 			: this(type, operation, details, new StackTrace(1, true)) {
 		}
 
-		public Feedback(Exception e, string operation)
-			: this(FeedbackType.ApplicationFailure, operation, new Dictionary<string, string> { { "", e.ToString() } }, new StackTrace(1, true)) {
+		/// <summary>
+		/// Prepares a feedback report for an <see cref="FeedbackType.ApplicationFailure"/>.
+		/// </summary>
+		/// <param name="ex">The <see cref="Exception"/> which caused this feedback.</param>
+		/// <param name="operation">The operation that was being performed.</param>
+		public Feedback(Exception ex, string operation)
+			: this(FeedbackType.ApplicationFailure, operation, new Dictionary<string, string> { { "", ex.ToString() } }, new StackTrace(1, true)) {
 		}
 
+		/// <summary>
+		/// Prepares a feedback report for a <see cref="FeedbackType.UserComment"/>.
+		/// </summary>
 		public Feedback()
 			: this(FeedbackType.UserComment, "", new Dictionary<string, string> { }, new StackTrace(1, true)) {
 		}
 
+		/// <summary>
+		/// Shows the report to the user, asking for their comments, and offering to send to the central store.
+		/// </summary>
+		/// <param name="owner">A <see cref="Form"/> to modally parent the <see cref="FeedbackPrompt"/> on.</param>
 		public void PromptAndSend(Form owner) {
 			var report =
 				"User ID: " + UID + " (random unique identifier, not shared between applications)\n" +
@@ -127,6 +148,10 @@ namespace Jgr.Gui {
 			}
 		}
 
+		/// <summary>
+		/// Sends the report to the central store and shows an error/success confirmation message.
+		/// </summary>
+		/// <param name="owner"></param>
 		public void Send(Form owner) {
 			var reportXML = new XDocument(
 					new XDeclaration("1.0", "utf-8", "yes"),

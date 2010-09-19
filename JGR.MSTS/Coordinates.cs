@@ -9,6 +9,9 @@ using System.Diagnostics;
 using System.Globalization;
 
 namespace Jgr.Msts {
+	/// <summary>
+	/// Contains a tile location as a <see cref="TileX"/> and <see cref="TileZ"/>.
+	/// </summary>
 	[Immutable]
 	public class TileCoordinate {
 		public int TileX { get; private set; }
@@ -30,6 +33,9 @@ namespace Jgr.Msts {
 		}
 	}
 
+	/// <summary>
+	/// Extends a <see cref="TileCoordinate"/> to contain an object location as <see cref="X"/>, <see cref="Y"/> and <see cref="Z"/> within the tile.
+	/// </summary>
 	[Immutable]
 	public class PreciseTileCoordinate : TileCoordinate {
 		public double X { get; private set; }
@@ -52,6 +58,9 @@ namespace Jgr.Msts {
 		}
 	}
 
+	/// <summary>
+	/// Contains a location as a <see cref="Line"/> (Y) and <see cref="Sample"/> (X) in the Interrupted Goode Homolosine projection.
+	/// </summary>
 	[Immutable]
 	public class IghCoordinate {
 		public double Line { get; private set; }
@@ -67,6 +76,9 @@ namespace Jgr.Msts {
 		}
 	}
 
+	/// <summary>
+	/// Contains a location as a <see cref="Latitude"/> and <see cref="Longitude"/>.
+	/// </summary>
 	[Immutable]
 	public class LatitudeLongitudeCoordinate {
 		public double Latitude { get; private set; }
@@ -82,6 +94,9 @@ namespace Jgr.Msts {
 		}
 	}
 
+	/// <summary>
+	/// Provides coordinate/projection transformations.
+	/// </summary>
 	public static class Coordinates {
 		// Tile Name -> MSTS Tile.
 		public static TileCoordinate ConvertToTile(string tileName) {

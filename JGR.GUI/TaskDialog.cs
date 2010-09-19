@@ -11,11 +11,13 @@ using System.Security.Permissions;
 using System.Windows.Forms;
 
 namespace Jgr.Gui {
-	public class TaskDialog {
+	/// <summary>
+	/// Provides Task Dialog support for Windows Vista and later, with automatic fallbacks for earlier operating systems.
+	/// </summary>
+	public static class TaskDialog {
 		static Version WindowsVista = new Version(6, 0);
 
 		static bool IsTaskDialogSupported() {
-			//return false;
 			return Environment.OSVersion.Version >= WindowsVista;
 		}
 
@@ -76,6 +78,13 @@ namespace Jgr.Gui {
 			}
 		}
 
+		/// <summary>
+		/// Shows a message with an <paramref name="icon"/> and an OK button.
+		/// </summary>
+		/// <param name="owner">The <see cref="Form"/> to parent the message on.</param>
+		/// <param name="icon">The <see cref="TaskDialogCommonIcon"/> to show with the message.</param>
+		/// <param name="mainInstruction">The main heading for the message.</param>
+		/// <param name="content">The details for the message, shown below the <paramref name="mainInstruction"/>.</param>
 		public static void Show(Form owner, TaskDialogCommonIcon icon, string mainInstruction, string content) {
 			if (IsTaskDialogSupported()) {
 				Show(owner, GetMessageBoxTitle(), icon, mainInstruction, content, TaskDialogCommonButtons.None, new TaskDialogButton[0]);
@@ -86,6 +95,16 @@ namespace Jgr.Gui {
 			}
 		}
 
+		/// <summary>
+		/// Shows a message with an <paramref name="icon"/> and yes and no buttons.
+		/// </summary>
+		/// <param name="owner">The <see cref="Form"/> to parent the message on.</param>
+		/// <param name="icon">The <see cref="TaskDialogCommonIcon"/> to show with the message.</param>
+		/// <param name="mainInstruction">The main heading for the message.</param>
+		/// <param name="content">The details for the message, shown below the <paramref name="mainInstruction"/>.</param>
+		/// <param name="yes">The <see cref="string"/> to use for the yes button.</param>
+		/// <param name="no">The <see cref="string"/> to use for the no button.</param>
+		/// <returns>The <see cref="DialogResult"/> indicating which button was selected.</returns>
 		public static DialogResult ShowYesNo(Form owner, TaskDialogCommonIcon icon, string mainInstruction, string content, string yes, string no) {
 			var button = DialogResult.None;
 			if (IsTaskDialogSupported()) {
@@ -98,6 +117,17 @@ namespace Jgr.Gui {
 			return (DialogResult)button;
 		}
 
+		/// <summary>
+		/// Shows a message with an <paramref name="icon"/> and yes, no and cancel buttons.
+		/// </summary>
+		/// <param name="owner">The <see cref="Form"/> to parent the message on.</param>
+		/// <param name="icon">The <see cref="TaskDialogCommonIcon"/> to show with the message.</param>
+		/// <param name="mainInstruction">The main heading for the message.</param>
+		/// <param name="content">The details for the message, shown below the <paramref name="mainInstruction"/>.</param>
+		/// <param name="yes">The <see cref="string"/> to use for the yes button.</param>
+		/// <param name="no">The <see cref="string"/> to use for the no button.</param>
+		/// <param name="cancel">The <see cref="string"/> to use for the cancel button.</param>
+		/// <returns>The <see cref="DialogResult"/> indicating which button was selected.</returns>
 		public static DialogResult ShowYesNoCancel(Form owner, TaskDialogCommonIcon icon, string mainInstruction, string content, string yes, string no, string cancel) {
 			var button = DialogResult.None;
 			if (IsTaskDialogSupported()) {
