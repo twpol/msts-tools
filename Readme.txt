@@ -13,11 +13,11 @@ Getting Started
     * Included with Windows 7 and later.
 2. Extract all files to an empty location of your choice.
 3. Run the tools.
-    * Simis Editor v0.4
-    * Simis File
+    * Simis Editor v0.5
+    * Simis File v0.5
 
 
-Tools - Simis Editor v0.4
+Tools - Simis Editor v0.5
 =========================
 
 Graphical editor for individual Simis files.
@@ -37,8 +37,8 @@ Graphical editor for individual Simis files.
   * Removing or replacing blocks in the tree structure of files.
 
 
-Tools - Simis File
-==================
+Tools - Simis File v0.5
+=======================
 
 Performs operations on individual or collections of Simis files.
 
@@ -110,9 +110,9 @@ Support File Types
 * Terrain (.t)                           [Uses :buffer type]
 * Train Cab View (.cvf)                  
 * Train Consist (.con)                   [Updated]
-* Train Engine (.eng)                    
-* Train Wagon (.wag)                     
-* World (.w)                             
+* Train Engine (.eng)                    [Updated]
+* Train Wagon (.wag)                     [Updated]
+* World (.w)                             [Updated]
 * World Sound (.ws)                      
 
 Note: Formats which use the :buffer type can be loaded but are not completely parsed and can not be saved correctly.
@@ -123,7 +123,7 @@ Version History
 
 --- ????????????? ---
 * Simis Editor v0.5
-* Simis File
+* Simis File v0.5
 * Libraries
   * BNFs added from Jeff:
     * Cameras (camcfg.dat).
@@ -144,6 +144,7 @@ Version History
   * BNFs: Train Consist updated with new labels from Jeff.
   * BNFs: Train Engine updated with feedback from Jeff.
   * BNFs: Train Wagon updated with feedback from Jeff.
+  * BNFs: World updated to use better data types.
   * Jgr.IO.Parser: BNFFile now throws FileException on duplicate definitions/productions.
   * Jgr.IO.Parser: SimisFile bug fix for when a file contains skipped content outside any blocks.
   * Jgr.IO.Parser: SimisReader accepts //-style single-line comments in text files.
