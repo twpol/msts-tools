@@ -158,11 +158,9 @@ namespace Normalize
 		}
 
 		static void ShowFormats() {
-			var resourcesDirectory = Application.ExecutablePath;
-			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
 			SimisProvider provider;
 			try {
-				provider = new SimisProvider(resourcesDirectory);
+				provider = new SimisProvider(Path.GetDirectoryName(Application.ExecutablePath) + @"\Resources");
 			} catch (FileException ex) {
 				Console.WriteLine(ex.ToString());
 				return;
@@ -177,11 +175,9 @@ namespace Normalize
 		}
 
 		static void RunDump(IEnumerable<string> files, bool verbose) {
-			var resourcesDirectory = Application.ExecutablePath;
-			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
 			SimisProvider provider;
 			try {
-				provider = new SimisProvider(resourcesDirectory);
+				provider = new SimisProvider(Path.GetDirectoryName(Application.ExecutablePath) + @"\Resources");
 			} catch (FileException ex) {
 				Console.WriteLine(ex.ToString());
 				return;
@@ -225,11 +221,9 @@ namespace Normalize
 		}
 
 		static void RunTest(IEnumerable<string> files, bool verbose, int threading) {
-			var resourcesDirectory = Application.ExecutablePath;
-			resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
 			SimisProvider provider;
 			try {
-				provider = new SimisProvider(resourcesDirectory);
+				provider = new SimisProvider(Path.GetDirectoryName(Application.ExecutablePath) + @"\Resources");
 			} catch (FileException ex) {
 				Console.WriteLine(ex.ToString());
 				return;
