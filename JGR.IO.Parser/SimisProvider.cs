@@ -61,21 +61,15 @@ namespace Jgr.IO.Parser {
 			}
 			formats.Sort((a, b) => StringComparer.InvariantCultureIgnoreCase.Compare(a.Name, b.Name));
 
-			foreach (var filename in Directory.GetFiles(directory, "*.tok")) {
-				var ffReader = new StreamReader(System.IO.File.OpenRead(filename), Encoding.ASCII);
-				var tokenType = (ushort)0x0000;
-				var tokenIndex = (ushort)0x0000;
-				for (var ffLine = ffReader.ReadLine(); ; ffLine = ffReader.ReadLine()) {
-					if (ffLine.StartsWith("SID_DEFINE_FIRST_ID(", StringComparison.Ordinal)) {
-						var type = ffLine.Substring(ffLine.IndexOf('(') + 1, ffLine.LastIndexOf(')') - ffLine.IndexOf('(') - 1);
-						tokenType = ushort.Parse(type.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-						tokenIndex = 0x0000;
-					} else if (ffLine.StartsWith("SIDDEF(", StringComparison.Ordinal)) {
-						var name = ffLine.Substring(ffLine.IndexOf('"') + 1, ffLine.LastIndexOf('"') - ffLine.IndexOf('"') - 1);
-						tokenNames.Add(((uint)tokenType << 16) + ++tokenIndex, name);
-						tokenIds.Add(name, ((uint)tokenType << 16) + tokenIndex);
-					}
-					if (ffReader.EndOfStream) break;
+			using (var tokens = new StreamReader(File.OpenRead(directory + @"\tokens.csv"), Encoding.ASCII)) {
+				while (!tokens.EndOfStream) {
+					var csv = tokens.ReadLine().Split(',');
+					if ((csv.Length != 3) || !csv[0].StartsWith("0x") || !csv[1].StartsWith("0x"))
+						continue;
+					var tokenId = (uint)(ushort.Parse(csv[0].Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture) << 16) +
+						ushort.Parse(csv[1].Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+					tokenNames.Add(tokenId, csv[2]);
+					tokenIds.Add(csv[2], tokenId);
 				}
 			}
 
