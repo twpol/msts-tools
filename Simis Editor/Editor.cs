@@ -114,10 +114,8 @@ namespace SimisEditor
 
 		void InitializeSimisProvider() {
 			SimisProviderThread = new Thread(() => {
-				var resourcesDirectory = Application.ExecutablePath;
-				resourcesDirectory = resourcesDirectory.Substring(0, resourcesDirectory.LastIndexOf('\\')) + @"\Resources";
 				try {
-					SimisProvider = new SimisProvider(resourcesDirectory);
+					SimisProvider = new SimisProvider(Path.GetDirectoryName(Application.ExecutablePath) + @"\Resources");
 				} catch (FileException ex) {
 					this.Invoke((MethodInvoker)(() => {
 						new Feedback(ex, "loading Simis Resource '" + Path.GetFileName(ex.FileName) + "'").PromptAndSend(this);
@@ -863,7 +861,7 @@ namespace SimisEditor
 			dUnit.ReferencedAssemblies.Add("System.dll");
 			dUnit.ReferencedAssemblies.Add("System.Drawing.dll");
 			dUnit.ReferencedAssemblies.Add("System.Windows.Forms.dll");
-			dUnit.ReferencedAssemblies.Add("JGR.IO.Parser.dll");
+			dUnit.ReferencedAssemblies.Add(Path.GetDirectoryName(Application.ExecutablePath) + @"\JGR.IO.Parser.dll");
 			dUnit.Namespaces.Add(dNamespace);
 
 			// Set up compiler options.
