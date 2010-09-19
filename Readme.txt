@@ -124,7 +124,7 @@ Note: Formats which use the :buffer type can be loaded but are not completely pa
 Version History
 ===============
 
---- ????????????? ---
+--- 19th September 2010 ---
 * Simis Editor v0.5
 * Simis File v0.5
   * Added {{/J[threads]}} option to run {{/TEST}} with multiple threads.
