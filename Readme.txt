@@ -48,7 +48,7 @@ Performs operations on individual or collections of Simis files.
 
   SIMISFILE /N[ORMALIZE] [file ...]
 
-  SIMISFILE /T[EST] [/V[ERBOSE]] [file ...] [dir ...]
+  SIMISFILE /T[EST] [/V[ERBOSE]] [/J[threads]] [file ...] [dir ...]
 
   /FORMATS  Displays a list of the supported Simis file formats.
   /DUMP     Reads all files and displays the resulting Simis tree for each.
@@ -64,6 +64,9 @@ Performs operations on individual or collections of Simis files.
             changed. A report of read/write success by file type is produced.
   /VERBOSE  Produces more output. For /DUMP and /TEST, displays the individual
             failures encountered while reading or writing files.
+  /J        Uses multiple threads for running the operation. By default, the
+            number of threads equals the number of logical processors.
+  threads   Explicitly specifies the number of threads to use.
   file      One or more Simis files to process.
   dir       One or more directories containing Simis files. These will be
             scanned recursively.
@@ -124,6 +127,7 @@ Version History
 --- ????????????? ---
 * Simis Editor v0.5
 * Simis File v0.5
+  * Added {{/J[threads]}} option to run {{/TEST}} with multiple threads.
 * Libraries
   * BNFs added from Jeff:
     * Cameras (camcfg.dat).
