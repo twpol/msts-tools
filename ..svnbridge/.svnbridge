@@ -2,4 +2,22 @@
 </Value></Property><Property><Name>svn:ignore</Name><Value>JGR MSTS Editor.suo
 Documentation
 bin
+</Value></Property><Property><Name>svn:ignore</Name><Value>JGR MSTS Editor.suo
+Documentation
+bin
+Microsoft Train Simulator
+MSTS Route Editor
+Simis Editor v0.1
+Simis Editor v0.2
+Simis Editor v0.3
+Simis Editor v0.4
+Testing
+TestResults
+time_all_test
+ACE
+*.dtp
+*.settings
+StyleCop.Cache
+Undo Framework
+*.fxcop
 </Value></Property></Properties></ItemProperties>
