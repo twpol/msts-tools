@@ -78,9 +78,11 @@ namespace Jgr.IO.Parser {
 					case SimisTokenKind.BlockBegin:
 						break;
 					case SimisTokenKind.BlockEnd:
-						var block = blockStack.Pop();
-						var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
-						blockStack.Peek().Value.Add(node);
+						if (blockStack.Peek().Key != null) {
+							var block = blockStack.Pop();
+							var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
+							blockStack.Peek().Value.Add(node);
+						}
 						break;
 					case SimisTokenKind.IntegerUnsigned:
 						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.Name, token.IntegerUnsigned));

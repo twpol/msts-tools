@@ -25,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR.MSTS", "JGR.MSTS\JGR.MSTS.csproj", "{F2AFE034-CD0A-4C51-9A7B-D5932F510F7D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tools", "Tools\Tools.csproj", "{6B0A3294-F32F-48CE-9805-B1E3BC10A911}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = JGR MSTS Editor.vsmdi
@@ -70,6 +72,10 @@ Global
 		{F2AFE034-CD0A-4C51-9A7B-D5932F510F7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F2AFE034-CD0A-4C51-9A7B-D5932F510F7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F2AFE034-CD0A-4C51-9A7B-D5932F510F7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B0A3294-F32F-48CE-9805-B1E3BC10A911}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B0A3294-F32F-48CE-9805-B1E3BC10A911}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B0A3294-F32F-48CE-9805-B1E3BC10A911}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B0A3294-F32F-48CE-9805-B1E3BC10A911}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
