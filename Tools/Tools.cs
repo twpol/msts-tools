@@ -7,19 +7,21 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
-using System.IO;
-using System.Diagnostics;
+using System.Threading;
 
 namespace Tools {
 	public partial class Tools : Form {
 		public Tools() {
 			InitializeComponent();
 			imageListIcons.ImageSize = SystemInformation.IconSize;
-			LoadTools();
+			new Thread(LoadTools).Start();
 		}
 
 		void LoadTools() {
@@ -30,7 +32,7 @@ namespace Tools {
 
 				var fileName = Path.GetFileNameWithoutExtension(filePath);
 
-				var icon = Icon.ExtractAssociatedIcon(filePath);
+				var icon = GetAssociatedIcon(filePath);
 				imageListIcons.Images.Add(fileName, icon);
 
 				var version = FileVersionInfo.GetVersionInfo(filePath);
@@ -40,9 +42,19 @@ namespace Tools {
 
 				var name = String.IsNullOrEmpty(version.ProductName) ? Path.GetFileNameWithoutExtension(filePath) : version.ProductName;
 
-				var listItem = listViewTools.Items.Add(name, fileName);
-				listItem.Tag = filePath;
+				Invoke((Action)(() => {
+					var listItem = listViewTools.Items.Add(name, fileName);
+					listItem.Tag = filePath;
+				}));
 			}
+		}
+
+		[DllImport("shell32.dll")]
+		static extern IntPtr ExtractAssociatedIcon(IntPtr instance, string iconPath, out ushort iconIndex);
+
+		Icon GetAssociatedIcon(string filePath) {
+			ushort index;
+			return Icon.FromHandle(ExtractAssociatedIcon(IntPtr.Zero, filePath, out index));
 		}
 
 		int GetPESubsystem(BinaryReader stream) {
