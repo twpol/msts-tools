@@ -533,9 +533,11 @@ namespace Jgr.Msts {
 					}
 					break;
 				case TileRenderLayer.Markers:
-					foreach (TileObject obj in Tile.Objects.Where(o => !(o is TileTrackShape))) {
+					foreach (TileObject obj in Tile.Objects.Where(o => !(o is TileTrackShape) && !(o is TilePlatform) && !(o is TileSiding) && !(o is TileSignal))) {
 						graphics.FillRectangle(Brushes.Yellow, x + w * (float)((1024 + obj.X) / 2048), y + h * (float)((1024 - obj.Z) / 2048), 1, 1);
-						//graphics.DrawString(obj.Label, SystemFonts.MessageBoxFont, Brushes.Yellow, x + w * (float)((1024 + obj.X) / 2048), y + h * (float)((1024 - obj.Z) / 2048));
+						var labeledObj = obj as TileLabeledObject;
+						if (labeledObj != null)
+							graphics.DrawString(labeledObj.Label, SystemFonts.MessageBoxFont, Brushes.Yellow, x + w * (float)((1024 + obj.X) / 2048), y + h * (float)((1024 - obj.Z) / 2048));
 					}
 					break;
 				case TileRenderLayer.Platforms:
@@ -546,12 +548,22 @@ namespace Jgr.Msts {
 						graphics.DrawLine(Pens.Blue, mx - 8, my + 6, mx + 6, my - 8);
 					}
 					break;
+				case TileRenderLayer.PlatformNames:
+					foreach (TilePlatform platform in Tile.Objects.Where(o => o is TilePlatform)) {
+						graphics.DrawString(platform.Label, SystemFonts.MessageBoxFont, Brushes.Blue, x + w * (float)((1024 + platform.X) / 2048), y + h * (float)((1024 - platform.Z) / 2048));
+					}
+					break;
 				case TileRenderLayer.Sidings:
 					foreach (TileSiding siding in Tile.Objects.Where(o => o is TileSiding)) {
 						var mx = (float)(x + w * (1024 + siding.X) / 2048);
 						var my = (float)(y + h * (1024 - siding.Z) / 2048);
 						graphics.FillPolygon(Brushes.DarkGreen, new PointF[] { new PointF(mx + 6, my - 8), new PointF(mx + 8, my - 6), new PointF(mx - 6, my + 8), new PointF(mx - 8, my + 6) });
 						graphics.DrawLine(Pens.Green, mx - 8, my + 6, mx + 6, my - 8);
+					}
+					break;
+				case TileRenderLayer.SidingNames:
+					foreach (TileSiding siding in Tile.Objects.Where(o => o is TileSiding)) {
+						graphics.DrawString(siding.Label, SystemFonts.MessageBoxFont, Brushes.Green, x + w * (float)((1024 + siding.X) / 2048), y + h * (float)((1024 - siding.Z) / 2048));
 					}
 					break;
 				case TileRenderLayer.Signals:
