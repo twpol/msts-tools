@@ -28,6 +28,7 @@
 			this.components = new System.ComponentModel.Container();
 			System.Windows.Forms.StatusStrip statusBar;
 			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("No file loaded");
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Editor));
 			this.statusBarProgress = new System.Windows.Forms.ToolStripProgressBar();
 			this.statusBarLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -429,6 +430,7 @@
 			this.Controls.Add(statusBar);
 			this.Controls.Add(this.menuStrip);
 			this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MainMenuStrip = this.menuStrip;
 			this.Name = "Editor";
 			this.Text = "Simis Editor";
