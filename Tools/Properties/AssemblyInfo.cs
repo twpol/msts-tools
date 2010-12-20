@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("JGR")]
-[assembly: AssemblyProduct("Tools")]
+[assembly: AssemblyProduct("MSTS Editors & Tools")]
 [assembly: AssemblyCopyright("© JGR 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
