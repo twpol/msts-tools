@@ -13,15 +13,20 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows.Forms;
 using System.Threading;
+using System.Windows.Forms;
+using IWshRuntimeLibrary;
+using Jgr;
 
 namespace Tools {
 	public partial class Tools : Form {
+		readonly ApplicationSettings Settings;
 		public Tools() {
 			InitializeComponent();
+			Settings = new ApplicationSettings(Application.ExecutablePath);
 			imageListIcons.ImageSize = SystemInformation.IconSize;
 			new Thread(LoadTools).Start();
+			new Thread(UpdateStartMenu).Start();
 		}
 
 		void LoadTools() {
@@ -40,12 +45,23 @@ namespace Tools {
 					continue;
 				}
 
-				var name = String.IsNullOrEmpty(version.ProductName) ? Path.GetFileNameWithoutExtension(filePath) : version.ProductName;
+				var name = String.IsNullOrEmpty(version.FileDescription) ? Path.GetFileNameWithoutExtension(filePath) : version.FileDescription;
 
 				Invoke((Action)(() => {
 					var listItem = listViewTools.Items.Add(name, fileName);
 					listItem.Tag = filePath;
 				}));
+			}
+		}
+
+		void UpdateStartMenu() {
+			if (!Settings.Default.Boolean["CreatedStartMenuLink"]) {
+				Settings.Default.Boolean["CreatedStartMenuLink"] = true;
+				var shell = new WshShell();
+				var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), Path.ChangeExtension(Application.ProductName, "lnk")));
+				shortcut.TargetPath = Application.ExecutablePath;
+				shortcut.WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath);
+				shortcut.Save();
 			}
 		}
 
@@ -116,7 +132,7 @@ namespace Tools {
 		void listViewTools_SelectedIndexChanged(object sender, EventArgs e) {
 			if (listViewTools.SelectedItems.Count > 0) {
 				ToolFilePath = (string)listViewTools.SelectedItems[0].Tag;
-				using (var reader = new BinaryReader(File.OpenRead(ToolFilePath))) {
+				using (var reader = new BinaryReader(System.IO.File.OpenRead(ToolFilePath))) {
 					ToolIsConsole = GetPESubsystem(reader) == 3;
 				}
 
@@ -124,8 +140,8 @@ namespace Tools {
 				var descFile = Path.GetFileNameWithoutExtension(ToolFilePath) + ".txt";
 
 				labelTool.Text = toolName;
-				if (File.Exists(descFile)) {
-					textBoxDescription.Text = File.ReadAllText(descFile);
+				if (System.IO.File.Exists(descFile)) {
+					textBoxDescription.Text = System.IO.File.ReadAllText(descFile);
 				} else {
 					textBoxDescription.Text = "";
 				}
