@@ -1,5 +1,5 @@
 ﻿//------------------------------------------------------------------------------
-// Simis File, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// Tools, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
 // License: New BSD License (BSD).
 //------------------------------------------------------------------------------
 
