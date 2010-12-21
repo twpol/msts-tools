@@ -26,10 +26,13 @@ namespace Tools {
 			Settings = new ApplicationSettings(Application.ExecutablePath);
 			imageListIcons.ImageSize = SystemInformation.IconSize;
 			new Thread(LoadTools).Start();
-			new Thread(UpdateStartMenu).Start();
+			UpdateCheck();
 		}
 
 		void LoadTools() {
+			var startMenuBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), Application.CompanyName);
+			UpdateStartMenu(startMenuBasePath);
+
 			foreach (var filePath in Directory.GetFiles(Path.GetDirectoryName(Application.ExecutablePath), "*.exe")) {
 				if (filePath.Equals(Application.ExecutablePath, StringComparison.InvariantCultureIgnoreCase)) {
 					continue;
@@ -51,18 +54,59 @@ namespace Tools {
 					var listItem = listViewTools.Items.Add(name, fileName);
 					listItem.Tag = filePath;
 				}));
+
+				// Don't create shortcuts to console applications.
+				using (var reader = new BinaryReader(System.IO.File.OpenRead(filePath))) {
+					if (GetPESubsystem(reader) != 3) {
+						UpdateStartMenu(startMenuBasePath, filePath, name);
+					}
+				}
 			}
 		}
 
-		void UpdateStartMenu() {
-			if (!Settings.Default.Boolean["CreatedStartMenuLink"]) {
-				Settings.Default.Boolean["CreatedStartMenuLink"] = true;
+		void UpdateStartMenu(string startMenuBasePath) {
+			if (!Directory.Exists(startMenuBasePath)) {
+				Directory.CreateDirectory(startMenuBasePath);
+			}
+			UpdateStartMenu(startMenuBasePath, Application.ExecutablePath, Application.ProductName, Path.GetFileName(Settings.Default.Path));
+		}
+
+		void UpdateStartMenu(string startMenuBasePath, string filePath, string name) {
+			UpdateStartMenu(startMenuBasePath, filePath, name, name);
+		}
+
+		void UpdateStartMenu(string startMenuBasePath, string filePath, string name, string settingsGroups) {
+			Console.WriteLine("UpdateStartMenu: " + filePath + " --> " + name);
+			if (!Settings[settingsGroups].Boolean["CreatedStartMenuLink"]) {
+				Settings[settingsGroups].Boolean["CreatedStartMenuLink"] = true;
+
 				var shell = new WshShell();
-				var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), Path.ChangeExtension(Application.ProductName, "lnk")));
-				shortcut.TargetPath = Application.ExecutablePath;
-				shortcut.WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath);
+				var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(startMenuBasePath, string.Format("{0} {1}.lnk", Application.CompanyName, name)));
+				shortcut.TargetPath = filePath;
+				shortcut.WorkingDirectory = Path.GetDirectoryName(filePath);
 				shortcut.Save();
 			}
+		}
+
+		void UpdateCheck() {
+			buttonUpdate.Text = "Checking for updates...";
+			buttonUpdate.Enabled = false;
+			var versionCheck = new CodePlexVersionCheck(Settings, "jgrmsts", "MSTS Editors and Tools", DateTime.Parse("26/09/2010"));
+			versionCheck.CheckComplete += (o1, e1) => this.Invoke((MethodInvoker)(() => {
+				if (versionCheck.HasLatestVersion) {
+					if (versionCheck.IsNewVersion) {
+						buttonUpdate.Enabled = true;
+						buttonUpdate.Text = "Download update from website";
+						toolTip.SetToolTip(buttonUpdate, versionCheck.LatestVersionTitle);
+						buttonUpdate.Click += (o2, e2) => Process.Start(versionCheck.LatestVersionUri.AbsoluteUri);
+					} else {
+						buttonUpdate.Text = "No updates available";
+					}
+				} else {
+					buttonUpdate.Text = "Error checking for updates";
+				}
+			}));
+			versionCheck.Check();
 		}
 
 		[DllImport("shell32.dll")]
