@@ -53,6 +53,7 @@
     <Compile Include="ByteEncoding.cs" />
     <Compile Include="FileFinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimisCompressedStream.cs" />
     <Compile Include="UnclosableStream.cs" />
   </ItemGroup>
   <ItemGroup>
