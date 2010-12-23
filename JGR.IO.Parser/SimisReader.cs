@@ -8,14 +8,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text;
 using Jgr.Grammar;
 
 namespace Jgr.IO.Parser
 {
-	public class SimisReader //: BufferedMessageSource
+	public class SimisReader
 	{
 		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.io.parser.simisreader", "Trace SimisReader");
 
@@ -24,7 +22,6 @@ namespace Jgr.IO.Parser
 		public bool StreamCompressed { get; private set; }
 		public bool EndOfStream { get; private set; }
 		public BnfState BnfState { get; private set; }
-		UnclosableStream BaseStream;
 		SimisProvider SimisProvider;
 		BinaryReader BinaryReader;
 		bool DoneAutoDetect;
@@ -65,26 +62,21 @@ namespace Jgr.IO.Parser
 		#endregion
 
 		public SimisReader(Stream stream, SimisProvider provider)
-			: this(stream, provider, null, SimisStreamFormat.AutoDetect, false) {
+			: this(stream, provider, null) {
 		}
 
-		public SimisReader(Stream stream, SimisProvider provider, SimisFormat simisFormat)
-			: this(stream, provider, simisFormat, SimisStreamFormat.AutoDetect, false) {
-		}
-
-		public SimisReader(Stream stream, SimisProvider provider, SimisFormat simisFormat, SimisStreamFormat format, bool compressed) {
+		public SimisReader(Stream stream, SimisProvider provider, SimisFormat simisFormat) {
 			if (!stream.CanRead) throw new InvalidDataException("Stream must support reading.");
 			if (!stream.CanSeek) throw new InvalidDataException("Stream must support seeking.");
 
-			BaseStream = new UnclosableStream(stream);
-			SimisProvider = provider;
+			var reader = SimisStreamReader.FromStream(stream);
+
 			SimisFormat = simisFormat;
-			StreamFormat = format;
-			StreamCompressed = compressed;
-			EndOfStream = false;
-			BinaryReader = new BinaryReader(BaseStream, new ByteEncoding());
-			DoneAutoDetect = format != SimisStreamFormat.AutoDetect;
-			StreamLength = BaseStream.Length;
+			StreamFormat = reader.IsBinary ? SimisStreamFormat.Binary : SimisStreamFormat.Text;
+			StreamCompressed = reader.IsCompressed;
+			SimisProvider = provider;
+			BinaryReader = reader;
+			StreamLength = reader.UncompressedLength;
 			BlockEndOffsets = new Stack<uint>();
 			PendingTokens = new Queue<SimisToken>();
 		}
@@ -566,64 +558,7 @@ namespace Jgr.IO.Parser
 
 		void AutodetectStreamFormat() {
 			if (SimisReader.TraceSwitch.TraceInfo) Trace.WriteLine("Autodetecting stream format...");
-
-			var start = BaseStream.Position;
-			var streamIsBinary = true;
-
-			// Use the StreamReader's BOM auto-detection to populate our BinaryReader's encoding.
-			{
-				var sr = new StreamReader(BaseStream, true);
-				sr.ReadLine();
-				if (!(sr.CurrentEncoding is UTF8Encoding)) {
-					streamIsBinary = false;
-					BinaryReader.Close();
-					BinaryReader = new BinaryReader(BaseStream, sr.CurrentEncoding);
-					start += sr.CurrentEncoding.GetPreamble().Length;
-				}
-			}
-			BaseStream.Position = start;
-
-			{
-				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
-				if ((signature != "SIMISA@F") && (signature != "SIMISA@@")) {
-					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
-				}
-				StreamCompressed = (signature == "SIMISA@F");
-			}
-
-			if (StreamCompressed) {
-				// This is a compressed stream. Read in the uncompressed size and DEFLATE the rest.
-				var uncompressedSize = BinaryReader.ReadUInt32();
-				StreamLength = BinaryReader.BaseStream.Position + uncompressedSize;
-				{
-					PinReader();
-					var signature = String.Join("", BinaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
-					if (signature != "@@@@") {
-						throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
-					}
-				}
-				// The stream is technically ZLIB, but we assume the selected ZLIB compression is DEFLATE (though we verify that here just in case). The ZLIB
-				// header for DEFLATE is 0x78 0x9C (apparently).
-				{
-					PinReader();
-					var zlibHeader = BinaryReader.ReadBytes(2);
-					if ((zlibHeader[0] != 0x78) || (zlibHeader[1] != 0x9C)) {
-						throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "ZLIB signature is invalid.");
-					}
-				}
-
-				// BinaryReader -> BufferedInMemoryStream -> DeflateStream -> BinaryReader -> BaseStream.
-				// The BufferedInMemoryStream is needed because DeflateStream only supports reading forwards - no seeking - and we'll potentially be jumping around.
-				BinaryReader.Close();
-				BinaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(BaseStream, CompressionMode.Decompress)), new ByteEncoding());
-			} else {
-				PinReader();
-				var signature = String.Join("", BinaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
-				if (signature != "@@@@@@@@") {
-					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
-				}
-			}
+			var isBinary = StreamFormat == SimisStreamFormat.Binary;
 
 			{
 				// For uncompressed binary or test, we start from index 16. For compressed binary, we start from index 0 inside the compressed stream.
@@ -636,24 +571,24 @@ namespace Jgr.IO.Parser
 				//	return;
 				//}
 				if (signature != "JINX") {
-					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
+					throw new ReaderException(BinaryReader, isBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
 			}
 			{
 				PinReader();
 				var signature = String.Join("", BinaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
 				if ((signature[3] != 'b') && (signature[3] != 't')) {
-					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid. Final character must be 'b' or 't'.");
+					throw new ReaderException(BinaryReader, isBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid. Final character must be 'b' or 't'.");
 				}
 				var simisFormat = signature.Substring(1, 2);
 				if (SimisFormat != null) {
 					if (SimisFormat.Format != simisFormat) {
-						throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Simis format '" + simisFormat + "' does not match format provided by caller '" + SimisFormat.Format + "'.");
+						throw new ReaderException(BinaryReader, isBinary, PinReaderChanged(), "Simis format '" + simisFormat + "' does not match format provided by caller '" + SimisFormat.Format + "'.");
 					}
 				} else {
 					SimisFormat = SimisProvider.GetForFormat(simisFormat);
 					if (SimisFormat == null) {
-						throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Simis format '" + simisFormat + "' is not known to " + SimisProvider + ".");
+						throw new ReaderException(BinaryReader, isBinary, PinReaderChanged(), "Simis format '" + simisFormat + "' is not known to " + SimisProvider + ".");
 					}
 				}
 				if (signature[3] == 'b') {
@@ -666,7 +601,7 @@ namespace Jgr.IO.Parser
 				PinReader();
 				var signature = String.Join("", BinaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
 				if (signature != "______\r\n") {
-					throw new ReaderException(BinaryReader, streamIsBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
+					throw new ReaderException(BinaryReader, isBinary, PinReaderChanged(), "Signature '" + signature + "' is invalid.");
 				}
 			}
 

@@ -55,6 +55,8 @@
     <Compile Include="ReaderException.cs" />
     <Compile Include="MutableSimisFile.cs" />
     <Compile Include="SimisFile.cs" />
+    <Compile Include="SimisStreamReader.cs" />
+    <Compile Include="SimisStreamWriter.cs" />
     <Compile Include="UndoRedoSimisFile.cs" />
     <Compile Include="SimisFormat.cs" />
     <Compile Include="SimisProvider.cs" />
