@@ -258,12 +258,13 @@ namespace Normalize
 
 				{
 					result.Total = true;
-					var reader = new SimisReader(readStream, fileProvider);
+					SimisReader reader = null;
 					try {
+						reader = new SimisReader(readStream, fileProvider);
 						reader.ReadToken();
 					} catch (ReaderException) {
 					}
-					if (reader.SimisFormat == null) {
+					if ((reader == null) || (reader.SimisFormat == null)) {
 						return result;
 					}
 					readStream.Position = 0;

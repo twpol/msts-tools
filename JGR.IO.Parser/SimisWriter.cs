@@ -19,7 +19,7 @@ namespace Jgr.IO.Parser
 		public SimisFormat SimisFormat { get; private set; }
 		public SimisStreamFormat StreamFormat { get; private set; }
 		public bool StreamCompressed { get; private set; }
-		UnclosableStream BaseStream;
+		Stream BaseStream;
 		SimisProvider SimisProvider;
 		BinaryWriter BinaryWriter;
 		bool DoneHeader;
@@ -36,12 +36,12 @@ namespace Jgr.IO.Parser
 			if (simisFormat == null) throw new ArgumentException("Cannot save a stream without a simisFormat.", "simisFormat");
 			if (format == SimisStreamFormat.AutoDetect) throw new ArgumentException("Cannot save a stream in Autodetect format.", "format");
 
-			BaseStream = new UnclosableStream(stream);
-			BinaryWriter = new BinaryWriter(BaseStream, new ByteEncoding());
-			SimisProvider = provider;
 			SimisFormat = simisFormat;
 			StreamFormat = format;
 			StreamCompressed = compressed;
+			BaseStream = stream;
+			SimisProvider = provider;
+			BinaryWriter = SimisStreamWriter.ToStream(stream, format == SimisStreamFormat.Binary, compressed);
 			TextBlocked = true;
 			BlockStarts = new Stack<long>();
 		}
