@@ -13,7 +13,7 @@ using Jgr.Grammar;
 
 namespace Jgr.IO.Parser
 {
-	public class SimisReader
+	public class SimisReader : IDisposable
 	{
 		public static TraceSwitch TraceSwitch = new TraceSwitch("jgr.io.parser.simisreader", "Trace SimisReader");
 
@@ -79,6 +79,25 @@ namespace Jgr.IO.Parser
 			StreamLength = reader.UncompressedLength;
 			BlockEndOffsets = new Stack<uint>();
 			PendingTokens = new Queue<SimisToken>();
+		}
+
+		~SimisReader() {
+			Dispose(false);
+		}
+
+		#region IDisposable Members
+
+		public void Dispose() {
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		#endregion
+
+		protected void Dispose(bool disposing) {
+			if (disposing) {
+				BinaryReader.Close();
+			}
 		}
 
 		public SimisToken ReadToken() {

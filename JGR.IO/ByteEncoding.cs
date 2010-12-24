@@ -12,6 +12,8 @@ namespace Jgr.IO
 	/// </summary>
 	public class ByteEncoding : Encoding
 	{
+		public static Encoding Encoding = new ByteEncoding();
+
 		public ByteEncoding() {
 		}
 

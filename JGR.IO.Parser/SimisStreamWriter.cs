@@ -12,10 +12,12 @@ namespace Jgr.IO.Parser {
 	public class SimisStreamWriter : BinaryWriter {
 		public readonly bool IsBinary;
 		public readonly bool IsCompressed;
+		readonly Stream RealStream;
 		readonly long CompressedLengthPosition;
 
-		SimisStreamWriter(Stream output, bool isBinary, bool isCompressed, long compressedLengthPosition)
-			: base(output, isBinary ? (Encoding)new ByteEncoding() : new UnicodeEncoding()) {
+		SimisStreamWriter(Stream realStream, Stream output, bool isBinary, bool isCompressed, long compressedLengthPosition)
+			: base(output, isBinary ? ByteEncoding.Encoding : Encoding.Unicode) {
+			RealStream = realStream;
 			IsBinary = isBinary;
 			IsCompressed = isCompressed;
 			CompressedLengthPosition = compressedLengthPosition;
@@ -23,39 +25,39 @@ namespace Jgr.IO.Parser {
 
 		public static SimisStreamWriter ToStream(Stream output, bool isBinary, bool isCompressed) {
 			var compressedLengthPosition = 0L;
+			var innerStream = output;
 			if (isBinary) {
-				using (var writer = new BinaryWriter(new UnclosableStream(output), new ByteEncoding())) {
+				using (var writer = new BinaryWriter(new UnclosableStream(output), ByteEncoding.Encoding)) {
 					if (isCompressed) {
-						writer.Write("SIMISA@F");
-						//writer.Write(new byte[] { 0x53, 0x49, 0x4D, 0x49, 0x53, 0x41, 0x40, 0x46 }, 0, 8);
+						writer.Write("SIMISA@F".ToCharArray());
 						compressedLengthPosition = output.Position;
-						writer.Write("\0\0\0\0@@@@\x78\x9C");
-						//writer.Write(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x40, 0x40, 0x40, 0x40, 0x78, 0x9C }, 0, 10);
+						writer.Write("\0\0\0\0@@@@\x78\x9C".ToCharArray());
+						innerStream = new BufferedInMemoryStream(new DeflateStream(output, CompressionMode.Compress));
 					} else {
-						writer.Write("SIMISA@@@@@@@@@@");
-						//writer.Write(new byte[] { 0x53, 0x49, 0x4D, 0x49, 0x53, 0x41, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40 }, 0, 16);
+						writer.Write("SIMISA@@@@@@@@@@".ToCharArray());
 					}
 				}
-				return new SimisStreamWriter(new BufferedInMemoryStream(new DeflateStream(output, CompressionMode.Compress)), isBinary, isCompressed, compressedLengthPosition);
 			} else {
 				Debug.Assert(!isCompressed, "SimisStreamWriter does not support compressed text.");
-				using (var writer = new BinaryWriter(new UnclosableStream(output), new UnicodeEncoding())) {
-					writer.Write("SIMISA@@@@@@@@@@");
+				using (var writer = new BinaryWriter(new UnclosableStream(output), Encoding.Unicode)) {
+					writer.Write(Encoding.Unicode.GetPreamble());
+					writer.Write("SIMISA@@@@@@@@@@".ToCharArray());
 				}
-				return new SimisStreamWriter(output, isBinary, isCompressed, compressedLengthPosition);
 			}
+			return new SimisStreamWriter(output, innerStream, isBinary, isCompressed, compressedLengthPosition);
 		}
 
-		public override void Flush() {
-			if (IsCompressed) {
-				var position = BaseStream.Position;
-				BaseStream.Position = CompressedLengthPosition;
-				using (var writer = new BinaryWriter(new UnclosableStream(BaseStream), new ByteEncoding())) {
-					writer.Write((int)0);
+		protected override void Dispose(bool disposing) {
+			if (disposing && IsCompressed) {
+				((BufferedInMemoryStream)BaseStream).RealFlush();
+				var position = RealStream.Position;
+				RealStream.Position = CompressedLengthPosition;
+				using (var writer = new BinaryWriter(new UnclosableStream(RealStream), ByteEncoding.Encoding)) {
+					writer.Write((int)BaseStream.Position);
 				}
-				BaseStream.Position = position;
+				RealStream.Position = position;
 			}
-			base.Flush();
+			base.Dispose(disposing);
 		}
 	}
 }

@@ -16,7 +16,7 @@ namespace Jgr.IO.Parser {
 		public readonly long UncompressedLength;
 
 		SimisStreamReader(Stream input, bool isBinary, bool isCompressed, long uncompressedLength)
-			: base(input, isBinary ? (Encoding)new ByteEncoding() : new UnicodeEncoding()) {
+			: base(input, isBinary ? ByteEncoding.Encoding : Encoding.Unicode) {
 			IsBinary = isBinary;
 			IsCompressed = isCompressed;
 			UncompressedLength = uncompressedLength;
@@ -27,14 +27,14 @@ namespace Jgr.IO.Parser {
 
 			var position = input.Position;
 			input.Position = 0;
-			using (var reader = new BinaryReader(new UnclosableStream(input), new ByteEncoding())) {
+			using (var reader = new BinaryReader(new UnclosableStream(input), ByteEncoding.Encoding)) {
 				using (var sr = new StreamReader(new UnclosableStream(input), true)) {
 					sr.ReadLine();
 					input.Position = position;
 					switch (sr.CurrentEncoding.BodyName) {
 						case "utf-16":
 							isBinary = false;
-							input.Position += new UnicodeEncoding().GetPreamble().Length;
+							input.Position += Encoding.Unicode.GetPreamble().Length;
 							break;
 						case "utf-8":
 							break;
@@ -45,7 +45,7 @@ namespace Jgr.IO.Parser {
 			}
 
 			position = input.Position;
-			using (var reader = new BinaryReader(new UnclosableStream(input), isBinary ? (Encoding)new ByteEncoding() : new UnicodeEncoding())) {
+			using (var reader = new BinaryReader(new UnclosableStream(input), isBinary ? ByteEncoding.Encoding : Encoding.Unicode)) {
 				var signature = String.Join("", reader.ReadChars(8).Select(c => c.ToString()).ToArray());
 				switch (signature) {
 					case "SIMISA@F":
