@@ -27,7 +27,6 @@
 		private void InitializeComponent() {
 			this.components = new System.ComponentModel.Container();
 			System.Windows.Forms.StatusStrip statusBar;
-			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("No file loaded");
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Editor));
 			this.statusBarProgress = new System.Windows.Forms.ToolStripProgressBar();
 			this.statusBarLabel = new System.Windows.Forms.ToolStripStatusLabel();
@@ -69,10 +68,24 @@
 			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
 			this.sendFeedbackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.zoomInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.zoomOutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.zoomToWindowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.actualSizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.AceContainer = new System.Windows.Forms.Panel();
+			this.AceImage = new System.Windows.Forms.PictureBox();
+			this.AceChannels = new System.Windows.Forms.Panel();
+			this.AceChannel = new System.Windows.Forms.PictureBox();
+			this.FileStatus = new System.Windows.Forms.Label();
 			statusBar = new System.Windows.Forms.StatusStrip();
 			statusBar.SuspendLayout();
 			this.contextMenuStrip.SuspendLayout();
 			this.menuStrip.SuspendLayout();
+			this.AceContainer.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.AceImage)).BeginInit();
+			this.AceChannels.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.AceChannel)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// statusBar
@@ -145,6 +158,7 @@
 			this.SimisProperties.Size = new System.Drawing.Size(302, 516);
 			this.SimisProperties.TabIndex = 2;
 			this.SimisProperties.ToolbarVisible = false;
+			this.SimisProperties.Visible = false;
 			this.SimisProperties.PropertyValueChanged += new System.Windows.Forms.PropertyValueChangedEventHandler(this.SimisProperties_PropertyValueChanged);
 			// 
 			// SimisTree
@@ -155,15 +169,11 @@
 			this.SimisTree.HideSelection = false;
 			this.SimisTree.Location = new System.Drawing.Point(0, 24);
 			this.SimisTree.Name = "SimisTree";
-			treeNode1.Name = "Node0";
-			treeNode1.NodeFont = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			treeNode1.Text = "No file loaded";
-			this.SimisTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode1});
 			this.SimisTree.ShowNodeToolTips = true;
 			this.SimisTree.ShowRootLines = false;
 			this.SimisTree.Size = new System.Drawing.Size(482, 516);
 			this.SimisTree.TabIndex = 0;
+			this.SimisTree.Visible = false;
 			this.SimisTree.MouseUp += new System.Windows.Forms.MouseEventHandler(this.SimisTree_MouseUp);
 			this.SimisTree.Enter += new System.EventHandler(this.SimisTree_Enter);
 			this.SimisTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.SimisTree_AfterSelect);
@@ -189,6 +199,7 @@
 			this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.editToolStripMenuItem,
+            this.viewToolStripMenuItem,
             this.helpToolStripMenuItem});
 			this.menuStrip.Location = new System.Drawing.Point(0, 0);
 			this.menuStrip.Name = "menuStrip";
@@ -215,7 +226,7 @@
 			this.newToolStripMenuItem.Enabled = false;
 			this.newToolStripMenuItem.Name = "newToolStripMenuItem";
 			this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-			this.newToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+			this.newToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.newToolStripMenuItem.Text = "&New";
 			this.newToolStripMenuItem.ToolTipText = "Create a new Simis file.";
 			this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
@@ -224,7 +235,7 @@
 			// 
 			this.openToolStripMenuItem.Name = "openToolStripMenuItem";
 			this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-			this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+			this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.ToolTipText = "Open an existing Simis file.";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
@@ -234,7 +245,7 @@
 			this.saveToolStripMenuItem.Enabled = false;
 			this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
 			this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-			this.saveToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+			this.saveToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.saveToolStripMenuItem.Text = "&Save";
 			this.saveToolStripMenuItem.ToolTipText = "Save the current Simis file.";
 			this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
@@ -243,7 +254,7 @@
 			// 
 			this.saveAsToolStripMenuItem.Enabled = false;
 			this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.saveAsToolStripMenuItem.Text = "Save &As...";
 			this.saveAsToolStripMenuItem.ToolTipText = "Save the current Simis file with a different name.";
 			this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
@@ -251,12 +262,12 @@
 			// toolStripMenuItem1
 			// 
 			this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-			this.toolStripMenuItem1.Size = new System.Drawing.Size(143, 6);
+			this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
 			// 
 			// exitToolStripMenuItem
 			// 
 			this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-			this.exitToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+			this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.exitToolStripMenuItem.Text = "E&xit";
 			this.exitToolStripMenuItem.ToolTipText = "Close Simis Editor.";
 			this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
@@ -285,6 +296,7 @@
 			this.undoToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Z)));
 			this.undoToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.undoToolStripMenuItem.Text = "&Undo";
+			this.undoToolStripMenuItem.ToolTipText = "Undo the most recent operation.";
 			this.undoToolStripMenuItem.Click += new System.EventHandler(this.undoToolStripMenuItem_Click);
 			// 
 			// redoToolStripMenuItem
@@ -294,6 +306,7 @@
 			this.redoToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Y)));
 			this.redoToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.redoToolStripMenuItem.Text = "&Redo";
+			this.redoToolStripMenuItem.ToolTipText = "Redo the most recently undone operation.";
 			this.redoToolStripMenuItem.Click += new System.EventHandler(this.redoToolStripMenuItem_Click);
 			// 
 			// toolStripMenuItem2
@@ -309,6 +322,7 @@
 			this.cutToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X)));
 			this.cutToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.cutToolStripMenuItem.Text = "Cu&t";
+			this.cutToolStripMenuItem.ToolTipText = "Cut the selection, removing it from the source.";
 			this.cutToolStripMenuItem.Click += new System.EventHandler(this.cutToolStripMenuItem_Click);
 			// 
 			// copyToolStripMenuItem
@@ -318,6 +332,7 @@
 			this.copyToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C)));
 			this.copyToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.copyToolStripMenuItem.Text = "&Copy";
+			this.copyToolStripMenuItem.ToolTipText = "Copy the current selection.";
 			this.copyToolStripMenuItem.Click += new System.EventHandler(this.copyToolStripMenuItem_Click);
 			// 
 			// pasteToolStripMenuItem
@@ -327,6 +342,7 @@
 			this.pasteToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V)));
 			this.pasteToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.pasteToolStripMenuItem.Text = "&Paste";
+			this.pasteToolStripMenuItem.ToolTipText = "Paste the contents of the clipboard.";
 			this.pasteToolStripMenuItem.Click += new System.EventHandler(this.pasteToolStripMenuItem_Click);
 			// 
 			// deleteToolStripMenuItem
@@ -336,6 +352,7 @@
 			this.deleteToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.Delete;
 			this.deleteToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.deleteToolStripMenuItem.Text = "De&lete";
+			this.deleteToolStripMenuItem.ToolTipText = "Remove the contents of the current selection.";
 			this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
 			// 
 			// toolStripMenuItem3
@@ -350,6 +367,7 @@
 			this.selectAllToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.A)));
 			this.selectAllToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
 			this.selectAllToolStripMenuItem.Text = "Select &All";
+			this.selectAllToolStripMenuItem.ToolTipText = "Select everything.";
 			this.selectAllToolStripMenuItem.Click += new System.EventHandler(this.selectAllToolStripMenuItem_Click);
 			// 
 			// helpToolStripMenuItem
@@ -419,14 +437,115 @@
 			this.sendFeedbackToolStripMenuItem.Text = "Send Feedback...";
 			this.sendFeedbackToolStripMenuItem.Click += new System.EventHandler(this.sendFeedbackToolStripMenuItem_Click);
 			// 
+			// viewToolStripMenuItem
+			// 
+			this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.zoomInToolStripMenuItem,
+            this.zoomOutToolStripMenuItem,
+            this.zoomToWindowToolStripMenuItem,
+            this.actualSizeToolStripMenuItem});
+			this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+			this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
+			this.viewToolStripMenuItem.Text = "&View";
+			// 
+			// zoomInToolStripMenuItem
+			// 
+			this.zoomInToolStripMenuItem.Enabled = false;
+			this.zoomInToolStripMenuItem.Name = "zoomInToolStripMenuItem";
+			this.zoomInToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.zoomInToolStripMenuItem.Text = "Zoom &In";
+			this.zoomInToolStripMenuItem.ToolTipText = "Zoom in on the image.";
+			// 
+			// zoomOutToolStripMenuItem
+			// 
+			this.zoomOutToolStripMenuItem.Enabled = false;
+			this.zoomOutToolStripMenuItem.Name = "zoomOutToolStripMenuItem";
+			this.zoomOutToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.zoomOutToolStripMenuItem.Text = "Zoom &Out";
+			this.zoomOutToolStripMenuItem.ToolTipText = "Zoom out of the image.";
+			// 
+			// zoomToWindowToolStripMenuItem
+			// 
+			this.zoomToWindowToolStripMenuItem.Enabled = false;
+			this.zoomToWindowToolStripMenuItem.Name = "zoomToWindowToolStripMenuItem";
+			this.zoomToWindowToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.zoomToWindowToolStripMenuItem.Text = "Zoom to &Window";
+			this.zoomToWindowToolStripMenuItem.ToolTipText = "Zoom the image so it fits in the window.";
+			// 
+			// actualSizeToolStripMenuItem
+			// 
+			this.actualSizeToolStripMenuItem.Enabled = false;
+			this.actualSizeToolStripMenuItem.Name = "actualSizeToolStripMenuItem";
+			this.actualSizeToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.actualSizeToolStripMenuItem.Text = "&Actual Size";
+			this.actualSizeToolStripMenuItem.ToolTipText = "Zoom the image to its actual size.";
+			// 
+			// AceContainer
+			// 
+			this.AceContainer.AutoScroll = true;
+			this.AceContainer.AutoScrollMargin = new System.Drawing.Size(3, 3);
+			this.AceContainer.AutoSize = true;
+			this.AceContainer.Controls.Add(this.AceImage);
+			this.AceContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.AceContainer.Location = new System.Drawing.Point(0, 24);
+			this.AceContainer.Name = "AceContainer";
+			this.AceContainer.Size = new System.Drawing.Size(282, 516);
+			this.AceContainer.TabIndex = 4;
+			this.AceContainer.TabStop = true;
+			this.AceContainer.Visible = false;
+			// 
+			// AceImage
+			// 
+			this.AceImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+			this.AceImage.Location = new System.Drawing.Point(3, 3);
+			this.AceImage.Name = "AceImage";
+			this.AceImage.Size = new System.Drawing.Size(1000, 1000);
+			this.AceImage.TabIndex = 0;
+			this.AceImage.TabStop = false;
+			// 
+			// AceChannels
+			// 
+			this.AceChannels.AutoScroll = true;
+			this.AceChannels.AutoScrollMargin = new System.Drawing.Size(3, 3);
+			this.AceChannels.Controls.Add(this.AceChannel);
+			this.AceChannels.Dock = System.Windows.Forms.DockStyle.Right;
+			this.AceChannels.Location = new System.Drawing.Point(282, 24);
+			this.AceChannels.Name = "AceChannels";
+			this.AceChannels.Size = new System.Drawing.Size(200, 516);
+			this.AceChannels.TabIndex = 5;
+			this.AceChannels.Visible = false;
+			// 
+			// AceChannel
+			// 
+			this.AceChannel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+						| System.Windows.Forms.AnchorStyles.Right)));
+			this.AceChannel.BackColor = System.Drawing.Color.White;
+			this.AceChannel.Location = new System.Drawing.Point(3, 3);
+			this.AceChannel.Name = "AceChannel";
+			this.AceChannel.Size = new System.Drawing.Size(192, 192);
+			this.AceChannel.TabIndex = 0;
+			this.AceChannel.TabStop = false;
+			// 
+			// FileStatus
+			// 
+			this.FileStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.FileStatus.Location = new System.Drawing.Point(0, 24);
+			this.FileStatus.Name = "FileStatus";
+			this.FileStatus.Size = new System.Drawing.Size(784, 516);
+			this.FileStatus.TabIndex = 1;
+			this.FileStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+			// 
 			// Editor
 			// 
 			this.AllowDrop = true;
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(784, 562);
+			this.Controls.Add(this.AceContainer);
+			this.Controls.Add(this.AceChannels);
 			this.Controls.Add(this.SimisTree);
 			this.Controls.Add(this.SimisProperties);
+			this.Controls.Add(this.FileStatus);
 			this.Controls.Add(statusBar);
 			this.Controls.Add(this.menuStrip);
 			this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -442,6 +561,10 @@
 			this.contextMenuStrip.ResumeLayout(false);
 			this.menuStrip.ResumeLayout(false);
 			this.menuStrip.PerformLayout();
+			this.AceContainer.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.AceImage)).EndInit();
+			this.AceChannels.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.AceChannel)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -489,6 +612,16 @@
 		private System.Windows.Forms.ToolStripMenuItem nodeLabelToolStripMenuItem;
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem5;
 		private System.Windows.Forms.ToolStripMenuItem sendFeedbackToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem zoomInToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem zoomOutToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem zoomToWindowToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem actualSizeToolStripMenuItem;
+		private System.Windows.Forms.Panel AceContainer;
+		private System.Windows.Forms.PictureBox AceImage;
+		private System.Windows.Forms.Panel AceChannels;
+		private System.Windows.Forms.PictureBox AceChannel;
+		private System.Windows.Forms.Label FileStatus;
 	}
 }
 

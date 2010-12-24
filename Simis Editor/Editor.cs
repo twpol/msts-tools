@@ -62,6 +62,10 @@ namespace SimisEditor
 			foreach (ToolStripMenuItem item in menuStrip.Items) {
 				InitializeMenu(item);
 			}
+			UpdateTitle();
+			UpdateMenu();
+			UpdateViewer();
+			UpdateStatusbar();
 		}
 
 		void InitializeMenu(ToolStripItem toolStripItem) {
@@ -174,6 +178,8 @@ namespace SimisEditor
 			ResyncSimisNodes();
 			UpdateTitle();
 			UpdateMenu();
+			UpdateViewer();
+			UpdateStatusbar();
 		}
 
 		bool OpenFile(string filename) {
@@ -186,18 +192,36 @@ namespace SimisEditor
 				return false;
 			}
 
+			// Put UI in to loading state.
+			Filename = "";
+			File = null;
+			SelectNode(null);
+			UpdateTitle();
+			UpdateMenu();
+			UpdateViewer(true);
+			UpdateStatusbar();
+			Refresh();
+
+			// Wipe out anything we had left.
+			SimisTree.Nodes.Clear();
+
+			// Set up for new file.
 			Filename = filename;
 			File = newFile;
-			SavedFileTree = File.Tree;
-			SimisTree.SelectedNode = null;
-			ResyncSimisNodes();
-			SimisTree.ExpandAll();
-			if (SimisTree.Nodes.Count > 0) {
-				SimisTree.TopNode = SimisTree.Nodes[0];
-				SimisTree.SelectedNode = SimisTree.Nodes[0];
+			if (true) {
+				SavedFileTree = File.Tree;
+				ResyncSimisNodes();
+				SimisTree.ExpandAll();
+				if (SimisTree.Nodes.Count > 0) {
+					SimisTree.TopNode = SimisTree.Nodes[0];
+					SimisTree.SelectedNode = SimisTree.Nodes[0];
+				}
+			} else {
 			}
 			UpdateTitle();
 			UpdateMenu();
+			UpdateViewer();
+			UpdateStatusbar();
 			return true;
 		}
 
@@ -306,6 +330,7 @@ namespace SimisEditor
 			SelectNode(SimisTree.SelectedNode);
 			UpdateTitle();
 			UpdateMenu();
+			UpdateStatusbar();
 		}
 
 		void redoToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -314,6 +339,7 @@ namespace SimisEditor
 			SelectNode(SimisTree.SelectedNode);
 			UpdateTitle();
 			UpdateMenu();
+			UpdateStatusbar();
 		}
 
 		void cutToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -404,7 +430,8 @@ namespace SimisEditor
 
         void SimisTree_AfterSelect(object sender, TreeViewEventArgs e) {
             SelectNode(e.Node);
-        }
+			UpdateStatusbar();
+		}
 
 		void SimisTree_MouseUp(object sender, MouseEventArgs e) {
 			// Basically fake right-clicking the tree so we can get the tree node that was right-clicked (KB810001).
@@ -570,6 +597,7 @@ namespace SimisEditor
 			SelectNode(SimisTree.SelectedNode);
 			UpdateTitle();
 			UpdateMenu();
+			UpdateStatusbar();
 		}
 
 		void SimisProperties_PropertyValueChanged(object s, PropertyValueChangedEventArgs e) {
@@ -609,6 +637,7 @@ namespace SimisEditor
 			SelectNode(SimisTree.SelectedNode);
 			UpdateTitle();
 			UpdateMenu();
+			UpdateStatusbar();
 		}
 
 		#endregion
@@ -624,6 +653,22 @@ namespace SimisEditor
 		void UpdateMenu() {
 			saveToolStripMenuItem.Enabled = File != null;
 			saveAsToolStripMenuItem.Enabled = File != null;
+		}
+
+		void UpdateViewer() {
+			UpdateViewer(false);
+		}
+
+		void UpdateViewer(bool loading) {
+			if (loading) {
+				FileStatus.Text = "Loading...";
+			} else {
+				FileStatus.Text = "No file loaded.";
+			}
+			SimisTree.Visible = File != null && !String.IsNullOrEmpty(Filename);
+			SimisProperties.Visible = File != null && !String.IsNullOrEmpty(Filename);
+			AceContainer.Visible = false;
+			AceChannels.Visible = false;
 		}
 
 		void UpdateStatusbar() {
@@ -709,7 +754,6 @@ namespace SimisEditor
 				SelectedNode = treeNode;
 				SimisProperties.SelectedObject = CreateEditObjectFor((SimisTreeNode)SelectedNode.Tag);
 			}
-			UpdateStatusbar();
         }
 
 		static string BlockToNameString(SimisTreeNode block) {
