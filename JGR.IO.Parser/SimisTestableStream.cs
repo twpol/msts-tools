@@ -23,8 +23,8 @@ namespace Jgr.IO.Parser
 
 			var start = baseStream.Position;
 			var streamCompressed = false;
-			var binaryReader = new BinaryReader(baseStream, new ByteEncoding());
-			var binaryWriter = new BinaryWriter(UncompressedStream, new ByteEncoding());
+			var binaryReader = new BinaryReader(baseStream, ByteEncoding.Encoding);
+			var binaryWriter = new BinaryWriter(UncompressedStream, ByteEncoding.Encoding);
 			{
 				var sr = new StreamReader(baseStream, true);
 				sr.ReadLine();
@@ -69,7 +69,7 @@ namespace Jgr.IO.Parser
 				// BinaryReader -> BufferedInMemoryStream -> DeflateStream -> BinaryReader -> BaseStream.
 				// The BufferedInMemoryStream is needed because DeflateStream only supports reading forwards - no seeking - and we'll potentially be jumping around.
 				binaryReader.Close();
-				binaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(baseStream, CompressionMode.Decompress)), new ByteEncoding());
+				binaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(baseStream, CompressionMode.Decompress)), ByteEncoding.Encoding);
 			} else {
 				var signature = String.Join("", binaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
 				if (signature != "@@@@@@@@") {

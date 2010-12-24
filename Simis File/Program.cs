@@ -205,7 +205,7 @@ namespace Normalize
 						outputFile += ".normalized";
 					}
 					using (var outputStream = File.OpenWrite(outputFile)) {
-						using (var outputStreamWriter = new BinaryWriter(outputStream, new ByteEncoding())) {
+						using (var outputStreamWriter = new BinaryWriter(outputStream, ByteEncoding.Encoding)) {
 							while (inputStream.Position < inputStream.Length) {
 								outputStreamWriter.Write((byte)inputStream.ReadByte());
 							}
@@ -253,22 +253,23 @@ namespace Normalize
 				var formatCount = new TestFormatCount();
 				var fileProvider = provider.GetForPath(file);
 				SimisFile newFile = null;
-				Stream readStream = new BufferedInMemoryStream(File.OpenRead(file));
-				Stream saveStream = new MemoryStream();
+				Stream readStream = new UnclosableStream(new BufferedInMemoryStream(File.OpenRead(file)));
+				Stream saveStream = new UnclosableStream(new MemoryStream());
 
 				{
 					result.Total = true;
-					SimisReader reader = null;
 					try {
-						reader = new SimisReader(readStream, fileProvider);
-						reader.ReadToken();
+						using (var reader = new SimisReader(readStream, fileProvider)) {
+							reader.ReadToken();
+							if (reader.SimisFormat == null) {
+								return result;
+							}
+							result.SimisFormat = reader.SimisFormat;
+						}
 					} catch (ReaderException) {
-					}
-					if ((reader == null) || (reader.SimisFormat == null)) {
 						return result;
 					}
 					readStream.Position = 0;
-					result.SimisFormat = reader.SimisFormat;
 				}
 
 				// First, read the file in.
@@ -308,8 +309,8 @@ namespace Normalize
 				// Third, verify that the output is the same as the input.
 				readStream.Seek(0, SeekOrigin.Begin);
 				saveStream.Seek(0, SeekOrigin.Begin);
-				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
-				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? new ByteEncoding() : Encoding.Unicode);
+				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? ByteEncoding.Encoding : Encoding.Unicode);
+				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? ByteEncoding.Encoding : Encoding.Unicode);
 				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
 					var oldPos = readReader.BaseStream.Position;
 					var fileChar = readReader.ReadChar();

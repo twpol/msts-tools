@@ -27,7 +27,9 @@ namespace Jgr.IO.Parser {
 			SimisProvider = simisProvider;
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
-					ReadStream(fileStream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
+					using (var stream = new BufferedInMemoryStream(fileStream)) {
+						ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
+					}
 				}
 			} catch (ReaderException e) {
 				throw new FileException(FileName, e);
@@ -64,55 +66,56 @@ namespace Jgr.IO.Parser {
 		}
 
 		void ReadStream(Stream stream, out SimisFormat simisFormat, out SimisStreamFormat streamFormat, out bool streamCompressed, out SimisTreeNode tree) {
-			var reader = new SimisReader(new BufferedInMemoryStream(stream), SimisProvider, SimisFormat);
+			using (var reader = new SimisReader(stream, SimisProvider, SimisFormat)) {
 
-			var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
-			blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(null, new List<SimisTreeNode>()));
-			while (!reader.EndOfStream) {
-				var token = reader.ReadToken();
+				var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
+				blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(null, new List<SimisTreeNode>()));
+				while (!reader.EndOfStream) {
+					var token = reader.ReadToken();
 
-				switch (token.Kind) {
-					case SimisTokenKind.Block:
-						blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(token, new List<SimisTreeNode>()));
-						break;
-					case SimisTokenKind.BlockBegin:
-						break;
-					case SimisTokenKind.BlockEnd:
-						if (blockStack.Peek().Key != null) {
-							var block = blockStack.Pop();
-							var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
-							blockStack.Peek().Value.Add(node);
-						}
-						break;
-					case SimisTokenKind.IntegerUnsigned:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.Name, token.IntegerUnsigned));
-						break;
-					case SimisTokenKind.IntegerSigned:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, token.Name, token.IntegerSigned));
-						break;
-					case SimisTokenKind.IntegerDWord:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, token.Name, token.IntegerDWord));
-						break;
-					case SimisTokenKind.IntegerWord:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerWord(token.Type, token.Name, (ushort)token.IntegerDWord));
-						break;
-					case SimisTokenKind.IntegerByte:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerByte(token.Type, token.Name, (byte)token.IntegerDWord));
-						break;
-					case SimisTokenKind.Float:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, token.Name, token.Float));
-						break;
-					case SimisTokenKind.String:
-						blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, token.Name, token.String));
-						break;
+					switch (token.Kind) {
+						case SimisTokenKind.Block:
+							blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(token, new List<SimisTreeNode>()));
+							break;
+						case SimisTokenKind.BlockBegin:
+							break;
+						case SimisTokenKind.BlockEnd:
+							if (blockStack.Peek().Key != null) {
+								var block = blockStack.Pop();
+								var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
+								blockStack.Peek().Value.Add(node);
+							}
+							break;
+						case SimisTokenKind.IntegerUnsigned:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.Name, token.IntegerUnsigned));
+							break;
+						case SimisTokenKind.IntegerSigned:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, token.Name, token.IntegerSigned));
+							break;
+						case SimisTokenKind.IntegerDWord:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, token.Name, token.IntegerDWord));
+							break;
+						case SimisTokenKind.IntegerWord:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerWord(token.Type, token.Name, (ushort)token.IntegerDWord));
+							break;
+						case SimisTokenKind.IntegerByte:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerByte(token.Type, token.Name, (byte)token.IntegerDWord));
+							break;
+						case SimisTokenKind.Float:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, token.Name, token.Float));
+							break;
+						case SimisTokenKind.String:
+							blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, token.Name, token.String));
+							break;
+					}
 				}
-			}
 
-			var rootBlock = blockStack.Pop();
-			simisFormat = reader.SimisFormat;
-			streamFormat = reader.StreamFormat;
-			streamCompressed = reader.StreamCompressed;
-			tree = new SimisTreeNode("<root>", "", rootBlock.Value);
+				var rootBlock = blockStack.Pop();
+				simisFormat = reader.SimisFormat;
+				streamFormat = reader.StreamFormat;
+				streamCompressed = reader.StreamCompressed;
+				tree = new SimisTreeNode("<root>", "", rootBlock.Value);
+			}
 		}
 
 		/// <summary>
@@ -134,9 +137,10 @@ namespace Jgr.IO.Parser {
 		/// </summary>
 		/// <param name="stream">The <see cref="Stream"/> to write to.</param>
 		public void Write(Stream stream) {
-			var writer = new SimisWriter(stream, SimisProvider, SimisFormat, StreamFormat, StreamCompressed);
-			WriteBlockChildren(writer, Tree);
-			writer.WriteEnd();
+			using (var writer = new SimisWriter(stream, SimisProvider, SimisFormat, StreamFormat, StreamCompressed)) {
+				WriteBlockChildren(writer, Tree);
+				writer.WriteEnd();
+			}
 		}
 
 		void WriteBlock(SimisWriter writer, SimisTreeNode block) {

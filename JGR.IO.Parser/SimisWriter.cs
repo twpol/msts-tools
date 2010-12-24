@@ -14,7 +14,7 @@ using Jgr.Grammar;
 
 namespace Jgr.IO.Parser
 {
-	class SimisWriter
+	class SimisWriter : IDisposable
 	{
 		public SimisFormat SimisFormat { get; private set; }
 		public SimisStreamFormat StreamFormat { get; private set; }
@@ -22,7 +22,6 @@ namespace Jgr.IO.Parser
 		Stream BaseStream;
 		SimisProvider SimisProvider;
 		BinaryWriter BinaryWriter;
-		bool DoneHeader;
 		int TextIndent;
 		bool TextBlocked;
 		bool TextBlockEmpty;
@@ -44,11 +43,34 @@ namespace Jgr.IO.Parser
 			BinaryWriter = SimisStreamWriter.ToStream(stream, format == SimisStreamFormat.Binary, compressed);
 			TextBlocked = true;
 			BlockStarts = new Stack<long>();
+
+			if (StreamFormat == SimisStreamFormat.Text) {
+				BinaryWriter.Write(("JINX0" + SimisFormat.Format + "t______\r\n\r\n").ToCharArray());
+			} else {
+				BinaryWriter.Write(("JINX0" + SimisFormat.Format + "b______\r\n").ToCharArray());
+			}
+		}
+
+		~SimisWriter() {
+			Dispose(false);
+		}
+
+		#region IDisposable Members
+
+		public void Dispose() {
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		#endregion
+
+		protected void Dispose(bool disposing) {
+			if (disposing) {
+				BinaryWriter.Close();
+			}
 		}
 
 		public void WriteToken(SimisToken token) {
-			if (!DoneHeader) WriteHeader();
-
 			if (StreamFormat == SimisStreamFormat.Text) {
 				switch (token.Kind) {
 					case SimisTokenKind.Block:
@@ -238,56 +260,6 @@ namespace Jgr.IO.Parser
 			if (StreamFormat == SimisStreamFormat.Text) {
 				BinaryWriter.Write("\r\n".ToCharArray());
 			}
-			if (StreamCompressed) {
-				var uncompressedSize = BinaryWriter.BaseStream.Position;
-				((BufferedInMemoryStream)BinaryWriter.BaseStream).RealFlush();
-				BinaryWriter.Close();
-				if (StreamFormat == SimisStreamFormat.Text) {
-					BinaryWriter = new BinaryWriter(BaseStream, Encoding.Unicode);
-					BinaryWriter.Seek(8 + Encoding.Unicode.GetPreamble().Length, SeekOrigin.Begin);
-				} else {
-					BinaryWriter = new BinaryWriter(BaseStream, new ByteEncoding());
-					BinaryWriter.Seek(8, SeekOrigin.Begin);
-				}
-				BinaryWriter.Write((uint)uncompressedSize);
-			}
-			BinaryWriter.Close();
-		}
-
-		void WriteHeader() {
-			// We support:
-			//   Text (uncompressed)   ==> UTF16LE text
-			//   Binary (uncompressed) ==> binary
-			//   Binary (compressed)   ==> Deflate binary
-
-			if (StreamFormat == SimisStreamFormat.Text) {
-				BinaryWriter.Write(Encoding.Unicode.GetPreamble());
-				BinaryWriter.Close();
-				BinaryWriter = new BinaryWriter(BaseStream, Encoding.Unicode);
-			}
-
-			if (StreamCompressed) {
-				BinaryWriter.Write("SIMISA@F".ToCharArray());
-			} else {
-				BinaryWriter.Write("SIMISA@@@@@@@@@@".ToCharArray());
-			}
-
-			if (StreamCompressed) {
-				BinaryWriter.Write((uint)0x7F8F7F8F);
-				BinaryWriter.Write("@@@@".ToCharArray());
-				BinaryWriter.Write((byte)0x78);
-				BinaryWriter.Write((byte)0x9C);
-				BinaryWriter.Close();
-				BinaryWriter = new BinaryWriter(new BufferedInMemoryStream(new DeflateStream(BaseStream, CompressionMode.Compress)), new ByteEncoding());
-			}
-
-			if (StreamFormat == SimisStreamFormat.Text) {
-				BinaryWriter.Write(("JINX0" + SimisFormat.Format + "t______\r\n\r\n").ToCharArray());
-			} else {
-				BinaryWriter.Write(("JINX0" + SimisFormat.Format + "b______\r\n").ToCharArray());
-			}
-
-			DoneHeader = true;
 		}
 	}
 }
