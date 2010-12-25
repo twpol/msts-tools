@@ -39,6 +39,7 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -54,17 +55,21 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReaderException.cs" />
     <Compile Include="MutableSimisFile.cs" />
+    <Compile Include="SimisAce.cs" />
+    <Compile Include="SimisAceReader.cs" />
     <Compile Include="SimisFile.cs" />
+    <Compile Include="SimisReader.cs" />
     <Compile Include="SimisStreamReader.cs" />
     <Compile Include="SimisStreamWriter.cs" />
+    <Compile Include="SimisWriter.cs" />
     <Compile Include="UndoRedoSimisFile.cs" />
-    <Compile Include="SimisFormat.cs" />
+    <Compile Include="SimisJinxFormat.cs" />
     <Compile Include="SimisProvider.cs" />
     <Compile Include="SimisJinxReader.cs" />
     <Compile Include="SimisTree.cs" />
     <Compile Include="SimisTypes.cs" />
     <Compile Include="SimisTestableStream.cs" />
-    <Compile Include="SimisWriter.cs" />
+    <Compile Include="SimisJinxWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JGR.Grammar\JGR.Grammar.csproj">
