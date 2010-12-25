@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 
 namespace Jgr.IO.Parser {
+	[Immutable]
 	public class SimisStreamReader : BinaryReader {
 		public readonly bool IsBinary;
 		public readonly bool IsCompressed;
@@ -46,13 +47,13 @@ namespace Jgr.IO.Parser {
 
 			position = input.Position;
 			using (var reader = new BinaryReader(new UnclosableStream(input), isBinary ? ByteEncoding.Encoding : Encoding.Unicode)) {
-				var signature = String.Join("", reader.ReadChars(8).Select(c => c.ToString()).ToArray());
+				var signature = new String(reader.ReadChars(8));
 				switch (signature) {
 					case "SIMISA@F":
 						// Compressed header has the uncompressed size embedded in the @-padding.
 						var uncompressedLength = reader.ReadUInt32();
 						position = input.Position;
-						signature = String.Join("", reader.ReadChars(4).Select(c => c.ToString()).ToArray());
+						signature = new String(reader.ReadChars(4));
 						if (signature != "@@@@") {
 							throw new ReaderException(reader, isBinary, (int)(input.Position - position), "Signature '" + signature + "' is invalid.");
 						}
@@ -70,7 +71,7 @@ namespace Jgr.IO.Parser {
 					case "SIMISA@@":
 						// Uncompressed header is all @-padding.
 						position = input.Position;
-						signature = String.Join("", reader.ReadChars(8).Select(c => c.ToString()).ToArray());
+						signature = new String(reader.ReadChars(8));
 						if (signature != "@@@@@@@@") {
 							throw new ReaderException(reader, isBinary, (int)(input.Position - position), "Signature '" + signature + "' is invalid.");
 						}

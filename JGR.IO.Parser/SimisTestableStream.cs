@@ -40,7 +40,7 @@ namespace Jgr.IO.Parser
 			baseStream.Position = start;
 
 			{
-				var signature = String.Join("", binaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
+				var signature = new String(binaryReader.ReadChars(8));
 				if ((signature != "SIMISA@F") && (signature != "SIMISA@@")) {
 					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 				}
@@ -52,7 +52,7 @@ namespace Jgr.IO.Parser
 				// This is a compressed stream. Read in the uncompressed size and DEFLATE the rest.
 				binaryReader.ReadUInt32();
 				{
-					var signature = String.Join("", binaryReader.ReadChars(4).Select(c => c.ToString()).ToArray());
+					var signature = new String(binaryReader.ReadChars(4));
 					if (signature != "@@@@") {
 						throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 					}
@@ -71,7 +71,7 @@ namespace Jgr.IO.Parser
 				binaryReader.Close();
 				binaryReader = new BinaryReader(new BufferedInMemoryStream(new DeflateStream(baseStream, CompressionMode.Decompress)), ByteEncoding.Encoding);
 			} else {
-				var signature = String.Join("", binaryReader.ReadChars(8).Select(c => c.ToString()).ToArray());
+				var signature = new String(binaryReader.ReadChars(8));
 				if (signature != "@@@@@@@@") {
 					throw new InvalidDataException("Signature '" + signature + "' is invalid.");
 				}
@@ -80,7 +80,7 @@ namespace Jgr.IO.Parser
 
 			var isText = false;
 			{
-				var signature = String.Join("", binaryReader.ReadChars(16).Select(c => c.ToString()).ToArray());
+				var signature = new String(binaryReader.ReadChars(16));
 				if (signature.Substring(0, 4) == "\x01\x00\x00\x00") {
 					// Texture/ACE format.
 					isText = false;

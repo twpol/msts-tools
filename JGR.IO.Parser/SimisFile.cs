@@ -15,6 +15,7 @@ namespace Jgr.IO.Parser {
 		public readonly SimisStreamFormat StreamFormat;
 		public readonly bool StreamCompressed;
 		public readonly SimisTreeNode Tree;
+		public readonly SimisAce ACE;
 		readonly SimisProvider SimisProvider;
 
 		/// <summary>
@@ -28,7 +29,7 @@ namespace Jgr.IO.Parser {
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
 					using (var stream = new BufferedInMemoryStream(fileStream)) {
-						ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
+						ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree, out ACE);
 					}
 				}
 			} catch (ReaderException e) {
@@ -44,77 +45,100 @@ namespace Jgr.IO.Parser {
 		public SimisFile(Stream stream, SimisProvider simisProvider) {
 			FileName = "";
 			SimisProvider = simisProvider;
-			ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree);
+			ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree, out ACE);
 		}
 
 		/// <summary>
-		/// Creates a <see cref="SimisFile"/> from the component parts.
+		/// Creates a <see cref="SimisFile"/> from the component parts (JINX type).
 		/// </summary>
-		/// <param name="fileName">The file to read from.</param>
+		/// <param name="fileName">The file to write to.</param>
 		/// <param name="simisFormat">The <see cref="SimisFormat"/> for this <see cref="SimisFile"/>.</param>
 		/// <param name="streamFormat">The <see cref="SimisStreamFormat"/> for this <see cref="SimisFile"/>.</param>
 		/// <param name="streamCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
 		/// <param name="tree">The <see cref="SimisTreeNode"/> tree for this <see cref="SimisFile"/>.</param>
 		/// <param name="simisProvider">A <see cref="SimisProvider"/> within which the appropriate <see cref="Bnf"/> for writing can be found.</param>
-		public SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisTreeNode tree, SimisProvider simisProvider) {
+		public SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisTreeNode tree, SimisProvider simisProvider)
+			: this(fileName, simisFormat, streamFormat, streamCompressed, tree, null, simisProvider) {
+		}
+
+		/// <summary>
+		/// Creates a <see cref="SimisFile"/> from the component parts (ACE type).
+		/// </summary>
+		/// <param name="fileName">The file to write to.</param>
+		/// <param name="simisFormat">The <see cref="SimisFormat"/> for this <see cref="SimisFile"/>.</param>
+		/// <param name="streamFormat">The <see cref="SimisStreamFormat"/> for this <see cref="SimisFile"/>.</param>
+		/// <param name="streamCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="ace">The <see cref="SimisAce"/> image for this <see cref="SimisFile"/>.</param>
+		public SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisAce ace)
+			: this(fileName, simisFormat, streamFormat, streamCompressed, null, ace, null) {
+		}
+
+		SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisTreeNode tree, SimisAce ace, SimisProvider simisProvider) {
 			FileName = fileName;
 			SimisFormat = simisFormat;
 			StreamFormat = streamFormat;
 			StreamCompressed = streamCompressed;
 			Tree = tree;
+			ACE = ace;
 			SimisProvider = simisProvider;
 		}
 
-		void ReadStream(Stream stream, out SimisFormat simisFormat, out SimisStreamFormat streamFormat, out bool streamCompressed, out SimisTreeNode tree) {
-			using (var reader = new SimisReader(stream, SimisProvider, SimisFormat)) {
+		void ReadStream(Stream stream, out SimisFormat simisFormat, out SimisStreamFormat streamFormat, out bool streamCompressed, out SimisTreeNode tree, out SimisAce ace) {
+			using (var reader = (SimisJinxReader)SimisReader.FromStream(stream, SimisProvider, SimisFormat)) {
+				//switch (reader.SimisType) {
+					//case SimisType.JINX:
+						var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
+						blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(null, new List<SimisTreeNode>()));
+						while (!reader.EndOfStream) {
+							var token = reader.ReadToken();
 
-				var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
-				blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(null, new List<SimisTreeNode>()));
-				while (!reader.EndOfStream) {
-					var token = reader.ReadToken();
-
-					switch (token.Kind) {
-						case SimisTokenKind.Block:
-							blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(token, new List<SimisTreeNode>()));
-							break;
-						case SimisTokenKind.BlockBegin:
-							break;
-						case SimisTokenKind.BlockEnd:
-							if (blockStack.Peek().Key != null) {
-								var block = blockStack.Pop();
-								var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
-								blockStack.Peek().Value.Add(node);
+							switch (token.Kind) {
+								case SimisTokenKind.Block:
+									blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(token, new List<SimisTreeNode>()));
+									break;
+								case SimisTokenKind.BlockBegin:
+									break;
+								case SimisTokenKind.BlockEnd:
+									if (blockStack.Peek().Key != null) {
+										var block = blockStack.Pop();
+										var node = new SimisTreeNode(block.Key.Type, block.Key.Name, block.Value);
+										blockStack.Peek().Value.Add(node);
+									}
+									break;
+								case SimisTokenKind.IntegerUnsigned:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.Name, token.IntegerUnsigned));
+									break;
+								case SimisTokenKind.IntegerSigned:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, token.Name, token.IntegerSigned));
+									break;
+								case SimisTokenKind.IntegerDWord:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, token.Name, token.IntegerDWord));
+									break;
+								case SimisTokenKind.IntegerWord:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerWord(token.Type, token.Name, (ushort)token.IntegerDWord));
+									break;
+								case SimisTokenKind.IntegerByte:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerByte(token.Type, token.Name, (byte)token.IntegerDWord));
+									break;
+								case SimisTokenKind.Float:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, token.Name, token.Float));
+									break;
+								case SimisTokenKind.String:
+									blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, token.Name, token.String));
+									break;
 							}
-							break;
-						case SimisTokenKind.IntegerUnsigned:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerUnsigned(token.Type, token.Name, token.IntegerUnsigned));
-							break;
-						case SimisTokenKind.IntegerSigned:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerSigned(token.Type, token.Name, token.IntegerSigned));
-							break;
-						case SimisTokenKind.IntegerDWord:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerDWord(token.Type, token.Name, token.IntegerDWord));
-							break;
-						case SimisTokenKind.IntegerWord:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerWord(token.Type, token.Name, (ushort)token.IntegerDWord));
-							break;
-						case SimisTokenKind.IntegerByte:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueIntegerByte(token.Type, token.Name, (byte)token.IntegerDWord));
-							break;
-						case SimisTokenKind.Float:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueFloat(token.Type, token.Name, token.Float));
-							break;
-						case SimisTokenKind.String:
-							blockStack.Peek().Value.Add(new SimisTreeNodeValueString(token.Type, token.Name, token.String));
-							break;
-					}
-				}
+						}
 
-				var rootBlock = blockStack.Pop();
-				simisFormat = reader.SimisFormat;
-				streamFormat = reader.StreamFormat;
-				streamCompressed = reader.StreamCompressed;
-				tree = new SimisTreeNode("<root>", "", rootBlock.Value);
+						var rootBlock = blockStack.Pop();
+						simisFormat = reader.SimisFormat;
+						streamFormat = reader.StreamFormat;
+						streamCompressed = reader.StreamCompressed;
+						tree = new SimisTreeNode("<root>", "", rootBlock.Value);
+						ace = null;
+						//break;
+					//case SimisType.ACE:
+						//break;
+				//}
 			}
 		}
 

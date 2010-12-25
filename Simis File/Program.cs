@@ -259,7 +259,7 @@ namespace Normalize
 				{
 					result.Total = true;
 					try {
-						using (var reader = new SimisReader(readStream, fileProvider)) {
+						using (var reader = (SimisJinxReader)SimisReader.FromStream(readStream, fileProvider)) {
 							reader.ReadToken();
 							if (reader.SimisFormat == null) {
 								return result;
