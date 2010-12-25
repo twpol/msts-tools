@@ -11,16 +11,16 @@ using System.Text;
 namespace Jgr.IO.Parser {
 	[Immutable]
 	public class SimisStreamWriter : BinaryWriter {
-		public readonly bool IsBinary;
-		public readonly bool IsCompressed;
+		public readonly bool StreamIsBinary;
+		public readonly bool StreamIsCompressed;
 		readonly Stream RealStream;
 		readonly long CompressedLengthPosition;
 
 		SimisStreamWriter(Stream realStream, Stream output, bool isBinary, bool isCompressed, long compressedLengthPosition)
 			: base(output, isBinary ? ByteEncoding.Encoding : Encoding.Unicode) {
 			RealStream = realStream;
-			IsBinary = isBinary;
-			IsCompressed = isCompressed;
+			StreamIsBinary = isBinary;
+			StreamIsCompressed = isCompressed;
 			CompressedLengthPosition = compressedLengthPosition;
 		}
 
@@ -49,7 +49,7 @@ namespace Jgr.IO.Parser {
 		}
 
 		protected override void Dispose(bool disposing) {
-			if (disposing && IsCompressed) {
+			if (disposing && StreamIsCompressed) {
 				((BufferedInMemoryStream)BaseStream).RealFlush();
 				var position = RealStream.Position;
 				RealStream.Position = CompressedLengthPosition;

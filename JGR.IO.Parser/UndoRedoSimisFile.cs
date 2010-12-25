@@ -39,6 +39,24 @@ namespace Jgr.IO.Parser {
 			}
 		}
 
+		/// <summary>
+		/// Gets or sets the root <see cref="SimisAce"/> for the image read or written by this class.
+		/// </summary>
+		/// <remarks>
+		/// <para>Setting the <see cref="ACE"/> will add to the available undo buffers and reset the redo buffers.</para>
+		/// </remarks>
+		public override SimisAce ACE {
+			get {
+				return base.ACE;
+			}
+			set {
+				// FIXME: Handle ACE undo/redo.
+				//UndoBuffer.Push(base.ACE);
+				RedoBuffer.Clear();
+				base.ACE = value;
+			}
+		}
+
 		void ResetUndo() {
 			UndoBuffer.Clear();
 			RedoBuffer.Clear();

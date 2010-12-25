@@ -29,7 +29,7 @@ namespace Normalize
 		public bool Total;
 		public bool ReadSuccess;
 		public bool WriteSuccess;
-		public SimisFormat SimisFormat;
+		public SimisJinxFormat JinxStreamFormat;
 	}
 
 	class Program
@@ -234,7 +234,7 @@ namespace Normalize
 			var formatCounts = new Dictionary<string, TestFormatCount>();
 			var timeStart = DateTime.Now;
 
-			Func<SimisFormat, TestFormatCount> GetFormatFor = (simisFormat) => {
+			Func<SimisJinxFormat, TestFormatCount> GetFormatFor = (simisFormat) => {
 				var formatName = simisFormat.Name;
 				if (!formatCounts.ContainsKey(formatName)) {
 					formatCounts[formatName] = new TestFormatCount() { FormatName = formatName, SortKey = formatName };
@@ -259,12 +259,16 @@ namespace Normalize
 				{
 					result.Total = true;
 					try {
-						using (var reader = (SimisJinxReader)SimisReader.FromStream(readStream, fileProvider)) {
-							reader.ReadToken();
-							if (reader.SimisFormat == null) {
+						using (var reader = SimisReader.FromStream(readStream, fileProvider)) {
+							var readerJinx = reader as SimisJinxReader;
+							if (readerJinx == null) {
 								return result;
 							}
-							result.SimisFormat = reader.SimisFormat;
+							readerJinx.ReadToken();
+							if (readerJinx.JinxStreamFormat == null) {
+								return result;
+							}
+							result.JinxStreamFormat = readerJinx.JinxStreamFormat;
 						}
 					} catch (ReaderException) {
 						return result;
@@ -309,15 +313,15 @@ namespace Normalize
 				// Third, verify that the output is the same as the input.
 				readStream.Seek(0, SeekOrigin.Begin);
 				saveStream.Seek(0, SeekOrigin.Begin);
-				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamFormat == SimisStreamFormat.Binary ? ByteEncoding.Encoding : Encoding.Unicode);
-				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamFormat == SimisStreamFormat.Binary ? ByteEncoding.Encoding : Encoding.Unicode);
+				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.JinxStreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
+				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.JinxStreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
 				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
 					var oldPos = readReader.BaseStream.Position;
 					var fileChar = readReader.ReadChar();
 					var saveChar = saveReader.ReadChar();
 					if (fileChar != saveChar) {
-						var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
-						var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, (int)(readReader.BaseStream.Position - oldPos), "");
+						var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
+						var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
 						if (verbose) {
 							lock (formatCounts) {
 								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
@@ -327,8 +331,8 @@ namespace Normalize
 					}
 				}
 				if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
-					var readEx = new ReaderException(readReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
-					var saveEx = new ReaderException(saveReader, newFile.StreamFormat == SimisStreamFormat.Binary, 0, "");
+					var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, 0, "");
+					var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, 0, "");
 					if (verbose) {
 						lock (formatCounts) {
 							Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
@@ -365,8 +369,8 @@ namespace Normalize
 								if (result.Total) totalCount.Total++;
 								if (result.ReadSuccess) totalCount.ReadSuccess++;
 								if (result.WriteSuccess) totalCount.WriteSuccess++;
-								if (result.SimisFormat != null) {
-									var formatCount = GetFormatFor(result.SimisFormat);
+								if (result.JinxStreamFormat != null) {
+									var formatCount = GetFormatFor(result.JinxStreamFormat);
 									if (result.Total) supportedCount.Total++;
 									if (result.ReadSuccess) supportedCount.ReadSuccess++;
 									if (result.WriteSuccess) supportedCount.WriteSuccess++;
@@ -390,8 +394,8 @@ namespace Normalize
 					if (result.Total) totalCount.Total++;
 					if (result.ReadSuccess) totalCount.ReadSuccess++;
 					if (result.WriteSuccess) totalCount.WriteSuccess++;
-					if (result.SimisFormat != null) {
-						var formatCount = GetFormatFor(result.SimisFormat);
+					if (result.JinxStreamFormat != null) {
+						var formatCount = GetFormatFor(result.JinxStreamFormat);
 						if (result.Total) supportedCount.Total++;
 						if (result.ReadSuccess) supportedCount.ReadSuccess++;
 						if (result.WriteSuccess) supportedCount.WriteSuccess++;

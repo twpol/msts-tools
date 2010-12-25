@@ -9,10 +9,10 @@ using Jgr.Grammar;
 namespace Jgr.IO.Parser
 {
 	/// <summary>
-	/// Contains all the information for reading and writing a single Simis format.
+	/// Contains all the information for reading and writing a single Simis Jinx format.
 	/// </summary>
 	[Immutable]
-	public class SimisFormat
+	public class SimisJinxFormat
 	{
 		/// <summary>
 		/// A human-readable string for identifying the format.
@@ -23,7 +23,7 @@ namespace Jgr.IO.Parser
 		/// </summary>
 		public string Extension { get; private set; }
 		/// <summary>
-		/// The Simis stream format (e.g. <c>"a1"</c>) for this Simis format.
+		/// The stream format code (e.g. <c>"a1"</c>) for this Simis Jinx format.
 		/// </summary>
 		public string Format { get; private set; }
 		/// <summary>
@@ -36,10 +36,10 @@ namespace Jgr.IO.Parser
 		public Bnf Bnf { get; private set; }
 
 		/// <summary>
-		/// Constructs a <see cref="SimisFormat"/> from a <see cref="BnfFile"/>.
+		/// Constructs a <see cref="SimisJinxFormat"/> from a <see cref="BnfFile"/>.
 		/// </summary>
-		/// <param name="bnf">The <see cref="BnfFile"/> to read Simis format data from.</param>
-		internal SimisFormat(BnfFile bnf) {
+		/// <param name="bnf">The <see cref="BnfFile"/> to read Simis Jinx format data from.</param>
+		internal SimisJinxFormat(BnfFile bnf) {
 			Name = bnf.BnfFileName;
 			Extension = bnf.BnfFileExtension;
 			Format = bnf.BnfFileType + bnf.BnfFileTypeVersion;

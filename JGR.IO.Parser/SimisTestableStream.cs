@@ -121,7 +121,7 @@ namespace Jgr.IO.Parser
 							}
 							if (!inString) {
 								var stringChars = stringBuffer.ToCharArray();
-								if (stringChars.All(c => SimisWriter.SafeTokenCharacters.Contains(c))) {
+								if (stringChars.All(c => SimisJinxWriter.SafeTokenCharacters.Contains(c))) {
 									binaryWriter.Write(stringChars);
 								} else {
 									binaryWriter.Write('"');
