@@ -295,11 +295,12 @@ namespace SimisEditor
 			if (!UpdateFromSimisProvider()) {
 				return;
 			}
-			saveFileDialog.FilterIndex = File.StreamCompressed ? 3 : File.StreamFormat == SimisStreamFormat.Text ? 1 : 2;
+			saveFileDialog.FilterIndex = File.StreamIsCompressed ? 3 : File.JinxStreamIsBinary ? 2 : 1;
 			if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
 				Filename = saveFileDialog.FileName;
-				File.StreamFormat = saveFileDialog.FilterIndex == 1 ? SimisStreamFormat.Text : SimisStreamFormat.Binary;
-				File.StreamCompressed = saveFileDialog.FilterIndex == 3;
+				File.StreamIsBinary = saveFileDialog.FilterIndex >= 2;
+				File.StreamIsCompressed = saveFileDialog.FilterIndex == 3;
+				File.JinxStreamIsBinary = saveFileDialog.FilterIndex >= 2;
 				SaveFile();
 			}
 		}
@@ -674,10 +675,12 @@ namespace SimisEditor
 		void UpdateStatusbar() {
 			if (File == null) {
 				statusBarLabel.Text = "";
+			} else if (File.ACE != null) {
+				statusBarLabel.Text = "[ACE Image]";
 			} else if (SelectedNode == null) {
-				statusBarLabel.Text = String.Format("[{0}]", File.SimisFormat.Name);
+				statusBarLabel.Text = String.Format("[{0}]", File.JinxStreamFormat.Name);
 			} else {
-				statusBarLabel.Text = String.Format("[{0}] {1}", File.SimisFormat.Name, GetBnfLocation(File, SelectedNode));
+				statusBarLabel.Text = String.Format("[{0}] {1}", File.JinxStreamFormat.Name, GetBnfLocation(File, SelectedNode));
 			}
 		}
 
@@ -986,7 +989,7 @@ namespace SimisEditor
 				nodes.Insert(0, (SimisTreeNode)treeNode.Tag);
 				treeNode = treeNode.Parent;
 			}
-			var bnfState = new BnfState(File.SimisFormat.Bnf);
+			var bnfState = new BnfState(File.JinxStreamFormat.Bnf);
 			for (var i = 1; i < nodes.Count; i++) {
 				NavigateBnfStateThrough(bnfState, nodes[i - 1], nodes[i]);
 			}

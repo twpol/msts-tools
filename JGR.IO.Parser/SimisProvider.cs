@@ -38,12 +38,12 @@ namespace Jgr.IO.Parser {
 		/// <summary>
 		/// Provides a collection of <see cref="SimisFormat"/>s which have been loaded.
 		/// </summary>
-		public IEnumerable<SimisFormat> Formats { get; private set; }
+		public IEnumerable<SimisJinxFormat> Formats { get; private set; }
 
 		public SimisProvider(string directory) {
 			var tokenNames = new Dictionary<uint, string>();
 			var tokenIds = new Dictionary<string, uint>();
-			var formats = new List<SimisFormat>();
+			var formats = new List<SimisJinxFormat>();
 
 			foreach (var filename in Directory.GetFiles(directory, "*.bnf")) {
 				var BNF = new BnfFile(filename);
@@ -56,7 +56,7 @@ namespace Jgr.IO.Parser {
 					}
 					throw ex;
 				}
-				var simisFormat = new SimisFormat(BNF);
+				var simisFormat = new SimisJinxFormat(BNF);
 				formats.Add(simisFormat);
 			}
 			formats.Sort((a, b) => StringComparer.InvariantCultureIgnoreCase.Compare(a.Name, b.Name));
@@ -78,7 +78,7 @@ namespace Jgr.IO.Parser {
 			Formats = formats;
 		}
 
-		internal SimisProvider(IDictionary<uint, string> tokenNames, IDictionary<string, uint> tokenIds, IEnumerable<SimisFormat> formats) {
+		internal SimisProvider(IDictionary<uint, string> tokenNames, IDictionary<string, uint> tokenIds, IEnumerable<SimisJinxFormat> formats) {
 			TokenNames = tokenNames;
 			TokenIds = tokenIds;
 			Formats = formats;
@@ -92,7 +92,7 @@ namespace Jgr.IO.Parser {
 		public SimisProvider GetForPath(string fileName) {
 			var tokenNames = new Dictionary<uint, string>(TokenNames);
 			var tokenIds = new Dictionary<string, uint>(TokenIds);
-			var formats = new List<SimisFormat>();
+			var formats = new List<SimisJinxFormat>();
 			var extension = "";
 
 			var inputFileName = Path.GetFileName(fileName);
@@ -101,17 +101,17 @@ namespace Jgr.IO.Parser {
 			// We allow extensions (e.g. "trk") and filenames (e.g. "tsection.dat") in SimisFormat.Extension. If there is a filename match, we should
 			// use that and only that; otherwise, any extension matches are in.
 			if (Formats.Any(f => inputFileName.Equals(f.Extension, StringComparison.OrdinalIgnoreCase))) {
-				formats = new List<SimisFormat>(Formats.Where(f => inputFileName.Equals(f.Extension, StringComparison.OrdinalIgnoreCase)));
+				formats = new List<SimisJinxFormat>(Formats.Where(f => inputFileName.Equals(f.Extension, StringComparison.OrdinalIgnoreCase)));
 				extension = inputFileName;
 			} else {
-				formats = new List<SimisFormat>(Formats.Where(f => inputExtension.Equals("." + f.Extension, StringComparison.OrdinalIgnoreCase)));
+				formats = new List<SimisJinxFormat>(Formats.Where(f => inputExtension.Equals("." + f.Extension, StringComparison.OrdinalIgnoreCase)));
 				extension = inputExtension;
 			}
 
 			return new SimisProviderForFile(tokenNames, tokenIds, formats, extension);
 		}
 
-		public SimisFormat GetForFormat(string format) {
+		public SimisJinxFormat GetForFormat(string format) {
 			return Formats.FirstOrDefault(f => f.Format == format);
 		}
 
@@ -127,7 +127,7 @@ namespace Jgr.IO.Parser {
 	public class SimisProviderForFile : SimisProvider {
 		public readonly string Extension;
 
-		internal SimisProviderForFile(IDictionary<uint, string> tokenNames, IDictionary<string, uint> tokenIds, IEnumerable<SimisFormat> formats, string extension)
+		internal SimisProviderForFile(IDictionary<uint, string> tokenNames, IDictionary<string, uint> tokenIds, IEnumerable<SimisJinxFormat> formats, string extension)
 			: base(tokenNames, tokenIds, formats) {
 			Extension = extension;
 		}

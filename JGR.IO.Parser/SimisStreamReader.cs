@@ -6,20 +6,19 @@
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text;
 
 namespace Jgr.IO.Parser {
 	[Immutable]
 	public class SimisStreamReader : BinaryReader {
-		public readonly bool IsBinary;
-		public readonly bool IsCompressed;
+		public readonly bool StreamIsBinary;
+		public readonly bool StreamIsCompressed;
 		public readonly long UncompressedLength;
 
 		SimisStreamReader(Stream input, bool isBinary, bool isCompressed, long uncompressedLength)
 			: base(input, isBinary ? ByteEncoding.Encoding : Encoding.Unicode) {
-			IsBinary = isBinary;
-			IsCompressed = isCompressed;
+			StreamIsBinary = isBinary;
+			StreamIsCompressed = isCompressed;
 			UncompressedLength = uncompressedLength;
 		}
 

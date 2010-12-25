@@ -11,9 +11,10 @@ namespace Jgr.IO.Parser {
 	[Immutable]
 	public class SimisFile : DataTreeNode<SimisFile> {
 		public readonly string FileName;
-		public readonly SimisFormat SimisFormat;
-		public readonly SimisStreamFormat StreamFormat;
-		public readonly bool StreamCompressed;
+		public readonly bool StreamIsBinary;
+		public readonly bool StreamIsCompressed;
+		public readonly bool JinxStreamIsBinary;
+		public readonly SimisJinxFormat JinxStreamFormat;
 		public readonly SimisTreeNode Tree;
 		public readonly SimisAce ACE;
 		readonly SimisProvider SimisProvider;
@@ -29,7 +30,7 @@ namespace Jgr.IO.Parser {
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
 					using (var stream = new BufferedInMemoryStream(fileStream)) {
-						ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree, out ACE);
+						ReadStream(stream, out StreamIsBinary, out StreamIsCompressed, out JinxStreamIsBinary, out JinxStreamFormat, out Tree, out ACE);
 					}
 				}
 			} catch (ReaderException e) {
@@ -45,52 +46,56 @@ namespace Jgr.IO.Parser {
 		public SimisFile(Stream stream, SimisProvider simisProvider) {
 			FileName = "";
 			SimisProvider = simisProvider;
-			ReadStream(stream, out SimisFormat, out StreamFormat, out StreamCompressed, out Tree, out ACE);
+			ReadStream(stream, out StreamIsBinary, out StreamIsCompressed, out JinxStreamIsBinary, out JinxStreamFormat, out Tree, out ACE);
 		}
 
 		/// <summary>
 		/// Creates a <see cref="SimisFile"/> from the component parts (JINX type).
 		/// </summary>
 		/// <param name="fileName">The file to write to.</param>
-		/// <param name="simisFormat">The <see cref="SimisFormat"/> for this <see cref="SimisFile"/>.</param>
-		/// <param name="streamFormat">The <see cref="SimisStreamFormat"/> for this <see cref="SimisFile"/>.</param>
-		/// <param name="streamCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="streamIsBinary">The <see cref="bool"/> indicating whether the stream should use binary/ASCII or Unicode text (UTF-16) when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="streamIsCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="jinxStreamIsBinary">The <see cref="bool"/> indicating whether the Jinx stream should use binary or text when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="jinxStreamFormat">The <see cref="SimisJinxFormat"/> for this <see cref="SimisFile"/>.</param>
 		/// <param name="tree">The <see cref="SimisTreeNode"/> tree for this <see cref="SimisFile"/>.</param>
 		/// <param name="simisProvider">A <see cref="SimisProvider"/> within which the appropriate <see cref="Bnf"/> for writing can be found.</param>
-		public SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisTreeNode tree, SimisProvider simisProvider)
-			: this(fileName, simisFormat, streamFormat, streamCompressed, tree, null, simisProvider) {
+		public SimisFile(string fileName, bool streamIsBinary, bool streamIsCompressed, bool jinxStreamIsBinary, SimisJinxFormat jinxStreamFormat, SimisTreeNode tree, SimisProvider simisProvider)
+			: this(fileName, streamIsBinary, streamIsCompressed, jinxStreamIsBinary, jinxStreamFormat, tree, null, simisProvider) {
 		}
 
 		/// <summary>
 		/// Creates a <see cref="SimisFile"/> from the component parts (ACE type).
 		/// </summary>
 		/// <param name="fileName">The file to write to.</param>
-		/// <param name="simisFormat">The <see cref="SimisFormat"/> for this <see cref="SimisFile"/>.</param>
-		/// <param name="streamFormat">The <see cref="SimisStreamFormat"/> for this <see cref="SimisFile"/>.</param>
-		/// <param name="streamCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="streamIsBinary">The <see cref="bool"/> indicating whether the stream should use binary/ASCII or Unicode text (UTF-16) when written from this <see cref="SimisFile"/>.</param>
+		/// <param name="streamIsCompressed">The <see cref="bool"/> indicating whether the stream should be compressed when written from this <see cref="SimisFile"/>.</param>
 		/// <param name="ace">The <see cref="SimisAce"/> image for this <see cref="SimisFile"/>.</param>
-		public SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisAce ace)
-			: this(fileName, simisFormat, streamFormat, streamCompressed, null, ace, null) {
+		public SimisFile(string fileName, bool streamIsBinary, bool streamIsCompressed, SimisAce ace)
+			: this(fileName, streamIsBinary, streamIsCompressed, false, null, null, ace, null) {
 		}
 
-		SimisFile(string fileName, SimisFormat simisFormat, SimisStreamFormat streamFormat, bool streamCompressed, SimisTreeNode tree, SimisAce ace, SimisProvider simisProvider) {
+		SimisFile(string fileName, bool streamIsBinary, bool streamIsCompressed, bool jinxStreamIsBinary, SimisJinxFormat jinxStreamFormat, SimisTreeNode tree, SimisAce ace, SimisProvider simisProvider) {
 			FileName = fileName;
-			SimisFormat = simisFormat;
-			StreamFormat = streamFormat;
-			StreamCompressed = streamCompressed;
+			StreamIsBinary = streamIsBinary;
+			StreamIsCompressed = streamIsCompressed;
+			JinxStreamIsBinary = jinxStreamIsBinary;
+			JinxStreamFormat = jinxStreamFormat;
 			Tree = tree;
 			ACE = ace;
 			SimisProvider = simisProvider;
 		}
 
-		void ReadStream(Stream stream, out SimisFormat simisFormat, out SimisStreamFormat streamFormat, out bool streamCompressed, out SimisTreeNode tree, out SimisAce ace) {
-			using (var reader = (SimisJinxReader)SimisReader.FromStream(stream, SimisProvider, SimisFormat)) {
-				//switch (reader.SimisType) {
-					//case SimisType.JINX:
+		void ReadStream(Stream stream, out bool streamIsBinary, out bool streamIsCompressed, out bool jinxStreamIsBinary, out SimisJinxFormat jinxStreamFormat, out SimisTreeNode tree, out SimisAce ace) {
+			using (var reader = SimisReader.FromStream(stream, SimisProvider, JinxStreamFormat)) {
+				streamIsBinary = reader.StreamIsBinary;
+				streamIsCompressed = reader.StreamIsCompressed;
+				switch (reader.GetType().Name) {
+					case "SimisJinxReader":
+						var readerJinx = (SimisJinxReader)reader;
 						var blockStack = new Stack<KeyValuePair<SimisToken, List<SimisTreeNode>>>();
 						blockStack.Push(new KeyValuePair<SimisToken, List<SimisTreeNode>>(null, new List<SimisTreeNode>()));
-						while (!reader.EndOfStream) {
-							var token = reader.ReadToken();
+						while (!readerJinx.EndOfStream) {
+							var token = readerJinx.ReadToken();
 
 							switch (token.Kind) {
 								case SimisTokenKind.Block:
@@ -130,15 +135,20 @@ namespace Jgr.IO.Parser {
 						}
 
 						var rootBlock = blockStack.Pop();
-						simisFormat = reader.SimisFormat;
-						streamFormat = reader.StreamFormat;
-						streamCompressed = reader.StreamCompressed;
+						jinxStreamIsBinary = readerJinx.JinxStreamIsBinary;
+						jinxStreamFormat = readerJinx.JinxStreamFormat;
 						tree = new SimisTreeNode("<root>", "", rootBlock.Value);
 						ace = null;
-						//break;
-					//case SimisType.ACE:
-						//break;
-				//}
+						break;
+					case "SimisAceReader":
+						jinxStreamIsBinary = false;
+						jinxStreamFormat = null;
+						tree = null;
+						ace = null;
+						break;
+					default:
+						throw new NotImplementedException();
+				}
 			}
 		}
 
@@ -161,13 +171,20 @@ namespace Jgr.IO.Parser {
 		/// </summary>
 		/// <param name="stream">The <see cref="Stream"/> to write to.</param>
 		public void Write(Stream stream) {
-			using (var writer = new SimisWriter(stream, SimisProvider, SimisFormat, StreamFormat, StreamCompressed)) {
-				WriteBlockChildren(writer, Tree);
-				writer.WriteEnd();
+			if (Tree != null) {
+				using (var writer = SimisWriter.ToJinxStream(stream, StreamIsBinary, StreamIsCompressed, SimisProvider, JinxStreamIsBinary, JinxStreamFormat)) {
+					WriteBlockChildren(writer, Tree);
+					writer.WriteEnd();
+				}
+			} else if (ACE != null) {
+				// FIXME: using (var writer = SimisWriter.ToAceStream(stream, StreamIsBinary, StreamIsCompressed)) {
+				// FIXME: WriteBlockChildren(writer, Tree);
+				// FIXME: writer.WriteEnd();
+				// FIXME: }
 			}
 		}
 
-		void WriteBlock(SimisWriter writer, SimisTreeNode block) {
+		void WriteBlock(SimisJinxWriter writer, SimisTreeNode block) {
 			writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.Block, Type = block.Type, Name = block.Name });
 			if (block.Type.Length > 0) {
 				writer.WriteToken(new SimisToken() { Kind = SimisTokenKind.BlockBegin });
@@ -176,7 +193,7 @@ namespace Jgr.IO.Parser {
 			}
 		}
 
-		void WriteBlockChildren(SimisWriter writer, SimisTreeNode block) {
+		void WriteBlockChildren(SimisJinxWriter writer, SimisTreeNode block) {
 			foreach (var child in block) {
 				var childValue = child as SimisTreeNodeValue;
 				if (childValue != null) {
