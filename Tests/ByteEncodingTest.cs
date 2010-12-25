@@ -33,7 +33,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void ConstructorTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 		}
 
 		/// <summary>
@@ -41,7 +41,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void GetByteCountTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 			var chars = "abcdef".ToCharArray();
 			Assert.AreEqual(chars.Length, target.GetByteCount(chars, 0, chars.Length));
 		}
@@ -51,7 +51,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void GetBytesTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 			var chars = "abcdef".ToCharArray();
 			var actual = new byte[chars.Length];
 			Assert.AreEqual(chars.Length, target.GetBytes(chars, 0, chars.Length, actual, 0), "Must return same number of bytes as characters.");
@@ -65,7 +65,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void GetCharCountTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 			var bytes = new byte[] { 97, 98, 99, 100, 101, 102 };
 			Assert.AreEqual(bytes.Length, target.GetCharCount(bytes, 0, bytes.Length));
 		}
@@ -75,7 +75,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void GetCharsTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 			var bytes = new byte[] { 97, 98, 99, 100, 101, 102 };
 			var actual = new char[bytes.Length];
 			Assert.AreEqual(bytes.Length, target.GetChars(bytes, 0, bytes.Length, actual, 0), "Must return same number of characters as bytes.");
@@ -89,7 +89,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void GetMaxByteCountTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 			Assert.AreEqual(10, target.GetMaxByteCount(10));
 		}
 
@@ -98,7 +98,7 @@ namespace Tests {
 		///</summary>
 		[TestMethod]
 		public void GetMaxCharCountTest() {
-			ByteEncoding target = new ByteEncoding();
+			var target = ByteEncoding.Encoding;
 			Assert.AreEqual(10, target.GetMaxCharCount(10));
 		}
 	}

@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Text;
 
 namespace Jgr.IO.Parser {
+	[Immutable]
 	public class SimisStreamWriter : BinaryWriter {
 		public readonly bool IsBinary;
 		public readonly bool IsCompressed;

@@ -15,29 +15,29 @@ namespace Jgr.IO.Parser
 {
 	public class InvalidBnfFormatException : DescriptiveException
 	{
-		static string FormatMessage(BufferedInMemoryTextReader reader, long alreadyRead, string message) {
-			var beforeError = Math.Min(128, reader.Position - alreadyRead);
-			var afterError = Math.Min(128, reader.Length - reader.Position);
-			reader.Position -= alreadyRead;
-			reader.Position -= beforeError;
+		static string FormatMessage(StreamReader reader, long alreadyRead, string message) {
+			var beforeError = Math.Min(128, reader.BaseStream.Position - alreadyRead);
+			var afterError = Math.Min(128, reader.BaseStream.Length - reader.BaseStream.Position);
+			reader.BaseStream.Position -= alreadyRead;
+			reader.BaseStream.Position -= beforeError;
 
 			var sourceText = message + "\r\n\r\n";
 			if (beforeError > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data preceding failure:\r\n";
+				sourceText += "From 0x" + reader.BaseStream.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data preceding failure:\r\n";
 				for (var i = 0; i < beforeError; i++) {
 					sourceText += (char)reader.Read();
 				}
 				sourceText += "\r\n\r\n";
 			}
 			if (alreadyRead > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data at failure:\r\n";
+				sourceText += "From 0x" + reader.BaseStream.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data at failure:\r\n";
 				for (var i = 0; i < alreadyRead; i++) {
 					sourceText += (char)reader.Read();
 				}
 				sourceText += "\r\n\r\n";
 			}
 			if (afterError > 0) {
-				sourceText += "From 0x" + reader.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data following failure:\r\n";
+				sourceText += "From 0x" + reader.BaseStream.Position.ToString("X8", CultureInfo.CurrentCulture) + " - data following failure:\r\n";
 				for (var i = 0; i < afterError; i++) {
 					sourceText += (char)reader.Read();
 				}
@@ -47,7 +47,7 @@ namespace Jgr.IO.Parser
 			return sourceText;
 		}
 
-		public InvalidBnfFormatException(BufferedInMemoryTextReader reader, long alreadyRead, string message)
+		public InvalidBnfFormatException(StreamReader reader, long alreadyRead, string message)
 			: base(FormatMessage(reader, alreadyRead, message))
 		{
 		}
@@ -83,8 +83,8 @@ namespace Jgr.IO.Parser
 			MessageSend(LevelInformation, "Loading '" + FileName + "'...");
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
-					using (var bufferedFileStream = new BufferedInMemoryStream(fileStream)) {
-						using (var reader = new StreamReader(bufferedFileStream, true)) {
+					using (var stream = new BufferedInMemoryStream(fileStream)) {
+						using (var reader = new StreamReader(stream, true)) {
 							var parser = new BnfParser(this, reader);
 							while (true) {
 								var rule = parser.NextRule();
@@ -175,12 +175,12 @@ namespace Jgr.IO.Parser
 		}
 		#endregion
 
-		protected BufferedInMemoryTextReader Reader { get; private set; }
+		protected StreamReader Reader { get; private set; }
 		readonly BnfFile File;
 
 		public BnfParser(BnfFile file, StreamReader reader) {
 			File = file;
-			Reader = new BufferedInMemoryTextReader(reader);
+			Reader = reader;
 		}
 
 		void EatWhitespace() {
@@ -199,7 +199,7 @@ namespace Jgr.IO.Parser
 			}
 			Reader.Read();
 			if ((Reader.Peek() == -1) || ('*' != Reader.Peek())) {
-				Reader.Position--;
+				Reader.BaseStream.Position--;
 				return false;
 			}
 			Reader.Read();
@@ -315,8 +315,8 @@ namespace Jgr.IO.Parser
 					EatWhitespace();
 					if ('"' == Reader.Peek()) {
 						var value = "";
-						streamPosition = Reader.Position;
-						if (!EatString(out value)) throw new InvalidBnfFormatException(Reader, Reader.Position - streamPosition, "BNF parser expected string.");
+						streamPosition = Reader.BaseStream.Position;
+						if (!EatString(out value)) throw new InvalidBnfFormatException(Reader, Reader.BaseStream.Position - streamPosition, "BNF parser expected string.");
 						ex = new StringOperator(value);
 					} else if ('.' == Reader.Peek()) {
 						Reader.Read();
@@ -328,8 +328,8 @@ namespace Jgr.IO.Parser
 					} else {
 						if (':' != Reader.Read()) throw new InvalidBnfFormatException(Reader, 1, "BNF parser expected ':'.");
 						var token = "";
-						streamPosition = Reader.Position;
-						if (!EatSymbol(out token)) throw new InvalidBnfFormatException(Reader, Reader.Position - streamPosition, "BNF parser expected token.");
+						streamPosition = Reader.BaseStream.Position;
+						if (!EatSymbol(out token)) throw new InvalidBnfFormatException(Reader, Reader.BaseStream.Position - streamPosition, "BNF parser expected token.");
 						ex = new ReferenceOperator(token);
 
 						EatWhitespace();
@@ -338,8 +338,8 @@ namespace Jgr.IO.Parser
 
 							var tokenName = "";
 							EatWhitespace();
-							streamPosition = Reader.Position;
-							if (!EatSymbol(out tokenName)) throw new InvalidBnfFormatException(Reader, Reader.Position - streamPosition, "BNF parser expected token name.");
+							streamPosition = Reader.BaseStream.Position;
+							if (!EatSymbol(out tokenName)) throw new InvalidBnfFormatException(Reader, Reader.BaseStream.Position - streamPosition, "BNF parser expected token name.");
 							ex = new NamedReferenceOperator(tokenName, token);
 						}
 					}
