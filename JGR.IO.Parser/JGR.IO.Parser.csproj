@@ -60,7 +60,7 @@
     <Compile Include="UndoRedoSimisFile.cs" />
     <Compile Include="SimisFormat.cs" />
     <Compile Include="SimisProvider.cs" />
-    <Compile Include="SimisReader.cs" />
+    <Compile Include="SimisJinxReader.cs" />
     <Compile Include="SimisTree.cs" />
     <Compile Include="SimisTypes.cs" />
     <Compile Include="SimisTestableStream.cs" />
