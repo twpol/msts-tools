@@ -72,17 +72,16 @@ namespace Jgr
 				FetchAndProcess();
 				if ((Settings != null) && HasLatestVersion) {
 					Settings.Integer["UpdateCheckTime"] = (int)(DateTime.Now.ToFileTimeUtc() / FileTimeAdjustment);
-					Settings.Boolean["UpdateIsNew"] = IsNewVersion;
 					Settings.Integer["UpdateDate"] = (int)(LatestVersionDate.ToFileTimeUtc() / FileTimeAdjustment);
 					Settings.String["UpdateTitle"] = LatestVersionTitle;
 					Settings.String["UpdateUri"] = LatestVersionUri.ToString();
 				}
 			} else {
 				HasLatestVersion = true;
-				IsNewVersion = Settings.Boolean["UpdateIsNew"];
 				LatestVersionDate = DateTime.FromFileTimeUtc((long)Settings.Integer["UpdateDate"] * FileTimeAdjustment);
 				LatestVersionTitle = Settings.String["UpdateTitle"];
 				LatestVersionUri = new Uri(Settings.String["UpdateUri"]);
+				IsNewVersion = LatestVersionDate > CurrentVersionReleaseDate;
 			}
 
 			var checkComplete = CheckComplete;
