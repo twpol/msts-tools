@@ -1,0 +1,5 @@
+A command-line program for manipulation of Simis files used by Microsoft Train Simulator (MSTS). Simis files are used by MSTS for activities, consists, engines, wagons, world and track data, shapes (3D models), textures (images) and many others things.
+
+Files can be dumped in a structured text format, whether the file is in text or binary format. This format is designed to be similar to the standard Simis text format but better for reading and comparing files.
+
+Files can also be converted to a normalized form; for binary files, this means uncompressing only, while for text files this means quoting and unquoting strings consistently, using the same numeric formats everywhere and whitespace cleaning. Normalized files are saved with the '.normalized' extension.

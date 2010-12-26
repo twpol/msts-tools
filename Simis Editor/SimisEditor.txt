@@ -1,0 +1,7 @@
+A graphical editor for Simis files used by Microsoft Train Simulator (MSTS). Simis files are used by MSTS for activities, consists, engines, wagons, world and track data, shapes (3D models), textures (images) and many others things.
+
+For non-image files, a tree view is presented with options to add, remove and edit nodes.
+
+For image files, a basic image viewer is presented with options to import and export, through a variety of standard image formats, the combined image and its different channels (red, green, blue, alpha and mask) and mips (levels of detail), and the ability to pan and zoom the combine image and its different channels.
+
+Files can be loaded and saved in both text and binary formats.
