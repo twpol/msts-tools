@@ -6,4 +6,10 @@ obj
 *.dtp
 *.settings
 StyleCop.Cache
+</Value></Property><Property><Name>svn:ignore</Name><Value>obj
+*.dtc
+*.dtp
+*.settings
+StyleCop.Cache
+Simis File.csproj.user
 </Value></Property></Properties></ItemProperties>
