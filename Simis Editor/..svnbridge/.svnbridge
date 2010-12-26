@@ -5,4 +5,9 @@ bin
 *.dtc
 Settings.StyleCop
 StyleCop.Cache
+</Value></Property><Property><Name>svn:ignore</Name><Value>obj
+*.dtc
+Settings.StyleCop
+StyleCop.Cache
+Simis Editor.csproj.user
 </Value></Property></Properties></ItemProperties>

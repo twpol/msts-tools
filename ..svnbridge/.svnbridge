@@ -20,4 +20,32 @@ ACE
 StyleCop.Cache
 Undo Framework
 *.fxcop
+</Value></Property><Property><Name>svn:ignore</Name><Value>*.dtp
+*.fxcop
+*.settings
+ACE
+Documentation
+JGR MSTS Editor.suo
+MSTS Route Editor
+Microsoft Train Simulator
+Simis Editor v0.1
+Simis Editor v0.2
+Simis Editor v0.3
+Simis Editor v0.4
+StyleCop.Cache
+TestResults
+Testing
+Undo Framework
+_ignored_
+bin
+time_all_test
+Simis Editor v0.5
+*.zip
+*.txt
+*.properties
+*.png
+*.svg
+*.xml
+*.xsl
+*.xlsx
 </Value></Property></Properties></ItemProperties>
