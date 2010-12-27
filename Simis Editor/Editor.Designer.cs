@@ -494,6 +494,7 @@
 			// AceImage
 			// 
 			this.AceImage.BackColor = System.Drawing.Color.White;
+			this.AceImage.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("AceImage.BackgroundImage")));
 			this.AceImage.Location = new System.Drawing.Point(3, 3);
 			this.AceImage.Name = "AceImage";
 			this.AceImage.Size = new System.Drawing.Size(100, 100);
