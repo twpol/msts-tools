@@ -68,6 +68,12 @@
       <DependentUpon>FeedbackPrompt.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\JGR\JGR.csproj">
+      <Project>{8A4E6830-F84F-4938-B261-F732B7C97C4F}</Project>
+      <Name>JGR</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

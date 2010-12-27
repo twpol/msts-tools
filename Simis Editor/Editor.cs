@@ -669,9 +669,9 @@ namespace SimisEditor
 
 		void UpdateTitle() {
 			if (File == null) {
-				Text = Application.ProductName;
+				Text = ApplicationSettings.ApplicationTitle;
 			} else {
-				Text = FilenameTitle + (File.Tree != SavedFileTree ? "*" : "") + " - " + Application.ProductName;
+				Text = FilenameTitle + (File.Tree != SavedFileTree ? "*" : "") + " - " + ApplicationSettings.ApplicationTitle;
 			}
 		}
 

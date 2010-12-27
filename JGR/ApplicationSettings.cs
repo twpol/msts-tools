@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,21 +27,61 @@ namespace Jgr {
 		public ApplicationSettings<string> String { get { return _settingsString; } }
 		public ApplicationSettings Default { get { return _groupDefault; } }
 
-		ApplicationSettings() {
+		public static string ApplicationCompany { get { return _applicationCompany; } }
+		static string _applicationCompany = GetApplicationCompany();
+		static string GetApplicationCompany() {
+			Assembly entryAssembly = Assembly.GetEntryAssembly();
+			if (entryAssembly != null) {
+				object[] customAttributes = entryAssembly.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
+				if ((customAttributes != null) && (customAttributes.Length > 0)) {
+					return ((AssemblyCompanyAttribute)customAttributes[0]).Company;
+				}
+			}
+			return null;
+		}
+
+		public static string ApplicationProduct { get { return _applicationProduct; } }
+		static string _applicationProduct = GetApplicationProduct();
+		static string GetApplicationProduct() {
+			Assembly entryAssembly = Assembly.GetEntryAssembly();
+			if (entryAssembly != null) {
+				object[] customAttributes = entryAssembly.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
+				if ((customAttributes != null) && (customAttributes.Length > 0)) {
+					return ((AssemblyProductAttribute)customAttributes[0]).Product;
+				}
+			}
+			return null;
+		}
+
+		public static string ApplicationVersion { get { return _applicationVersion; } }
+		static string _applicationVersion = GetApplicationVersion();
+		static string GetApplicationVersion() {
+			return Assembly.GetEntryAssembly().GetName().Version.ToString();
+		}
+
+		public static string ApplicationTitle { get { return _applicationTitle; } }
+		static string _applicationTitle = GetApplicationTitle();
+		static string GetApplicationTitle() {
+			Assembly entryAssembly = Assembly.GetEntryAssembly();
+			if (entryAssembly != null) {
+				object[] customAttributes = entryAssembly.GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+				if ((customAttributes != null) && (customAttributes.Length > 0)) {
+					return ((AssemblyTitleAttribute)customAttributes[0]).Title;
+				}
+			}
+			return null;
+		}
+
+		public ApplicationSettings() {
 			_settingsBoolean = new ApplicationSettings<bool>(this, RegistryValueKind.DWord);
 			_settingsInteger = new ApplicationSettings<int>(this, RegistryValueKind.DWord);
 			_settingsString = new ApplicationSettings<string>(this, RegistryValueKind.String);
 			_groups = new Dictionary<string, ApplicationSettings>();
-		}
-
-		public ApplicationSettings(string filePath)
-			: this() {
-			var version = FileVersionInfo.GetVersionInfo(filePath);
-			_path = string.Format(@"Software\{0}\{1}", version.CompanyName, version.ProductName);
-			if ((version.ProductName == version.FileDescription) || string.IsNullOrEmpty(version.FileDescription)) {
+			_path = string.Format(@"Software\{0}\{1}", ApplicationCompany, ApplicationProduct);
+			if ((ApplicationProduct == ApplicationTitle) || string.IsNullOrEmpty(ApplicationTitle)) {
 				_groupDefault = this;
 			} else {
-				_groupDefault = this[version.FileDescription];
+				_groupDefault = this[ApplicationTitle];
 			}
 		}
 
