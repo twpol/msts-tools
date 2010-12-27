@@ -22,7 +22,7 @@ namespace Jgr.Gui {
 		}
 
 		static string GetMessageBoxTitle() {
-			return Application.ProductName;
+			return ApplicationSettings.ApplicationTitle;
 		}
 
 		static MessageBoxIcon GetMessageBoxIcon(TaskDialogCommonIcon icon) {

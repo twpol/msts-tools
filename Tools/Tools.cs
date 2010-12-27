@@ -4,15 +4,10 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using IWshRuntimeLibrary;
@@ -23,14 +18,14 @@ namespace Tools {
 		readonly ApplicationSettings Settings;
 		public Tools() {
 			InitializeComponent();
-			Settings = new ApplicationSettings(Application.ExecutablePath);
+			Settings = new ApplicationSettings();
 			imageListIcons.ImageSize = SystemInformation.IconSize;
 			new Thread(LoadTools).Start();
 			UpdateCheck();
 		}
 
 		void LoadTools() {
-			var startMenuBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), Application.CompanyName);
+			var startMenuBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), ApplicationSettings.ApplicationCompany);
 			UpdateStartMenu(startMenuBasePath);
 
 			foreach (var filePath in Directory.GetFiles(Path.GetDirectoryName(Application.ExecutablePath), "*.exe")) {
@@ -68,7 +63,7 @@ namespace Tools {
 			if (!Directory.Exists(startMenuBasePath)) {
 				Directory.CreateDirectory(startMenuBasePath);
 			}
-			UpdateStartMenu(startMenuBasePath, Application.ExecutablePath, Application.ProductName, Path.GetFileName(Settings.Default.Path));
+			UpdateStartMenu(startMenuBasePath, Application.ExecutablePath, ApplicationSettings.ApplicationProduct, ApplicationSettings.ApplicationTitle);
 		}
 
 		void UpdateStartMenu(string startMenuBasePath, string filePath, string name) {
@@ -81,7 +76,7 @@ namespace Tools {
 				Settings[settingsGroups].Boolean["CreatedStartMenuLink"] = true;
 
 				var shell = new WshShell();
-				var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(startMenuBasePath, string.Format("{0} {1}.lnk", Application.CompanyName, name)));
+				var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(startMenuBasePath, string.Format("{0} {1}.lnk", ApplicationSettings.ApplicationCompany, name)));
 				shortcut.TargetPath = filePath;
 				shortcut.WorkingDirectory = Path.GetDirectoryName(filePath);
 				shortcut.Save();

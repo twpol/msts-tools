@@ -62,8 +62,8 @@ namespace Jgr.Gui {
 			EnvironmentCLR = Environment.Version;
 			EnvironmentCLRBitness = IntPtr.Size * 8;
 			Time = DateTime.Now;
-			ApplicationName = Application.ProductName;
-			ApplicationVersion = Application.ProductVersion;
+			ApplicationName = ApplicationSettings.ApplicationTitle;
+			ApplicationVersion = ApplicationSettings.ApplicationVersion;
 			Source = callingStackFrame;
 			Type = type;
 			Operation = operation;
@@ -71,7 +71,7 @@ namespace Jgr.Gui {
 			Email = "";
 			Comments = "";
 
-			using (var key = Registry.CurrentUser.CreateSubKey(@"Software\JGR\" + ApplicationName, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+			using (var key = Registry.CurrentUser.CreateSubKey(@"Software\JGR\" + ApplicationSettings.ApplicationProduct, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
 				UID = (string)key.GetValue("UID", "");
 				if (UID.Length != 16) {
 					UID = GenerateUID();
