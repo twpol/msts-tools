@@ -12,14 +12,24 @@ namespace Jgr.IO.Parser {
 	/// A support class for using <see cref="SimisReader"/> and <see cref="SimisWriter"/> with on-disk files and editing capabilities.
 	/// </summary>
 	public class UndoRedoSimisFile : MutableSimisFile {
-		Stack<SimisTreeNode> UndoBuffer { get; set; }
-		Stack<SimisTreeNode> RedoBuffer { get; set; }
+		Stack<SimisFileState> UndoBuffer { get; set; }
+		Stack<SimisFileState> RedoBuffer { get; set; }
+
+		struct SimisFileState {
+			public SimisTreeNode Tree;
+			public SimisAce Ace;
+
+			public SimisFileState(SimisTreeNode tree, SimisAce ace) {
+				Tree = tree;
+				Ace = ace;
+			}
+		}
 
 		public UndoRedoSimisFile(string fileName, SimisProvider provider)
 			: base(fileName, provider) {
-			UndoBuffer = new Stack<SimisTreeNode>();
-			RedoBuffer = new Stack<SimisTreeNode>();
-			ResetUndo(new SimisTreeNode("<root>", ""));
+			UndoBuffer = new Stack<SimisFileState>();
+			RedoBuffer = new Stack<SimisFileState>();
+			ResetUndo(new SimisTreeNode("<root>", ""), new SimisAce(0, 0, 0, 0, 0, 0, "", "", new byte[44], new SimisAceChannel[0], new SimisAceImage[0]));
 		}
 
 		/// <summary>
@@ -33,9 +43,11 @@ namespace Jgr.IO.Parser {
 				return base.Tree;
 			}
 			set {
-				UndoBuffer.Push(base.Tree);
-				RedoBuffer.Clear();
-				base.Tree = value;
+				if (base.Tree != value) {
+					UndoBuffer.Push(new SimisFileState(base.Tree, base.Ace));
+					RedoBuffer.Clear();
+					base.Tree = value;
+				}
 			}
 		}
 
@@ -43,17 +55,18 @@ namespace Jgr.IO.Parser {
 		/// Gets or sets the root <see cref="SimisAce"/> for the image read or written by this class.
 		/// </summary>
 		/// <remarks>
-		/// <para>Setting the <see cref="ACE"/> will add to the available undo buffers and reset the redo buffers.</para>
+		/// <para>Setting the <see cref="Ace"/> will add to the available undo buffers and reset the redo buffers.</para>
 		/// </remarks>
 		public override SimisAce Ace {
 			get {
 				return base.Ace;
 			}
 			set {
-				// FIXME: Handle ACE undo/redo.
-				//UndoBuffer.Push(base.ACE);
-				RedoBuffer.Clear();
-				base.Ace = value;
+				if (base.Ace != value) {
+					UndoBuffer.Push(new SimisFileState(base.Tree, base.Ace));
+					RedoBuffer.Clear();
+					base.Ace = value;
+				}
 			}
 		}
 
@@ -62,25 +75,30 @@ namespace Jgr.IO.Parser {
 			RedoBuffer.Clear();
 		}
 
-		void ResetUndo(SimisTreeNode newTree) {
+		void ResetUndo(SimisTreeNode newTree, SimisAce newAce) {
 			ResetUndo();
 			base.Tree = newTree;
+			base.Ace = newAce;
 		}
 
 		/// <summary>
-		/// Switches to the previous <see cref="SimisTreeNode"/> root.
+		/// Switches to the previous <see cref="SimisTreeNode"/>/<see cref="SimisAce"/> root.
 		/// </summary>
 		public void Undo() {
-			RedoBuffer.Push(base.Tree);
-			base.Tree = UndoBuffer.Pop();
+			RedoBuffer.Push(new SimisFileState(base.Tree, base.Ace));
+			var state = UndoBuffer.Pop();
+			base.Tree = state.Tree;
+			base.Ace = state.Ace;
 		}
 
 		/// <summary>
-		/// Switches to the next <see cref="SimisTreeNode"/> root.
+		/// Switches to the next <see cref="SimisTreeNode"/>/<see cref="SimisAce"/> root.
 		/// </summary>
 		public void Redo() {
-			UndoBuffer.Push(base.Tree);
-			base.Tree = RedoBuffer.Pop();
+			UndoBuffer.Push(new SimisFileState(base.Tree, base.Ace));
+			var state = RedoBuffer.Pop();
+			base.Tree = state.Tree;
+			base.Ace = state.Ace;
 		}
 
 		/// <summary>

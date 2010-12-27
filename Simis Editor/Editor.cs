@@ -204,11 +204,12 @@ namespace SimisEditor
 
 			// Wipe out anything we had left.
 			SimisTree.Nodes.Clear();
+			AceChannels.Controls.Clear();
 
 			// Set up for new file.
 			Filename = filename;
 			File = newFile;
-			if (true) {
+			if (File.Tree != null) {
 				SavedFileTree = File.Tree;
 				ResyncSimisNodes();
 				SimisTree.ExpandAll();
@@ -216,7 +217,36 @@ namespace SimisEditor
 					SimisTree.TopNode = SimisTree.Nodes[0];
 					SimisTree.SelectedNode = SimisTree.Nodes[0];
 				}
-			} else {
+			} else if (File.Ace != null) {
+				AceImage.Image = File.Ace.Image[0].ImageColor;
+				AceImage.Width = AceImage.Image.Width;
+				AceImage.Height = AceImage.Image.Height;
+
+				var y = 0;
+				foreach (var image in File.Ace.Image) {
+					if (image.ImageColor != null) {
+						var pic = new PictureBox();
+						pic.Image = image.ImageColor;
+						pic.Width = pic.Image.Width;
+						pic.Height = pic.Image.Height;
+						pic.Left = 3;
+						pic.Top = 3 + y;
+						pic.BackColor = Color.White;
+						AceChannels.Controls.Add(pic);
+						y += 6 + pic.Image.Height;
+					}
+					if (image.ImageMask != null) {
+						var pic = new PictureBox();
+						pic.Image = image.ImageMask;
+						pic.Width = pic.Image.Width;
+						pic.Height = pic.Image.Height;
+						pic.Left = 3;
+						pic.Top = 3 + y;
+						pic.BackColor = Color.White;
+						AceChannels.Controls.Add(pic);
+						y += 6 + pic.Image.Height;
+					}
+				}
 			}
 			UpdateTitle();
 			UpdateMenu();
@@ -666,10 +696,10 @@ namespace SimisEditor
 			} else {
 				FileStatus.Text = "No file loaded.";
 			}
-			SimisTree.Visible = File != null && !String.IsNullOrEmpty(Filename);
-			SimisProperties.Visible = File != null && !String.IsNullOrEmpty(Filename);
-			AceContainer.Visible = false;
-			AceChannels.Visible = false;
+			SimisTree.Visible = File != null && File.Tree != null && !String.IsNullOrEmpty(Filename);
+			SimisProperties.Visible = File != null && File.Tree != null && !String.IsNullOrEmpty(Filename);
+			AceContainer.Visible = File != null && File.Ace != null && !String.IsNullOrEmpty(Filename);
+			AceChannels.Visible = File != null && File.Ace != null && !String.IsNullOrEmpty(Filename);
 		}
 
 		void UpdateStatusbar() {
