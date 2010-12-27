@@ -133,51 +133,50 @@ namespace Jgr.IO.Parser {
 				}
 			} else {
 				// RGB format.
-				throw new ReaderException(Reader, true, 0, "RGB ACE streams not supported yet.");
 
-				//    // Jump table: offsets to start of each scanline of each image.
-				//    for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
-				//        var imageHeight = height / (int)Math.Pow(2, imageIndex);
-				//        Reader.ReadBytes(imageHeight * 4);
-				//    }
+				// Jump table: offsets to start of each scanline of each image.
+				for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
+					var imageHeight = height / (int)Math.Pow(2, imageIndex);
+					Reader.ReadBytes(imageHeight * 4);
+				}
 
-				//    for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
-				//        var imageWidth = width / (int)Math.Pow(2, imageIndex);
-				//        var imageHeight = height / (int)Math.Pow(2, imageIndex);
+				for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
+					var imageWidth = width / (int)Math.Pow(2, imageIndex);
+					var imageHeight = height / (int)Math.Pow(2, imageIndex);
+					var imageData = new int[imageWidth * imageHeight];
+					var imageMaskData = new int[imageWidth * imageHeight];
 
-				//        for (var y = 0; y < imageHeight; y++) {
-				//            var imageChannels = new byte[8][];
-				//            foreach (var channel in channels)
-				//                imageChannels[(int)channel.Type] = Reader.ReadBytes((int)Math.Ceiling((double)channel.Size * imageWidth / 8));
+					for (var y = 0; y < imageHeight; y++) {
+						var imageChannels = new byte[8][];
+						foreach (var channel in channels)
+							imageChannels[(int)channel.Type] = Reader.ReadBytes((int)Math.Ceiling((double)channel.Size * imageWidth / 8));
 
-				//            for (var x = 0; x < imageWidth; x++) {
-				//                //var offsetX = 0;
+						for (var x = 0; x < imageWidth; x++) {
+							imageData[imageWidth * y + x] = (imageChannels[(int)SimisAceChannelId.Red][x] << 16) + (imageChannels[(int)SimisAceChannelId.Green][x] << 8) + imageChannels[(int)SimisAceChannelId.Blue][x];
+							if (imageChannels[(int)SimisAceChannelId.Alpha] != null) {
+								imageData[imageWidth * y + x] += (imageChannels[(int)SimisAceChannelId.Alpha][x] << 24);
+							}
 
-				//                Brush brush;
-				//                if (imageChannels[(int)SimisAceChannelId.Alpha] != null)
-				//                    brush = new SolidBrush(Color.FromArgb(imageChannels[(int)SimisAceChannelId.Alpha][x], imageChannels[(int)SimisAceChannelId.Red][x], imageChannels[(int)SimisAceChannelId.Green][x], imageChannels[(int)SimisAceChannelId.Blue][x]));
-				//                else if (imageChannels[(int)SimisAceChannelId.Mask] != null)
-				//                    brush = new SolidBrush(Color.FromArgb(((imageChannels[(int)SimisAceChannelId.Mask][x / 8] >> (7 - (x % 8))) & 1) != 0 ? 255 : 0, imageChannels[(int)SimisAceChannelId.Red][x], imageChannels[(int)SimisAceChannelId.Green][x], imageChannels[(int)SimisAceChannelId.Blue][x]));
-				//                else
-				//                    brush = new SolidBrush(Color.FromArgb(imageChannels[(int)SimisAceChannelId.Red][x], imageChannels[(int)SimisAceChannelId.Green][x], imageChannels[(int)SimisAceChannelId.Blue][x]));
-				//                //g.FillRectangle(brush, x + offsetX, y, 1, 1);
-				//                //offsetX += width;
+							if (imageChannels[(int)SimisAceChannelId.Mask] != null) {
+								imageMaskData[imageWidth * y + x] = (((imageChannels[(int)SimisAceChannelId.Mask][x / 8] >> (7 - (x % 8))) & 1) != 0 ? 255 : 0) * 0x00010101;
+							}
+						}
+					}
 
-				//                if (imageChannels[(int)SimisAceChannelId.Red] != null) {
-				//                    //g.FillRectangle(new SolidBrush(Color.FromArgb(imageChannels[(int)SimisAceChannelId.Red][x], imageChannels[(int)SimisAceChannelId.Green][x], imageChannels[(int)SimisAceChannelId.Blue][x])), x + offsetX, y, 1, 1);
-				//                    //offsetX += width;
-				//                }
-				//                if (imageChannels[(int)SimisAceChannelId.Alpha] != null) {
-				//                    //g.FillRectangle(new SolidBrush(Color.FromArgb(imageChannels[(int)SimisAceChannelId.Alpha][x], imageChannels[(int)SimisAceChannelId.Alpha][x], imageChannels[(int)SimisAceChannelId.Alpha][x])), x + offsetX, y, 1, 1);
-				//                    //offsetX += width;
-				//                }
-				//                if (imageChannels[(int)SimisAceChannelId.Mask] != null) {
-				//                    //g.FillRectangle(new SolidBrush(((imageChannels[(int)SimisAceChannelId.Mask][x / 8] >> (7 - (x % 8))) & 1) != 0 ? Color.White : Color.Black), x + offsetX, y, 1, 1);
-				//                    //offsetX += width;
-				//                }
-				//            }
-				//        }
-				//    }
+					var image = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppArgb);
+					var imageBits = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
+					Debug.Assert(imageBits.Stride == 4 * imageBits.Width, "Cannot copy data to bitmap with Stride != Width.");
+					Marshal.Copy(imageData, 0, imageBits.Scan0, imageData.Length);
+					image.UnlockBits(imageBits);
+
+					var imageMask = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppRgb);
+					var imageMaskBits = imageMask.LockBits(new Rectangle(Point.Empty, imageMask.Size), ImageLockMode.WriteOnly, imageMask.PixelFormat);
+					Debug.Assert(imageMaskBits.Stride == 4 * imageMaskBits.Width, "Cannot copy data to bitmap with Stride != Width.");
+					Marshal.Copy(imageMaskData, 0, imageMaskBits.Scan0, imageMaskData.Length);
+					imageMask.UnlockBits(imageMaskBits);
+
+					images.Add(new SimisAceImage(image, imageMask));
+				}
 			}
 
 			return new SimisAce(format, width, height, unknown4, channelCount, unknown6, unknown7, creator, unknown9, channels.ToArray(), images.ToArray());
