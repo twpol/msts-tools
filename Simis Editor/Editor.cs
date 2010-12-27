@@ -235,6 +235,7 @@ namespace SimisEditor
 							pictureBox.Top = 3 + y;
 							pictureBox.BackColor = Color.White;
 							pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+							pictureBox.BackgroundImage = AceImage.BackgroundImage;
 							AceChannels.Controls.Add(pictureBox);
 							y += 6 + pictureBox.Height;
 						}
