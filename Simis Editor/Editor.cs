@@ -222,29 +222,22 @@ namespace SimisEditor
 				AceImage.Width = AceImage.Image.Width;
 				AceImage.Height = AceImage.Image.Height;
 
+				var width = AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6;
 				var y = 0;
 				foreach (var image in File.Ace.Image) {
-					if (image.ImageColor != null) {
-						var pic = new PictureBox();
-						pic.Image = image.ImageColor;
-						pic.Width = pic.Image.Width;
-						pic.Height = pic.Image.Height;
-						pic.Left = 3;
-						pic.Top = 3 + y;
-						pic.BackColor = Color.White;
-						AceChannels.Controls.Add(pic);
-						y += 6 + pic.Image.Height;
-					}
-					if (image.ImageMask != null) {
-						var pic = new PictureBox();
-						pic.Image = image.ImageMask;
-						pic.Width = pic.Image.Width;
-						pic.Height = pic.Image.Height;
-						pic.Left = 3;
-						pic.Top = 3 + y;
-						pic.BackColor = Color.White;
-						AceChannels.Controls.Add(pic);
-						y += 6 + pic.Image.Height;
+					foreach (var picture in new[] { image.ImageColor, image.ImageMask }) {
+						if (picture != null) {
+							var pictureBox = new PictureBox();
+							pictureBox.Image = picture;
+							pictureBox.Width = Math.Min(pictureBox.Image.Width, AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
+							pictureBox.Height = pictureBox.Image.Height * pictureBox.Width / pictureBox.Image.Width;
+							pictureBox.Left = 3 + (width - pictureBox.Width) / 2;
+							pictureBox.Top = 3 + y;
+							pictureBox.BackColor = Color.White;
+							pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+							AceChannels.Controls.Add(pictureBox);
+							y += 6 + pictureBox.Height;
+						}
 					}
 				}
 			}
