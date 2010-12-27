@@ -18,7 +18,7 @@ namespace Jgr.IO.Parser {
 		public bool JinxStreamIsBinary { get; set; }
 		public SimisJinxFormat JinxStreamFormat { get; set; }
 		public virtual SimisTreeNode Tree { get; set; }
-		public virtual SimisAce ACE { get; set; }
+		public virtual SimisAce Ace { get; set; }
 		readonly SimisProvider SimisProvider;
 
 		public MutableSimisFile(string fileName, SimisProvider simisProvider) {
@@ -33,7 +33,7 @@ namespace Jgr.IO.Parser {
 			JinxStreamIsBinary = simisFile.JinxStreamIsBinary;
 			JinxStreamFormat = simisFile.JinxStreamFormat;
 			Tree = simisFile.Tree;
-			ACE = simisFile.ACE;
+			Ace = simisFile.Ace;
 		}
 
 		public virtual void Read(Stream stream) {
@@ -43,15 +43,15 @@ namespace Jgr.IO.Parser {
 			JinxStreamIsBinary = simisFile.JinxStreamIsBinary;
 			JinxStreamFormat = simisFile.JinxStreamFormat;
 			Tree = simisFile.Tree;
-			ACE = simisFile.ACE;
+			Ace = simisFile.Ace;
 		}
 
 		public void Write() {
 			if (Tree != null) {
 				var simisFile = new SimisFile(FileName, StreamIsBinary, StreamIsCompressed, JinxStreamIsBinary, JinxStreamFormat, Tree, SimisProvider);
 				simisFile.Write();
-			} else if (ACE != null) {
-				var simisFile = new SimisFile(FileName, StreamIsBinary, StreamIsCompressed, ACE);
+			} else if (Ace != null) {
+				var simisFile = new SimisFile(FileName, StreamIsBinary, StreamIsCompressed, Ace);
 				simisFile.Write();
 			}
 		}
@@ -60,8 +60,8 @@ namespace Jgr.IO.Parser {
 			if (Tree != null) {
 				var simisFile = new SimisFile(FileName, StreamIsBinary, StreamIsCompressed, JinxStreamIsBinary, JinxStreamFormat, Tree, SimisProvider);
 				simisFile.Write(stream);
-			} else if (ACE != null) {
-				var simisFile = new SimisFile(FileName, StreamIsBinary, StreamIsCompressed, ACE);
+			} else if (Ace != null) {
+				var simisFile = new SimisFile(FileName, StreamIsBinary, StreamIsCompressed, Ace);
 				simisFile.Write(stream);
 			}
 		}

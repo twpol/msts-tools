@@ -57,5 +57,22 @@ namespace Jgr.IO.Parser {
 				Reader.Close();
 			}
 		}
+
+		#region PinReader code
+
+		long PinReaderPosition;
+		protected void PinReader() {
+			PinReaderPosition = Reader.BaseStream.Position;
+		}
+
+		protected int PinReaderChanged() {
+			return (int)(Reader.BaseStream.Position - PinReaderPosition);
+		}
+
+		protected void PinReaderReset() {
+			Reader.BaseStream.Position = PinReaderPosition;
+		}
+
+		#endregion
 	}
 }

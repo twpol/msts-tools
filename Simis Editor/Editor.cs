@@ -675,7 +675,7 @@ namespace SimisEditor
 		void UpdateStatusbar() {
 			if (File == null) {
 				statusBarLabel.Text = "";
-			} else if (File.ACE != null) {
+			} else if (File.Ace != null) {
 				statusBarLabel.Text = "[ACE Image]";
 			} else if (SelectedNode == null) {
 				statusBarLabel.Text = String.Format("[{0}]", File.JinxStreamFormat.Name);
