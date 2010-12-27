@@ -59,6 +59,11 @@
 			this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
 			this.selectAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.zoomInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.zoomOutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.zoomToWindowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.actualSizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.homepageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.updatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -68,15 +73,9 @@
 			this.reloadSimisResourcesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
 			this.sendFeedbackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.zoomInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.zoomOutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.zoomToWindowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.actualSizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.AceContainer = new System.Windows.Forms.Panel();
 			this.AceImage = new System.Windows.Forms.PictureBox();
 			this.AceChannels = new System.Windows.Forms.Panel();
-			this.AceChannel = new System.Windows.Forms.PictureBox();
 			this.FileStatus = new System.Windows.Forms.Label();
 			statusBar = new System.Windows.Forms.StatusStrip();
 			statusBar.SuspendLayout();
@@ -84,8 +83,6 @@
 			this.menuStrip.SuspendLayout();
 			this.AceContainer.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.AceImage)).BeginInit();
-			this.AceChannels.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.AceChannel)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// statusBar
@@ -226,7 +223,7 @@
 			this.newToolStripMenuItem.Enabled = false;
 			this.newToolStripMenuItem.Name = "newToolStripMenuItem";
 			this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-			this.newToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.newToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.newToolStripMenuItem.Text = "&New";
 			this.newToolStripMenuItem.ToolTipText = "Create a new Simis file.";
 			this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
@@ -235,7 +232,7 @@
 			// 
 			this.openToolStripMenuItem.Name = "openToolStripMenuItem";
 			this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-			this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.ToolTipText = "Open an existing Simis file.";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
@@ -245,7 +242,7 @@
 			this.saveToolStripMenuItem.Enabled = false;
 			this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
 			this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-			this.saveToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.saveToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.saveToolStripMenuItem.Text = "&Save";
 			this.saveToolStripMenuItem.ToolTipText = "Save the current Simis file.";
 			this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
@@ -254,7 +251,7 @@
 			// 
 			this.saveAsToolStripMenuItem.Enabled = false;
 			this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.saveAsToolStripMenuItem.Text = "Save &As...";
 			this.saveAsToolStripMenuItem.ToolTipText = "Save the current Simis file with a different name.";
 			this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
@@ -262,12 +259,12 @@
 			// toolStripMenuItem1
 			// 
 			this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-			this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+			this.toolStripMenuItem1.Size = new System.Drawing.Size(143, 6);
 			// 
 			// exitToolStripMenuItem
 			// 
 			this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-			this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.exitToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.exitToolStripMenuItem.Text = "E&xit";
 			this.exitToolStripMenuItem.ToolTipText = "Close Simis Editor.";
 			this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
@@ -370,6 +367,49 @@
 			this.selectAllToolStripMenuItem.ToolTipText = "Select everything.";
 			this.selectAllToolStripMenuItem.Click += new System.EventHandler(this.selectAllToolStripMenuItem_Click);
 			// 
+			// viewToolStripMenuItem
+			// 
+			this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.zoomInToolStripMenuItem,
+            this.zoomOutToolStripMenuItem,
+            this.zoomToWindowToolStripMenuItem,
+            this.actualSizeToolStripMenuItem});
+			this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+			this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
+			this.viewToolStripMenuItem.Text = "&View";
+			// 
+			// zoomInToolStripMenuItem
+			// 
+			this.zoomInToolStripMenuItem.Enabled = false;
+			this.zoomInToolStripMenuItem.Name = "zoomInToolStripMenuItem";
+			this.zoomInToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.zoomInToolStripMenuItem.Text = "Zoom &In";
+			this.zoomInToolStripMenuItem.ToolTipText = "Zoom in on the image.";
+			// 
+			// zoomOutToolStripMenuItem
+			// 
+			this.zoomOutToolStripMenuItem.Enabled = false;
+			this.zoomOutToolStripMenuItem.Name = "zoomOutToolStripMenuItem";
+			this.zoomOutToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.zoomOutToolStripMenuItem.Text = "Zoom &Out";
+			this.zoomOutToolStripMenuItem.ToolTipText = "Zoom out of the image.";
+			// 
+			// zoomToWindowToolStripMenuItem
+			// 
+			this.zoomToWindowToolStripMenuItem.Enabled = false;
+			this.zoomToWindowToolStripMenuItem.Name = "zoomToWindowToolStripMenuItem";
+			this.zoomToWindowToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.zoomToWindowToolStripMenuItem.Text = "Zoom to &Window";
+			this.zoomToWindowToolStripMenuItem.ToolTipText = "Zoom the image so it fits in the window.";
+			// 
+			// actualSizeToolStripMenuItem
+			// 
+			this.actualSizeToolStripMenuItem.Enabled = false;
+			this.actualSizeToolStripMenuItem.Name = "actualSizeToolStripMenuItem";
+			this.actualSizeToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.actualSizeToolStripMenuItem.Text = "&Actual Size";
+			this.actualSizeToolStripMenuItem.ToolTipText = "Zoom the image to its actual size.";
+			// 
 			// helpToolStripMenuItem
 			// 
 			this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -437,49 +477,6 @@
 			this.sendFeedbackToolStripMenuItem.Text = "Send Feedback...";
 			this.sendFeedbackToolStripMenuItem.Click += new System.EventHandler(this.sendFeedbackToolStripMenuItem_Click);
 			// 
-			// viewToolStripMenuItem
-			// 
-			this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.zoomInToolStripMenuItem,
-            this.zoomOutToolStripMenuItem,
-            this.zoomToWindowToolStripMenuItem,
-            this.actualSizeToolStripMenuItem});
-			this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
-			this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
-			this.viewToolStripMenuItem.Text = "&View";
-			// 
-			// zoomInToolStripMenuItem
-			// 
-			this.zoomInToolStripMenuItem.Enabled = false;
-			this.zoomInToolStripMenuItem.Name = "zoomInToolStripMenuItem";
-			this.zoomInToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
-			this.zoomInToolStripMenuItem.Text = "Zoom &In";
-			this.zoomInToolStripMenuItem.ToolTipText = "Zoom in on the image.";
-			// 
-			// zoomOutToolStripMenuItem
-			// 
-			this.zoomOutToolStripMenuItem.Enabled = false;
-			this.zoomOutToolStripMenuItem.Name = "zoomOutToolStripMenuItem";
-			this.zoomOutToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
-			this.zoomOutToolStripMenuItem.Text = "Zoom &Out";
-			this.zoomOutToolStripMenuItem.ToolTipText = "Zoom out of the image.";
-			// 
-			// zoomToWindowToolStripMenuItem
-			// 
-			this.zoomToWindowToolStripMenuItem.Enabled = false;
-			this.zoomToWindowToolStripMenuItem.Name = "zoomToWindowToolStripMenuItem";
-			this.zoomToWindowToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
-			this.zoomToWindowToolStripMenuItem.Text = "Zoom to &Window";
-			this.zoomToWindowToolStripMenuItem.ToolTipText = "Zoom the image so it fits in the window.";
-			// 
-			// actualSizeToolStripMenuItem
-			// 
-			this.actualSizeToolStripMenuItem.Enabled = false;
-			this.actualSizeToolStripMenuItem.Name = "actualSizeToolStripMenuItem";
-			this.actualSizeToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
-			this.actualSizeToolStripMenuItem.Text = "&Actual Size";
-			this.actualSizeToolStripMenuItem.ToolTipText = "Zoom the image to its actual size.";
-			// 
 			// AceContainer
 			// 
 			this.AceContainer.AutoScroll = true;
@@ -496,10 +493,10 @@
 			// 
 			// AceImage
 			// 
-			this.AceImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+			this.AceImage.BackColor = System.Drawing.Color.White;
 			this.AceImage.Location = new System.Drawing.Point(3, 3);
 			this.AceImage.Name = "AceImage";
-			this.AceImage.Size = new System.Drawing.Size(1000, 1000);
+			this.AceImage.Size = new System.Drawing.Size(100, 100);
 			this.AceImage.TabIndex = 0;
 			this.AceImage.TabStop = false;
 			// 
@@ -507,24 +504,12 @@
 			// 
 			this.AceChannels.AutoScroll = true;
 			this.AceChannels.AutoScrollMargin = new System.Drawing.Size(3, 3);
-			this.AceChannels.Controls.Add(this.AceChannel);
 			this.AceChannels.Dock = System.Windows.Forms.DockStyle.Right;
 			this.AceChannels.Location = new System.Drawing.Point(282, 24);
 			this.AceChannels.Name = "AceChannels";
 			this.AceChannels.Size = new System.Drawing.Size(200, 516);
 			this.AceChannels.TabIndex = 5;
 			this.AceChannels.Visible = false;
-			// 
-			// AceChannel
-			// 
-			this.AceChannel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-						| System.Windows.Forms.AnchorStyles.Right)));
-			this.AceChannel.BackColor = System.Drawing.Color.White;
-			this.AceChannel.Location = new System.Drawing.Point(3, 3);
-			this.AceChannel.Name = "AceChannel";
-			this.AceChannel.Size = new System.Drawing.Size(192, 192);
-			this.AceChannel.TabIndex = 0;
-			this.AceChannel.TabStop = false;
 			// 
 			// FileStatus
 			// 
@@ -563,8 +548,6 @@
 			this.menuStrip.PerformLayout();
 			this.AceContainer.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)(this.AceImage)).EndInit();
-			this.AceChannels.ResumeLayout(false);
-			((System.ComponentModel.ISupportInitialize)(this.AceChannel)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -620,7 +603,6 @@
 		private System.Windows.Forms.Panel AceContainer;
 		private System.Windows.Forms.PictureBox AceImage;
 		private System.Windows.Forms.Panel AceChannels;
-		private System.Windows.Forms.PictureBox AceChannel;
 		private System.Windows.Forms.Label FileStatus;
 	}
 }
