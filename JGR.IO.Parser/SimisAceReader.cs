@@ -75,6 +75,10 @@ namespace Jgr.IO.Parser {
 					throw new InvalidDataException("Only unknown4 = 0x12 is supported for DXT-compressed ACE files.");
 				}
 
+				if (channels.Any(c => c.Type == SimisAceChannelId.Alpha)) {
+					throw new InvalidDataException("Alpha channel not supported with DXT-compressed ACE files.");
+				}
+
 				// Jump table: offsets to start of each image.
 				Reader.ReadBytes(imageCount * 4);
 
@@ -91,12 +95,10 @@ namespace Jgr.IO.Parser {
 					for (var y = 0; y < size; y++) {
 						for (var x = 0; x < size; x++) {
 							var c = new byte[4, 4];
-							for (var i = 0; i < 4; i++) {
-								c[i, 0] = 255;
-							}
 							var ci = new uint[2];
 							for (var i = 0; i < 2; i++) {
 								ci[i] = Reader.ReadUInt16();
+								c[i, 0] = 0xFF;
 								c[i, 1] = (byte)((ci[i] & 0xF800) >> 9);
 								c[i, 2] = (byte)((ci[i] & 0x07E0) >> 4);
 								c[i, 3] = (byte)((ci[i] & 0x001F) << 2);
@@ -110,7 +112,6 @@ namespace Jgr.IO.Parser {
 								for (var i = 0; i < 4; i++) {
 									c[2, i] = (byte)(c[0, i] / 2 + c[1, i] / 2);
 								}
-								c[3, 0] = 0;
 							}
 							var lookup = Reader.ReadUInt32();
 							for (var x2 = 0; x2 < 4; x2++) {
