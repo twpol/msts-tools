@@ -16,7 +16,7 @@ namespace Jgr.IO.Parser {
 		public readonly bool JinxStreamIsBinary;
 		public readonly SimisJinxFormat JinxStreamFormat;
 		public readonly SimisTreeNode Tree;
-		public readonly SimisAce ACE;
+		public readonly SimisAce Ace;
 		readonly SimisProvider SimisProvider;
 
 		/// <summary>
@@ -30,7 +30,7 @@ namespace Jgr.IO.Parser {
 			try {
 				using (var fileStream = File.OpenRead(FileName)) {
 					using (var stream = new BufferedInMemoryStream(fileStream)) {
-						ReadStream(stream, out StreamIsBinary, out StreamIsCompressed, out JinxStreamIsBinary, out JinxStreamFormat, out Tree, out ACE);
+						ReadStream(stream, out StreamIsBinary, out StreamIsCompressed, out JinxStreamIsBinary, out JinxStreamFormat, out Tree, out Ace);
 					}
 				}
 			} catch (ReaderException e) {
@@ -46,7 +46,7 @@ namespace Jgr.IO.Parser {
 		public SimisFile(Stream stream, SimisProvider simisProvider) {
 			FileName = "";
 			SimisProvider = simisProvider;
-			ReadStream(stream, out StreamIsBinary, out StreamIsCompressed, out JinxStreamIsBinary, out JinxStreamFormat, out Tree, out ACE);
+			ReadStream(stream, out StreamIsBinary, out StreamIsCompressed, out JinxStreamIsBinary, out JinxStreamFormat, out Tree, out Ace);
 		}
 
 		/// <summary>
@@ -81,7 +81,7 @@ namespace Jgr.IO.Parser {
 			JinxStreamIsBinary = jinxStreamIsBinary;
 			JinxStreamFormat = jinxStreamFormat;
 			Tree = tree;
-			ACE = ace;
+			Ace = ace;
 			SimisProvider = simisProvider;
 		}
 
@@ -141,10 +141,11 @@ namespace Jgr.IO.Parser {
 						ace = null;
 						break;
 					case "SimisAceReader":
+						var readerAce = (SimisAceReader)reader;
 						jinxStreamIsBinary = false;
 						jinxStreamFormat = null;
 						tree = null;
-						ace = null;
+						ace = readerAce.Read();
 						break;
 					default:
 						throw new NotImplementedException();
@@ -176,7 +177,7 @@ namespace Jgr.IO.Parser {
 					WriteBlockChildren(writer, Tree);
 					writer.WriteEnd();
 				}
-			} else if (ACE != null) {
+			} else if (Ace != null) {
 				// FIXME: using (var writer = SimisWriter.ToAceStream(stream, StreamIsBinary, StreamIsCompressed)) {
 				// FIXME: WriteBlockChildren(writer, Tree);
 				// FIXME: writer.WriteEnd();

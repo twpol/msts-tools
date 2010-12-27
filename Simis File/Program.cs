@@ -157,6 +157,56 @@ namespace Normalize
 			}
 		}
 
+		static void PrintSimisAce(SimisAce ace) {
+			Console.WriteLine("Ace {");
+			PrintSimisAce(1, ace);
+			Console.WriteLine("}");
+		}
+
+		static void PrintSimisAce(int indent, SimisAce ace) {
+			var indentString = new String(' ', 2 * indent);
+			Console.WriteLine("{0}Format:        0x{1:X}", indentString, ace.Format);
+			Console.WriteLine("{0}Width:         {1}", indentString, ace.Width);
+			Console.WriteLine("{0}Height:        {1}", indentString, ace.Height);
+			Console.WriteLine("{0}Unk4:          0x{1:X}", indentString, ace.Unknown4);
+			Console.WriteLine("{0}Channel Count: {1}", indentString, ace.ChannelCount);
+			Console.WriteLine("{0}Unk6:          0x{1:X}", indentString, ace.Unknown6);
+			Console.WriteLine("{0}Unk7:          {1}", indentString, ace.Unknown7);
+			Console.WriteLine("{0}Creator:       {1}", indentString, ace.Creator);
+			for (var i = 0; i < 11; i++) {
+				Console.WriteLine("{0}Unk9.{2:X}:        {1}", indentString, String.Join(" ", ace.Unknown9.Skip(i * 4).Take(4).Select(b => b.ToString("X2")).ToArray()), i);
+			}
+			Console.WriteLine("{0}Channels:      {1}", indentString, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
+
+			Console.WriteLine("{0}D1: f={1:X2} unk4={2:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
+			Console.WriteLine("{0}D2: f={1:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
+			Console.WriteLine("{0}D3: unk4={2:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
+			Console.WriteLine("{0}D4: f={1:X2} unk4={2:X2}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
+
+			foreach (var channel in ace.Channel) {
+				Console.WriteLine("{0}Channel {{", indentString);
+				PrintSimisAce(indent + 1, channel);
+				Console.WriteLine("{0}}}", indentString);
+			}
+
+			foreach (var image in ace.Image) {
+				Console.WriteLine("{0}Image {{", indentString);
+				PrintSimisAce(indent + 1, image);
+				Console.WriteLine("{0}}}", indentString);
+			}
+		}
+
+		static void PrintSimisAce(int indent, SimisAceChannel channel) {
+			var indentString = new String(' ', 2 * indent);
+			Console.WriteLine("{0}Type: {1}", indentString, channel.Type);
+			Console.WriteLine("{0}Size: {1} bits", indentString, channel.Size);
+		}
+
+		static void PrintSimisAce(int indent, SimisAceImage image) {
+			var indentString = new String(' ', 2 * indent);
+			Console.WriteLine("{0}NOT SUPPORTED IN DUMP YET", indentString);
+		}
+
 		static void ShowFormats() {
 			SimisProvider provider;
 			try {
@@ -187,7 +237,11 @@ namespace Normalize
 				try {
 					var parsedFile = new SimisFile(inputFile, provider.GetForPath(inputFile));
 					Console.WriteLine(inputFile);
-					PrintSimisTree(0, parsedFile.Tree);
+					if (parsedFile.Tree != null) {
+						PrintSimisTree(0, parsedFile.Tree);
+					} else if (parsedFile.Ace != null) {
+						PrintSimisAce(parsedFile.Ace);
+					}
 				} catch (Exception ex) {
 					if (verbose) {
 						Console.WriteLine("Read: " + ex + "\n");
@@ -261,14 +315,18 @@ namespace Normalize
 					try {
 						using (var reader = SimisReader.FromStream(readStream, fileProvider)) {
 							var readerJinx = reader as SimisJinxReader;
-							if (readerJinx == null) {
+							var readerAce = reader as SimisAceReader;
+							if (readerJinx != null) {
+								readerJinx.ReadToken();
+								if (readerJinx.JinxStreamFormat == null) {
+									return result;
+								}
+								result.JinxStreamFormat = readerJinx.JinxStreamFormat;
+							} else if (readerAce != null) {
+								result.JinxStreamFormat = fileProvider.Formats.FirstOrDefault();
+							} else {
 								return result;
 							}
-							readerJinx.ReadToken();
-							if (readerJinx.JinxStreamFormat == null) {
-								return result;
-							}
-							result.JinxStreamFormat = readerJinx.JinxStreamFormat;
 						}
 					} catch (ReaderException) {
 						return result;
@@ -313,31 +371,36 @@ namespace Normalize
 				// Third, verify that the output is the same as the input.
 				readStream.Seek(0, SeekOrigin.Begin);
 				saveStream.Seek(0, SeekOrigin.Begin);
-				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.JinxStreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
-				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.JinxStreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
-				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
-					var oldPos = readReader.BaseStream.Position;
-					var fileChar = readReader.ReadChar();
-					var saveChar = saveReader.ReadChar();
-					if (fileChar != saveChar) {
-						var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
-						var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
+				try {
+					var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
+					var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
+					while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
+						var oldPos = readReader.BaseStream.Position;
+						var fileChar = readReader.ReadChar();
+						var saveChar = saveReader.ReadChar();
+						if (fileChar != saveChar) {
+							var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
+							var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
+							if (verbose) {
+								lock (formatCounts) {
+									Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+								}
+							}
+							return result;
+						}
+					}
+					if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
+						var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, 0, "");
+						var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, 0, "");
 						if (verbose) {
 							lock (formatCounts) {
-								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
 							}
 						}
 						return result;
 					}
-				}
-				if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
-					var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, 0, "");
-					var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, 0, "");
-					if (verbose) {
-						lock (formatCounts) {
-							Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
-						}
-					}
+				} catch (InvalidDataException) {
+					// Unable to set up SimisTestableStream probably because writer wrote nothing.
 					return result;
 				}
 

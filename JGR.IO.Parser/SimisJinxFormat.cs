@@ -3,6 +3,7 @@
 // License: New BSD License (BSD).
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using Jgr.Grammar;
 
@@ -45,6 +46,10 @@ namespace Jgr.IO.Parser
 			Format = bnf.BnfFileType + bnf.BnfFileTypeVersion;
 			Roots = bnf.BnfFileRoots;
 			Bnf = bnf.Bnf;
+		}
+
+		public override string ToString() {
+			return String.Format("{0} ({1}, {2})", Name, Extension, Format);
 		}
 	}
 }

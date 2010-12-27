@@ -550,20 +550,5 @@ namespace Jgr.IO.Parser
 
 			return rv;
 		}
-
-		#region PinReader code
-		long PinReaderPosition;
-		void PinReader() {
-			PinReaderPosition = Reader.BaseStream.Position;
-		}
-
-		int PinReaderChanged() {
-			return (int)(Reader.BaseStream.Position - PinReaderPosition);
-		}
-
-		void PinReaderReset() {
-			Reader.BaseStream.Position = PinReaderPosition;
-		}
-		#endregion
 	}
 }

@@ -45,15 +45,15 @@ namespace Jgr.IO.Parser {
 		/// <remarks>
 		/// <para>Setting the <see cref="ACE"/> will add to the available undo buffers and reset the redo buffers.</para>
 		/// </remarks>
-		public override SimisAce ACE {
+		public override SimisAce Ace {
 			get {
-				return base.ACE;
+				return base.Ace;
 			}
 			set {
 				// FIXME: Handle ACE undo/redo.
 				//UndoBuffer.Push(base.ACE);
 				RedoBuffer.Clear();
-				base.ACE = value;
+				base.Ace = value;
 			}
 		}
 

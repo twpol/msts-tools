@@ -12,15 +12,75 @@ using System.Runtime.InteropServices;
 namespace Jgr.IO.Parser {
 	[Immutable]
 	public class SimisAce : DataTreeNode<SimisAce> {
-		public int Width { get { return Red == null ? Green == null ? Blue == null ? Alpha == null ? Mask == null ? 0 : Mask.Width : Alpha.Width : Blue.Width : Green.Width : Red.Width; } }
-		public int Height { get { return Red == null ? Green == null ? Blue == null ? Alpha == null ? Mask == null ? 0 : Mask.Height : Alpha.Height : Blue.Height : Green.Height : Red.Height; } }
-		public readonly SimisAceChannel Red;
-		public readonly SimisAceChannel Green;
-		public readonly SimisAceChannel Blue;
-		public readonly SimisAceChannel Alpha;
-		public readonly SimisAceChannel Mask;
+		public readonly int Format;
+		public readonly int Width;
+		public readonly int Height;
+		public readonly int Unknown4;
+		public readonly int ChannelCount;
+		public readonly int Unknown6;
+		public readonly string Unknown7;
+		public readonly string Creator;
+		public readonly byte[] Unknown9;
+		public IList<SimisAceChannel> Channel { get { return Channels; } }
+		readonly SimisAceChannel[] Channels;
 
-		SimisAce(SimisAceChannel red, SimisAceChannel green, SimisAceChannel blue, SimisAceChannel alpha, SimisAceChannel mask) {
+		//public int Width { get { return Images.Length == 0 ? 0 : Images[0].Width; } }
+		//public int Height { get { return Images.Length == 0 ? 0 : Images[0].Height; } }
+		public IList<SimisAceImage> Image { get { return Images; } }
+		readonly SimisAceImage[] Images;
+
+		public SimisAce(int format, int width, int height, int unknown4, int channelCount, int unknown6, string unknown7, string creator, byte[] unknown9, SimisAceChannel[] channels, SimisAceImage[] images) {
+			Format = format;
+			Width = width;
+			Height = height;
+			Unknown4 = unknown4;
+			ChannelCount = channelCount;
+			Unknown6 = unknown6;
+			Unknown7 = unknown7;
+			Creator = creator;
+			Unknown9 = unknown9;
+			Channels = channels;
+			Images = images;
+		}
+	}
+
+	public enum SimisAceChannelId {
+		Mask = 2,
+		Red,
+		Green,
+		Blue,
+		Alpha,
+	}
+
+	[Immutable]
+	public class SimisAceChannel : DataTreeNode<SimisAceChannel> {
+		public readonly int Size;
+		public readonly SimisAceChannelId Type;
+
+		public SimisAceChannel(int size, SimisAceChannelId type) {
+			Size = size;
+			Type = type;
+		}
+	}
+
+	[Immutable]
+	public abstract class SimisAceImage : DataTreeNode<SimisAceImage> {
+		public abstract int Width { get; }
+		public abstract int Height { get; }
+		public abstract Image Image { get; }
+	}
+
+	[Immutable]
+	public class SimisAceImageChannels : SimisAceImage {
+		public override int Width { get { return Red == null ? Green == null ? Blue == null ? Alpha == null ? Mask == null ? 0 : Mask.Width : Alpha.Width : Blue.Width : Green.Width : Red.Width; } }
+		public override int Height { get { return Red == null ? Green == null ? Blue == null ? Alpha == null ? Mask == null ? 0 : Mask.Height : Alpha.Height : Blue.Height : Green.Height : Red.Height; } }
+		public readonly SimisAceImageChannel Red;
+		public readonly SimisAceImageChannel Green;
+		public readonly SimisAceImageChannel Blue;
+		public readonly SimisAceImageChannel Alpha;
+		public readonly SimisAceImageChannel Mask;
+
+		SimisAceImageChannels(SimisAceImageChannel red, SimisAceImageChannel green, SimisAceImageChannel blue, SimisAceImageChannel alpha, SimisAceImageChannel mask) {
 			Red = red;
 			Green = green;
 			Blue = blue;
@@ -36,7 +96,7 @@ namespace Jgr.IO.Parser {
 			if ((Mask != null) && (Mask.Height != Height)) throw new ArgumentException("Mask channel height is different.", "mask");
 		}
 
-		public Image Image {
+		public override Image Image {
 			get {
 				var image = new Bitmap(Width, Height, PixelFormat.Format32bppArgb);
 				var data = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
@@ -69,13 +129,13 @@ namespace Jgr.IO.Parser {
 	}
 
 	[Immutable]
-	public class SimisAceChannel : DataTreeNode<SimisAceChannel> {
+	public class SimisAceImageChannel : DataTreeNode<SimisAceImageChannel> {
 		public readonly int Width;
 		public readonly int Height;
 		public IList<byte> Data { get { return DataArray; } }
 		readonly byte[] DataArray;
 
-		SimisAceChannel(int width, int height, byte[] dataArray) {
+		SimisAceImageChannel(int width, int height, byte[] dataArray) {
 			Width = width;
 			Height = height;
 			DataArray = dataArray;
@@ -99,5 +159,12 @@ namespace Jgr.IO.Parser {
 				return image;
 			}
 		}
+	}
+
+	[Immutable]
+	public class SimisAceImageDXT1 : SimisAceImage {
+		public override int Width { get { throw new NotImplementedException(); } }
+		public override int Height { get { throw new NotImplementedException(); } }
+		public override Image Image { get { throw new NotImplementedException(); } }
 	}
 }
