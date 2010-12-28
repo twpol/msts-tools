@@ -77,6 +77,12 @@
 			this.AceImage = new System.Windows.Forms.PictureBox();
 			this.AceChannels = new System.Windows.Forms.Panel();
 			this.FileStatus = new System.Windows.Forms.Label();
+			this.toolStripMenuItem6 = new System.Windows.Forms.ToolStripSeparator();
+			this.colorOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.alphaOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.maskOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.colorAndAlphaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.colorAndMaskToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			statusBar = new System.Windows.Forms.StatusStrip();
 			statusBar.SuspendLayout();
 			this.contextMenuStrip.SuspendLayout();
@@ -373,7 +379,13 @@
             this.zoomInToolStripMenuItem,
             this.zoomOutToolStripMenuItem,
             this.zoomToWindowToolStripMenuItem,
-            this.actualSizeToolStripMenuItem});
+            this.actualSizeToolStripMenuItem,
+            this.toolStripMenuItem6,
+            this.colorOnlyToolStripMenuItem,
+            this.alphaOnlyToolStripMenuItem,
+            this.maskOnlyToolStripMenuItem,
+            this.colorAndAlphaToolStripMenuItem,
+            this.colorAndMaskToolStripMenuItem});
 			this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
 			this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 23);
 			this.viewToolStripMenuItem.Text = "&View";
@@ -521,6 +533,58 @@
 			this.FileStatus.TabIndex = 1;
 			this.FileStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 			// 
+			// toolStripMenuItem6
+			// 
+			this.toolStripMenuItem6.Name = "toolStripMenuItem6";
+			this.toolStripMenuItem6.Size = new System.Drawing.Size(164, 6);
+			// 
+			// colorOnlyToolStripMenuItem
+			// 
+			this.colorOnlyToolStripMenuItem.Enabled = false;
+			this.colorOnlyToolStripMenuItem.Name = "colorOnlyToolStripMenuItem";
+			this.colorOnlyToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.colorOnlyToolStripMenuItem.Text = "Color Only";
+			this.colorOnlyToolStripMenuItem.ToolTipText = "Show only the color (red, green, blue) image.";
+			this.colorOnlyToolStripMenuItem.Click += new System.EventHandler(this.colorOnlyToolStripMenuItem_Click);
+			// 
+			// alphaOnlyToolStripMenuItem
+			// 
+			this.alphaOnlyToolStripMenuItem.Enabled = false;
+			this.alphaOnlyToolStripMenuItem.Name = "alphaOnlyToolStripMenuItem";
+			this.alphaOnlyToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.alphaOnlyToolStripMenuItem.Text = "Alpha Only";
+			this.alphaOnlyToolStripMenuItem.ToolTipText = "Show only the alpha image.";
+			this.alphaOnlyToolStripMenuItem.Click += new System.EventHandler(this.alphaOnlyToolStripMenuItem_Click);
+			// 
+			// maskOnlyToolStripMenuItem
+			// 
+			this.maskOnlyToolStripMenuItem.Enabled = false;
+			this.maskOnlyToolStripMenuItem.Name = "maskOnlyToolStripMenuItem";
+			this.maskOnlyToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.maskOnlyToolStripMenuItem.Text = "Mask Only";
+			this.maskOnlyToolStripMenuItem.ToolTipText = "Show only the mask image.";
+			this.maskOnlyToolStripMenuItem.Click += new System.EventHandler(this.maskOnlyToolStripMenuItem_Click);
+			// 
+			// colorAndAlphaToolStripMenuItem
+			// 
+			this.colorAndAlphaToolStripMenuItem.Checked = true;
+			this.colorAndAlphaToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.colorAndAlphaToolStripMenuItem.Enabled = false;
+			this.colorAndAlphaToolStripMenuItem.Name = "colorAndAlphaToolStripMenuItem";
+			this.colorAndAlphaToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.colorAndAlphaToolStripMenuItem.Text = "Color and Alpha";
+			this.colorAndAlphaToolStripMenuItem.ToolTipText = "Show the color (red, green, blue) image merged with the alpha image.";
+			this.colorAndAlphaToolStripMenuItem.Click += new System.EventHandler(this.colorAndAlphaToolStripMenuItem_Click);
+			// 
+			// colorAndMaskToolStripMenuItem
+			// 
+			this.colorAndMaskToolStripMenuItem.Enabled = false;
+			this.colorAndMaskToolStripMenuItem.Name = "colorAndMaskToolStripMenuItem";
+			this.colorAndMaskToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.colorAndMaskToolStripMenuItem.Text = "Color and Mask";
+			this.colorAndMaskToolStripMenuItem.ToolTipText = "Show the color (red, green, blue) image merged with the mask image.";
+			this.colorAndMaskToolStripMenuItem.Click += new System.EventHandler(this.colorAndMaskToolStripMenuItem_Click);
+			// 
 			// Editor
 			// 
 			this.AllowDrop = true;
@@ -605,6 +669,12 @@
 		private System.Windows.Forms.PictureBox AceImage;
 		private System.Windows.Forms.Panel AceChannels;
 		private System.Windows.Forms.Label FileStatus;
+		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem6;
+		private System.Windows.Forms.ToolStripMenuItem colorOnlyToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem alphaOnlyToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem maskOnlyToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem colorAndAlphaToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem colorAndMaskToolStripMenuItem;
 	}
 }
 
