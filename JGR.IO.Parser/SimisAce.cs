@@ -3,8 +3,12 @@
 // License: New BSD License (BSD).
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace Jgr.IO.Parser {
 	[Immutable]
@@ -57,119 +61,91 @@ namespace Jgr.IO.Parser {
 		}
 	}
 
+	public enum SimisAceImageType {
+		ColorOnly,
+		AlphaOnly,
+		MaskOnly,
+		ColorAndAlpha,
+		ColorAndMask,
+	}
+
 	[Immutable]
 	public class SimisAceImage : DataTreeNode<SimisAceImage> {
-		public readonly Image ImageColor;
-		public readonly Image ImageMask;
+		public readonly Bitmap ImageColor;
+		public readonly Bitmap ImageMask;
 
-		public SimisAceImage(Image imageColor, Image imageMask) {
+		public SimisAceImage(Bitmap imageColor, Bitmap imageMask) {
+			if ((imageColor != null) && (imageColor.PixelFormat != PixelFormat.Format32bppArgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppArgb.", "imageColor");
+			if ((imageMask != null) && (imageMask.PixelFormat != PixelFormat.Format32bppRgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppRgb.", "imageMask");
 			ImageColor = imageColor;
 			ImageMask = imageMask;
 		}
+
+		public Image GetImage(SimisAceImageType type) {
+			switch (type) {
+				case SimisAceImageType.ColorOnly:
+					if (ImageColor == null) throw new InvalidOperationException("Cannot produce color-only image when ImageColor is null.");
+					var imageColorBits = ImageColor.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageColor.PixelFormat);
+					var image = new Bitmap(ImageColor.Width, ImageColor.Height, PixelFormat.Format32bppRgb);
+					var imageBits = image.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.WriteOnly, ImageColor.PixelFormat);
+					var buffer = new int[imageBits.Width * imageBits.Height];
+					Debug.Assert(imageBits.Stride == 4 * imageBits.Width);
+					Debug.Assert(imageBits.Stride == imageColorBits.Stride);
+					Marshal.Copy(imageColorBits.Scan0, buffer, 0, buffer.Length);
+					for (var i = 0; i < buffer.Length; i++) {
+						buffer[i] = buffer[i] & 0x00FFFFFF;
+					}
+					Marshal.Copy(buffer, 0, imageBits.Scan0, buffer.Length);
+					image.UnlockBits(imageBits);
+					ImageColor.UnlockBits(imageColorBits);
+					return image;
+				case SimisAceImageType.AlphaOnly:
+					if (ImageColor == null) throw new InvalidOperationException("Cannot produce alpha-only image when ImageColor is null.");
+					imageColorBits = ImageColor.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageColor.PixelFormat);
+					image = new Bitmap(ImageColor.Width, ImageColor.Height, PixelFormat.Format32bppRgb);
+					imageBits = image.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.WriteOnly, ImageColor.PixelFormat);
+					buffer = new int[imageBits.Width * imageBits.Height];
+					Debug.Assert(imageBits.Stride == 4 * imageBits.Width);
+					Debug.Assert(imageBits.Stride == imageColorBits.Stride);
+					Marshal.Copy(imageColorBits.Scan0, buffer, 0, buffer.Length);
+					for (var i = 0; i < buffer.Length; i++) {
+						buffer[i] = (buffer[i] >> 24) * 0x00010101;
+					}
+					Marshal.Copy(buffer, 0, imageBits.Scan0, buffer.Length);
+					image.UnlockBits(imageBits);
+					ImageColor.UnlockBits(imageColorBits);
+					return image;
+				case SimisAceImageType.MaskOnly:
+					if (ImageMask == null) throw new InvalidOperationException("Cannot produce mask-only image when ImageMask is null.");
+					return ImageMask;
+				case SimisAceImageType.ColorAndAlpha:
+					if (ImageColor == null) throw new InvalidOperationException("Cannot produce color-and-alpha image when ImageColor is null.");
+					return ImageColor;
+				case SimisAceImageType.ColorAndMask:
+					if (ImageColor == null) throw new InvalidOperationException("Cannot produce color-and-mask image when ImageColor is null.");
+					if (ImageMask == null) throw new InvalidOperationException("Cannot produce color-and-mask image when ImageMask is null.");
+					imageColorBits = ImageColor.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageColor.PixelFormat);
+					var imageMaskBits = ImageMask.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageMask.PixelFormat);
+					image = new Bitmap(ImageColor.Width, ImageColor.Height, PixelFormat.Format32bppArgb);
+					imageBits = image.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.WriteOnly, ImageColor.PixelFormat);
+					buffer = new int[imageBits.Width * imageBits.Height];
+					var bufferMask = new int[imageBits.Width * imageBits.Height];
+					Debug.Assert(imageBits.Stride == 4 * imageBits.Width);
+					Debug.Assert(imageBits.Stride == imageColorBits.Stride);
+					Debug.Assert(imageBits.Stride == imageMaskBits.Stride);
+					Marshal.Copy(imageColorBits.Scan0, buffer, 0, buffer.Length);
+					Marshal.Copy(imageMaskBits.Scan0, bufferMask, 0, bufferMask.Length);
+					for (var i = 0; i < buffer.Length; i++) {
+						buffer[i] = (buffer[i] & 0x00FFFFFF) + ((bufferMask[i] & 0x000000FF) << 24);
+					}
+					Marshal.Copy(buffer, 0, imageBits.Scan0, buffer.Length);
+					image.UnlockBits(imageBits);
+					ImageColor.UnlockBits(imageColorBits);
+					ImageMask.UnlockBits(imageMaskBits);
+					return image;
+				default:
+					throw new ArgumentException("Unknown image type: " + type, "type");
+			}
+		}
 	}
-
-	//[Immutable]
-	//public abstract class SimisAceImage : DataTreeNode<SimisAceImage> {
-	//    public abstract int Width { get; }
-	//    public abstract int Height { get; }
-	//    public abstract Image Image { get; }
-	//}
-
-	//[Immutable]
-	//public class SimisAceImageChannels : SimisAceImage {
-	//    public override int Width { get { return Red == null ? Green == null ? Blue == null ? Alpha == null ? Mask == null ? 0 : Mask.Width : Alpha.Width : Blue.Width : Green.Width : Red.Width; } }
-	//    public override int Height { get { return Red == null ? Green == null ? Blue == null ? Alpha == null ? Mask == null ? 0 : Mask.Height : Alpha.Height : Blue.Height : Green.Height : Red.Height; } }
-	//    public readonly SimisAceImageChannel Red;
-	//    public readonly SimisAceImageChannel Green;
-	//    public readonly SimisAceImageChannel Blue;
-	//    public readonly SimisAceImageChannel Alpha;
-	//    public readonly SimisAceImageChannel Mask;
-
-	//    SimisAceImageChannels(SimisAceImageChannel red, SimisAceImageChannel green, SimisAceImageChannel blue, SimisAceImageChannel alpha, SimisAceImageChannel mask) {
-	//        Red = red;
-	//        Green = green;
-	//        Blue = blue;
-	//        Alpha = alpha;
-	//        Mask = mask;
-	//        if ((Green != null) && (Green.Width != Width)) throw new ArgumentException("Green channel width is different.", "green");
-	//        if ((Green != null) && (Green.Height != Height)) throw new ArgumentException("Green channel height is different.", "green");
-	//        if ((Blue != null) && (Blue.Width != Width)) throw new ArgumentException("Blue channel width is different.", "blue");
-	//        if ((Blue != null) && (Blue.Height != Height)) throw new ArgumentException("Blue channel height is different.", "blue");
-	//        if ((Alpha != null) && (Alpha.Width != Width)) throw new ArgumentException("Alpha channel width is different.", "alpha");
-	//        if ((Alpha != null) && (Alpha.Height != Height)) throw new ArgumentException("Alpha channel height is different.", "alpha");
-	//        if ((Mask != null) && (Mask.Width != Width)) throw new ArgumentException("Mask channel width is different.", "mask");
-	//        if ((Mask != null) && (Mask.Height != Height)) throw new ArgumentException("Mask channel height is different.", "mask");
-	//    }
-
-	//    public override Image Image {
-	//        get {
-	//            var image = new Bitmap(Width, Height, PixelFormat.Format32bppArgb);
-	//            var data = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
-	//            var imageData = new byte[data.Stride * data.Height];
-	//            for (var y = 0; y < Height; y++) {
-	//                for (var x = 0; x < Width; x++) {
-	//                    var imageDataOffset = (data.Stride * y + x) * 4;
-	//                    var channelOffset = Width * y + x;
-	//                    if (Red != null) {
-	//                        imageData[imageDataOffset + 1] = Red.Data[channelOffset];
-	//                    }
-	//                    if (Green != null) {
-	//                        imageData[imageDataOffset + 2] = Green.Data[channelOffset];
-	//                    }
-	//                    if (Blue != null) {
-	//                        imageData[imageDataOffset + 3] = Blue.Data[channelOffset];
-	//                    }
-	//                    if (Alpha != null) {
-	//                        imageData[imageDataOffset + 0] = Alpha.Data[channelOffset];
-	//                    } else if (Mask != null) {
-	//                        imageData[imageDataOffset + 0] = Mask.Data[channelOffset];
-	//                    }
-	//                }
-	//            }
-	//            Marshal.Copy(imageData, 0, data.Scan0, imageData.Length);
-	//            image.UnlockBits(data);
-	//            return image;
-	//        }
-	//    }
-	//}
-
-	//[Immutable]
-	//public class SimisAceImageChannel : DataTreeNode<SimisAceImageChannel> {
-	//    public readonly int Width;
-	//    public readonly int Height;
-	//    public IList<byte> Data { get { return DataArray; } }
-	//    readonly byte[] DataArray;
-
-	//    SimisAceImageChannel(int width, int height, byte[] dataArray) {
-	//        Width = width;
-	//        Height = height;
-	//        DataArray = dataArray;
-	//    }
-
-	//    public Image Image {
-	//        get {
-	//            var image = new Bitmap(Width, Height, PixelFormat.Format8bppIndexed);
-	//            for (var i = 0; i < 256; i++) {
-	//                image.Palette.Entries[i] = Color.FromArgb(i, i, i);
-	//            }
-	//            var data = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
-	//            if (data.Stride == Width) {
-	//                Marshal.Copy(DataArray, 0, data.Scan0, Width * Height);
-	//            } else {
-	//                for (var i = 0; i < Height; i++) {
-	//                    Marshal.Copy(DataArray, Width * i, new IntPtr((int)data.Scan0 + data.Stride * i), Width);
-	//                }
-	//            }
-	//            image.UnlockBits(data);
-	//            return image;
-	//        }
-	//    }
-	//}
-
-	//[Immutable]
-	//public class SimisAceImageDXT1 : SimisAceImage {
-	//    public override int Width { get { throw new NotImplementedException(); } }
-	//    public override int Height { get { throw new NotImplementedException(); } }
-	//    public override Image Image { get { throw new NotImplementedException(); } }
-	//}
 }

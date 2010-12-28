@@ -28,6 +28,8 @@ namespace SimisEditor
 	{
 		static TraceSwitch TraceSwitch = new TraceSwitch("editor", "Trace Editor");
 
+		#region Fields
+
 		string Filename = "";
 		string FilenameTitle {
 			get {
@@ -46,6 +48,9 @@ namespace SimisEditor
 		TreeNode ContextNode;
 		SimisProvider SimisProvider;
 		Thread SimisProviderThread;
+		SimisAceImageType AceType = SimisAceImageType.ColorAndAlpha;
+
+		#endregion
 
 		#region Initialization
 
@@ -218,7 +223,11 @@ namespace SimisEditor
 					SimisTree.SelectedNode = SimisTree.Nodes[0];
 				}
 			} else if (File.Ace != null) {
-				AceImage.Image = File.Ace.Image[0].ImageColor;
+				try {
+					SelectAceType(AceType);
+				} catch (InvalidOperationException) {
+					SelectAceType(SimisAceImageType.ColorAndAlpha);
+				}
 				AceImage.Width = AceImage.Image.Width;
 				AceImage.Height = AceImage.Image.Height;
 
@@ -389,6 +398,30 @@ namespace SimisEditor
 
 		#endregion
 
+		#region Menu Events - View
+
+		void colorOnlyToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceType(SimisAceImageType.ColorOnly);
+		}
+
+		void alphaOnlyToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceType(SimisAceImageType.AlphaOnly);
+		}
+
+		void maskOnlyToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceType(SimisAceImageType.MaskOnly);
+		}
+
+		void colorAndAlphaToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceType(SimisAceImageType.ColorAndAlpha);
+		}
+
+		void colorAndMaskToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceType(SimisAceImageType.ColorAndMask);
+		}
+
+		#endregion
+
 		#region Menu Events - Help
 
 		void homepageToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -409,6 +442,10 @@ namespace SimisEditor
 
 		void reloadSimisResourcesToolStripMenuItem_Click(object sender, EventArgs e) {
 			InitializeSimisProvider();
+		}
+
+		void sendFeedbackToolStripMenuItem_Click(object sender, EventArgs e) {
+			new Feedback().PromptAndSend(this);
 		}
 
 		#endregion
@@ -667,6 +704,8 @@ namespace SimisEditor
 
 		#endregion
 
+		#region Functionality - UI updaters
+
 		void UpdateTitle() {
 			if (File == null) {
 				Text = ApplicationSettings.ApplicationTitle;
@@ -694,6 +733,23 @@ namespace SimisEditor
 			SimisProperties.Visible = File != null && File.Tree != null && !String.IsNullOrEmpty(Filename);
 			AceContainer.Visible = File != null && File.Ace != null && !String.IsNullOrEmpty(Filename);
 			AceChannels.Visible = File != null && File.Ace != null && !String.IsNullOrEmpty(Filename);
+
+			zoomInToolStripMenuItem.Enabled = AceContainer.Visible;
+			zoomOutToolStripMenuItem.Enabled = AceContainer.Visible;
+			zoomToWindowToolStripMenuItem.Enabled = AceContainer.Visible;
+			actualSizeToolStripMenuItem.Enabled = AceContainer.Visible;
+
+			colorOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null;
+			alphaOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null;
+			maskOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageMask != null;
+			colorAndAlphaToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null;
+			colorAndMaskToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null && File.Ace.Image[0].ImageMask != null;
+
+			colorOnlyToolStripMenuItem.Checked = AceType == SimisAceImageType.ColorOnly;
+			alphaOnlyToolStripMenuItem.Checked = AceType == SimisAceImageType.AlphaOnly;
+			maskOnlyToolStripMenuItem.Checked = AceType == SimisAceImageType.MaskOnly;
+			colorAndAlphaToolStripMenuItem.Checked = AceType == SimisAceImageType.ColorAndAlpha;
+			colorAndMaskToolStripMenuItem.Checked = AceType == SimisAceImageType.ColorAndMask;
 		}
 
 		void UpdateStatusbar() {
@@ -707,6 +763,10 @@ namespace SimisEditor
 				statusBarLabel.Text = String.Format("[{0}] {1}", File.JinxStreamFormat.Name, GetBnfLocation(File, SelectedNode));
 			}
 		}
+
+		#endregion
+
+		#region Functionality - Simis Jinx
 
 		void ResyncSimisNodes() {
 			undoToolStripMenuItem.Enabled = File.CanUndo;
@@ -1117,8 +1177,16 @@ namespace SimisEditor
 			return paths;
 		}
 
-		void sendFeedbackToolStripMenuItem_Click(object sender, EventArgs e) {
-			new Feedback().PromptAndSend(this);
+		#endregion
+
+		#region Functionality - Simis Ace
+
+		void SelectAceType(SimisAceImageType type) {
+			AceType = type;
+			AceImage.Image = File.Ace.Image[0].GetImage(type);
+			UpdateViewer();
 		}
+
+		#endregion
 	}
 }
