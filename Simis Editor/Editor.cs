@@ -231,22 +231,31 @@ namespace SimisEditor
 				AceImage.Width = AceImage.Image.Width;
 				AceImage.Height = AceImage.Image.Height;
 
-				var width = AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6;
-				var y = 0;
+				var padding = 3;
+				var horizontalSpace = AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 2 * padding;
+				var verticalPosition = padding;
 				foreach (var image in File.Ace.Image) {
 					foreach (var picture in new[] { image.ImageColor, image.ImageMask }) {
 						if (picture != null) {
+							var label = new Label();
+							label.Text = String.Format("{0}x{1} {2}:", picture.Width, picture.Height, picture == image.ImageColor ? "color" : "mask");
+							label.AutoSize = true;
+							label.Left = padding;
+							label.Top = verticalPosition;
+							AceChannels.Controls.Add(label);
+							verticalPosition += label.Height;
+
 							var pictureBox = new PictureBox();
 							pictureBox.Image = picture;
+							pictureBox.BackColor = Color.White;
+							pictureBox.BackgroundImage = AceImage.BackgroundImage;
+							pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
 							pictureBox.Width = Math.Min(pictureBox.Image.Width, AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
 							pictureBox.Height = pictureBox.Image.Height * pictureBox.Width / pictureBox.Image.Width;
-							pictureBox.Left = 3 + (width - pictureBox.Width) / 2;
-							pictureBox.Top = 3 + y;
-							pictureBox.BackColor = Color.White;
-							pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
-							pictureBox.BackgroundImage = AceImage.BackgroundImage;
+							pictureBox.Left = padding + (horizontalSpace - pictureBox.Width) / 2;
+							pictureBox.Top = verticalPosition;
 							AceChannels.Controls.Add(pictureBox);
-							y += 6 + pictureBox.Height;
+							verticalPosition += pictureBox.Height + padding;
 						}
 					}
 				}
@@ -756,7 +765,7 @@ namespace SimisEditor
 			if (File == null) {
 				statusBarLabel.Text = "";
 			} else if (File.Ace != null) {
-				statusBarLabel.Text = "[ACE Image]";
+				statusBarLabel.Text = String.Format("[ACE Image] {0}", new[] { "Color Only", "Alpha Only", "Mask Only", "Color and Alpha", "Color and Mask" }[(int)AceType]);
 			} else if (SelectedNode == null) {
 				statusBarLabel.Text = String.Format("[{0}]", File.JinxStreamFormat.Name);
 			} else {
@@ -1185,6 +1194,7 @@ namespace SimisEditor
 			AceType = type;
 			AceImage.Image = File.Ace.Image[0].GetImage(type);
 			UpdateViewer();
+			UpdateStatusbar();
 		}
 
 		#endregion
