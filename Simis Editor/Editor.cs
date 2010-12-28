@@ -231,6 +231,7 @@ namespace SimisEditor
 				} catch (InvalidOperationException) {
 					SelectAceType(SimisAceImageType.ColorAndAlpha);
 				}
+				SelectAceZoomToWindow();
 			}
 			UpdateTitle();
 			UpdateMenu();
@@ -392,6 +393,7 @@ namespace SimisEditor
 		}
 
 		void zoomToWindowToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceZoomToWindow();
 		}
 
 		void actualSizeToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -704,6 +706,7 @@ namespace SimisEditor
 			if (AceImage.Tag != null) {
 				var image = (Image)AceImage.Tag;
 				e.Graphics.InterpolationMode = AceImage.Width >= image.Width ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
+				e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
 				e.Graphics.DrawImage(image, AceImage.ClientRectangle);
 			}
 		}
@@ -807,7 +810,7 @@ namespace SimisEditor
 			if (File == null) {
 				statusBarLabel.Text = "";
 			} else if (File.Ace != null) {
-				statusBarLabel.Text = String.Format("[ACE Image] {0}", new[] { "Color Only", "Alpha Only", "Mask Only", "Color and Alpha", "Color and Mask" }[(int)AceType]);
+				statusBarLabel.Text = String.Format("[ACE Image] {1}%, {0}", new[] { "Color Only", "Alpha Only", "Mask Only", "Color and Alpha", "Color and Mask" }[(int)AceType], 100 * Math.Pow(2, AceZoom));
 			} else if (SelectedNode == null) {
 				statusBarLabel.Text = String.Format("[{0}]", File.JinxStreamFormat.Name);
 			} else {
@@ -1242,6 +1245,16 @@ namespace SimisEditor
 		void SelectAceZoom(int zoom) {
 			AceZoom = zoom;
 			UpdateImage();
+		}
+
+		void SelectAceZoomToWindow() {
+			var image = (Image)AceImage.Tag;
+			var space = AceContainer.ClientRectangle;
+			space.Inflate(-3 - SystemInformation.VerticalScrollBarWidth, -3 - SystemInformation.HorizontalScrollBarHeight);
+
+			var zoomX = Math.Log((double)space.Width / image.Width) / Math.Log(2);
+			var zoomY = Math.Log((double)space.Height / image.Height) / Math.Log(2);
+			SelectAceZoom((int)Math.Floor(Math.Min(zoomX, zoomY)));
 		}
 
 		#endregion
