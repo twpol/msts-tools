@@ -156,6 +156,8 @@ namespace Jgr.IO.Parser {
 							imageData[imageWidth * y + x] = (imageChannels[(int)SimisAceChannelId.Red][x] << 16) + (imageChannels[(int)SimisAceChannelId.Green][x] << 8) + imageChannels[(int)SimisAceChannelId.Blue][x];
 							if (imageChannels[(int)SimisAceChannelId.Alpha] != null) {
 								imageData[imageWidth * y + x] += (imageChannels[(int)SimisAceChannelId.Alpha][x] << 24);
+							} else {
+								imageData[imageWidth * y + x] += (0xFF << 24);
 							}
 
 							if (imageChannels[(int)SimisAceChannelId.Mask] != null) {
@@ -179,6 +181,13 @@ namespace Jgr.IO.Parser {
 					images.Add(new SimisAceImage(image, imageMask));
 				}
 			}
+
+			// A number of ACE files appear to have 8BIM (Photoshop) files attached to them or bits of them from memory by accident.
+			//var diff = (int)(Reader.BaseStream.Length - Reader.BaseStream.Position);
+			//if (diff > 0) {
+			//    Reader.ReadBytes(diff);
+			//    throw new ReaderException(Reader, true, diff, String.Format("Reader is {0} bytes short of the end of ACE format 0x{1:X2}/0x{2:X2}.", diff, format, unknown4));
+			//}
 
 			return new SimisAce(format, width, height, unknown4, channelCount, unknown6, unknown7, creator, unknown9, channels.ToArray(), images.ToArray());
 		}
