@@ -9,6 +9,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -49,6 +50,7 @@ namespace SimisEditor
 		SimisProvider SimisProvider;
 		Thread SimisProviderThread;
 		SimisAceImageType AceType = SimisAceImageType.ColorAndAlpha;
+		int AceZoom = 0;
 
 		#endregion
 
@@ -204,12 +206,13 @@ namespace SimisEditor
 			UpdateTitle();
 			UpdateMenu();
 			UpdateViewer(true);
+			UpdateImage();
+			UpdateImageSidebar();
 			UpdateStatusbar();
 			Refresh();
 
 			// Wipe out anything we had left.
 			SimisTree.Nodes.Clear();
-			AceChannels.Controls.Clear();
 
 			// Set up for new file.
 			Filename = filename;
@@ -228,41 +231,12 @@ namespace SimisEditor
 				} catch (InvalidOperationException) {
 					SelectAceType(SimisAceImageType.ColorAndAlpha);
 				}
-				AceImage.Width = AceImage.Image.Width;
-				AceImage.Height = AceImage.Image.Height;
-
-				var padding = 3;
-				var horizontalSpace = AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 2 * padding;
-				var verticalPosition = padding;
-				foreach (var image in File.Ace.Image) {
-					foreach (var picture in new[] { image.ImageColor, image.ImageMask }) {
-						if (picture != null) {
-							var label = new Label();
-							label.Text = String.Format("{0}x{1} {2}:", picture.Width, picture.Height, picture == image.ImageColor ? "color" : "mask");
-							label.AutoSize = true;
-							label.Left = padding;
-							label.Top = verticalPosition;
-							AceChannels.Controls.Add(label);
-							verticalPosition += label.Height;
-
-							var pictureBox = new PictureBox();
-							pictureBox.Image = picture;
-							pictureBox.BackColor = Color.White;
-							pictureBox.BackgroundImage = AceImage.BackgroundImage;
-							pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
-							pictureBox.Width = Math.Min(pictureBox.Image.Width, AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
-							pictureBox.Height = pictureBox.Image.Height * pictureBox.Width / pictureBox.Image.Width;
-							pictureBox.Left = padding + (horizontalSpace - pictureBox.Width) / 2;
-							pictureBox.Top = verticalPosition;
-							AceChannels.Controls.Add(pictureBox);
-							verticalPosition += pictureBox.Height + padding;
-						}
-					}
-				}
 			}
 			UpdateTitle();
 			UpdateMenu();
 			UpdateViewer();
+			UpdateImage();
+			UpdateImageSidebar();
 			UpdateStatusbar();
 			return true;
 		}
@@ -408,6 +382,21 @@ namespace SimisEditor
 		#endregion
 
 		#region Menu Events - View
+
+		void zoomInToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceZoom(AceZoom + 1);
+		}
+
+		void zoomOutToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceZoom(AceZoom - 1);
+		}
+
+		void zoomToWindowToolStripMenuItem_Click(object sender, EventArgs e) {
+		}
+
+		void actualSizeToolStripMenuItem_Click(object sender, EventArgs e) {
+			SelectAceZoom(0);
+		}
 
 		void colorOnlyToolStripMenuItem_Click(object sender, EventArgs e) {
 			SelectAceType(SimisAceImageType.ColorOnly);
@@ -711,6 +700,14 @@ namespace SimisEditor
 			UpdateStatusbar();
 		}
 
+		void AceImage_Paint(object sender, PaintEventArgs e) {
+			if (AceImage.Tag != null) {
+				var image = (Image)AceImage.Tag;
+				e.Graphics.InterpolationMode = AceImage.Width >= image.Width ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
+				e.Graphics.DrawImage(image, AceImage.ClientRectangle);
+			}
+		}
+
 		#endregion
 
 		#region Functionality - UI updaters
@@ -759,6 +756,51 @@ namespace SimisEditor
 			maskOnlyToolStripMenuItem.Checked = AceType == SimisAceImageType.MaskOnly;
 			colorAndAlphaToolStripMenuItem.Checked = AceType == SimisAceImageType.ColorAndAlpha;
 			colorAndMaskToolStripMenuItem.Checked = AceType == SimisAceImageType.ColorAndMask;
+		}
+
+		void UpdateImage() {
+			if ((File == null) || (File.Ace == null)) return;
+
+			var zoom = Math.Pow(2, AceZoom);
+			var image = File.Ace.Image[0].GetImage(AceType);
+			AceImage.Tag = image;
+			AceImage.Width = (int)(image.Width * zoom);
+			AceImage.Height = (int)(image.Height * zoom);
+			AceImage.Refresh();
+		}
+
+		void UpdateImageSidebar() {
+			AceChannels.Controls.Clear();
+			if ((File == null) || (File.Ace == null)) return;
+
+			var padding = 3;
+			var horizontalSpace = AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 2 * padding;
+			var verticalPosition = padding;
+			foreach (var image in File.Ace.Image) {
+				foreach (var picture in new[] { image.ImageColor, image.ImageMask }) {
+					if (picture != null) {
+						var label = new Label();
+						label.Text = String.Format("{0}x{1} {2}:", picture.Width, picture.Height, picture == image.ImageColor ? "color" : "mask");
+						label.AutoSize = true;
+						label.Left = padding;
+						label.Top = verticalPosition;
+						AceChannels.Controls.Add(label);
+						verticalPosition += label.Height;
+
+						var pictureBox = new PictureBox();
+						pictureBox.Image = picture;
+						pictureBox.BackColor = Color.White;
+						pictureBox.BackgroundImage = AceImage.BackgroundImage;
+						pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+						pictureBox.Width = Math.Min(picture.Width, AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
+						pictureBox.Height = picture.Height * pictureBox.Width / picture.Width;
+						pictureBox.Left = padding + (horizontalSpace - pictureBox.Width) / 2;
+						pictureBox.Top = verticalPosition;
+						AceChannels.Controls.Add(pictureBox);
+						verticalPosition += pictureBox.Height + padding;
+					}
+				}
+			}
 		}
 
 		void UpdateStatusbar() {
@@ -1192,9 +1234,14 @@ namespace SimisEditor
 
 		void SelectAceType(SimisAceImageType type) {
 			AceType = type;
-			AceImage.Image = File.Ace.Image[0].GetImage(type);
 			UpdateViewer();
+			UpdateImage();
 			UpdateStatusbar();
+		}
+
+		void SelectAceZoom(int zoom) {
+			AceZoom = zoom;
+			UpdateImage();
 		}
 
 		#endregion
