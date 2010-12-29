@@ -31,13 +31,13 @@ namespace Jgr.IO.Parser {
 			}
 			var width = Reader.ReadInt32();
 			var height = Reader.ReadInt32();
-			// TODO: Work out what this int is for. It seems to change with the format but not match it. Could be DirectX surface format?
-			//   0E = D3DFMT_R5G6B5?
-			//   10 = D3DFMT_A1R5G5B5?
-			//   11 = D3DFMT_A4R4G4B4?
-			//   12 = D3DFMT_DXT1?
-			//   14 = D3DFMT_DXT3???
-			//   16 = D3DFMT_DXT5???
+			// TODO: Could this be the DirectX surface format?
+			//   0E = D3DFMT_R5G6B5
+			//   10 = D3DFMT_A1R5G5B5
+			//   11 = D3DFMT_A4R4G4B4
+			//   12 = D3DFMT_DXT1
+			//   14 = D3DFMT_DXT3
+			//   16 = D3DFMT_DXT5
 			var unknown4 = Reader.ReadInt32();
 			var channelCount = Reader.ReadInt32();
 			// TODO: Work out what this int is for. Tends to be zero.
@@ -99,9 +99,9 @@ namespace Jgr.IO.Parser {
 							for (var i = 0; i < 2; i++) {
 								ci[i] = Reader.ReadUInt16();
 								c[i, 0] = 0xFF;
-								c[i, 1] = (byte)((ci[i] & 0xF800) >> 9);
-								c[i, 2] = (byte)((ci[i] & 0x07E0) >> 4);
-								c[i, 3] = (byte)((ci[i] & 0x001F) << 2);
+								c[i, 1] = (byte)((ci[i] & 0xF800) >> 8);
+								c[i, 2] = (byte)((ci[i] & 0x07E0) >> 3);
+								c[i, 3] = (byte)((ci[i] & 0x001F) << 3);
 							}
 							if (ci[0] > ci[1]) {
 								for (var i = 0; i < 4; i++) {
