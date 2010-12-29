@@ -26,8 +26,10 @@ namespace Jgr.IO.Parser {
 		readonly SimisAceChannel[] Channels;
 		public IList<SimisAceImage> Image { get { return Images; } }
 		readonly SimisAceImage[] Images;
+		public readonly byte[] UnknownTrail1;
+		public readonly byte[] UnknownTrail2;
 
-		public SimisAce(int format, int width, int height, int unknown4, int channelCount, int unknown6, string unknown7, string creator, byte[] unknown9, SimisAceChannel[] channels, SimisAceImage[] images) {
+		public SimisAce(int format, int width, int height, int unknown4, int channelCount, int unknown6, string unknown7, string creator, byte[] unknown9, SimisAceChannel[] channels, SimisAceImage[] images, byte[] unknownTrail1, byte[] unknownTrail2) {
 			Format = format;
 			Width = width;
 			Height = height;
@@ -39,6 +41,8 @@ namespace Jgr.IO.Parser {
 			Unknown9 = unknown9;
 			Channels = channels;
 			Images = images;
+			UnknownTrail1 = unknownTrail1;
+			UnknownTrail2 = unknownTrail2;
 		}
 	}
 
