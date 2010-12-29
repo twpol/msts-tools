@@ -157,13 +157,13 @@ namespace Normalize
 			}
 		}
 
-		static void PrintSimisAce(SimisAce ace) {
+		static void PrintSimisAce(SimisAce ace, string fileName) {
 			Console.WriteLine("Ace {");
-			PrintSimisAce(1, ace);
+			PrintSimisAce(1, ace, fileName);
 			Console.WriteLine("}");
 		}
 
-		static void PrintSimisAce(int indent, SimisAce ace) {
+		static void PrintSimisAce(int indent, SimisAce ace, string fileName) {
 			var indentString = new String(' ', 2 * indent);
 			Console.WriteLine("{0}Format:        0x{1:X}", indentString, ace.Format);
 			Console.WriteLine("{0}Width:         {1}", indentString, ace.Width);
@@ -178,10 +178,24 @@ namespace Normalize
 			}
 			Console.WriteLine("{0}Channels:      {1}", indentString, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
 
+#if DEBUG_ACE
 			Console.WriteLine("{0}D1: f={1:X2} unk4={2:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
 			Console.WriteLine("{0}D2: f={1:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
 			Console.WriteLine("{0}D3: unk4={2:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
 			Console.WriteLine("{0}D4: f={1:X2} unk4={2:X2}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
+
+			var fileBytes = (double)File.ReadAllBytes(fileName).Length - 168 - 16 * ace.Channel.Count;
+			var imageCount = 1 + (int)((ace.Format & 0x01) == 0x01 ? Math.Log(ace.Width) / Math.Log(2) : 0);
+			if ((ace.Format & 0x10) == 0x10) {
+				fileBytes -= 4 * imageCount;
+			} else {
+				fileBytes -= 4 * imageCount * ace.Height;
+			}
+			var bytesPerPixel = (double)ace.Channel.Sum(c => c.Size) / 8;
+			if ((ace.Format & 0x10) == 0x10) bytesPerPixel = 0.5;
+			var imageBytes = ace.Width * ace.Height * bytesPerPixel;
+			Console.WriteLine("{0}E1: f={1:X2} fs={2,8:F0} im={3,8:F0} ratio={4,3:F1} {5}", indentString, ace.Format, fileBytes, imageBytes, fileBytes / imageBytes, fileBytes / imageBytes > 1.1 ? "MIPS" : "");
+#endif
 
 			foreach (var channel in ace.Channel) {
 				Console.WriteLine("{0}Channel {{", indentString);
@@ -240,7 +254,7 @@ namespace Normalize
 					if (parsedFile.Tree != null) {
 						PrintSimisTree(0, parsedFile.Tree);
 					} else if (parsedFile.Ace != null) {
-						PrintSimisAce(parsedFile.Ace);
+						PrintSimisAce(parsedFile.Ace, inputFile);
 					}
 				} catch (Exception ex) {
 					if (verbose) {
@@ -371,36 +385,40 @@ namespace Normalize
 				// Third, verify that the output is the same as the input.
 				readStream.Seek(0, SeekOrigin.Begin);
 				saveStream.Seek(0, SeekOrigin.Begin);
-				try {
-					var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
-					var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
-					while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
-						var oldPos = readReader.BaseStream.Position;
-						var fileChar = readReader.ReadChar();
-						var saveChar = saveReader.ReadChar();
-						if (fileChar != saveChar) {
-							var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
-							var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
-							if (verbose) {
-								lock (formatCounts) {
-									Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
-								}
-							}
-							return result;
-						}
-					}
-					if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
-						var readEx = new ReaderException(readReader, newFile.JinxStreamIsBinary, 0, "");
-						var saveEx = new ReaderException(saveReader, newFile.JinxStreamIsBinary, 0, "");
+				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
+				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
+				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
+					var oldPos = readReader.BaseStream.Position;
+					var fileChar = readReader.ReadChar();
+					var saveChar = saveReader.ReadChar();
+					if (fileChar != saveChar) {
+						var readEx = new ReaderException(readReader, newFile.StreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
+						var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
 						if (verbose) {
 							lock (formatCounts) {
-								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
 							}
 						}
 						return result;
 					}
-				} catch (InvalidDataException) {
-					// Unable to set up SimisTestableStream probably because writer wrote nothing.
+				}
+				if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
+					if ((result.JinxStreamFormat.Extension == "ace") && (readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position == saveReader.BaseStream.Length)) {
+						var photoshopExtra = readReader.ReadUInt32();
+						if (photoshopExtra == 0x4D494238) { // 38 42 49 4D == 8BIM
+							// This is kind of a cheat, but many MSTS files have 8BIM-tagged (Photoshop) data beyond the end. I'm going to consider it a
+							// success but print a warning.
+							result.WriteSuccess = true;
+						}
+						readReader.BaseStream.Position -= 4;
+					}
+					var readEx = new ReaderException(readReader, newFile.StreamIsBinary, 0, "");
+					var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, 0, "");
+					if (verbose) {
+						lock (formatCounts) {
+							Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+						}
+					}
 					return result;
 				}
 
