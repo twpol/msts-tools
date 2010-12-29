@@ -144,7 +144,7 @@ namespace Jgr.IO.Parser {
 				for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
 					var imageWidth = width / (int)Math.Pow(2, imageIndex);
 					var imageHeight = height / (int)Math.Pow(2, imageIndex);
-					var imageData = new int[imageWidth * imageHeight];
+					var imageColorData = new int[imageWidth * imageHeight];
 					var imageMaskData = new int[imageWidth * imageHeight];
 
 					for (var y = 0; y < imageHeight; y++) {
@@ -167,11 +167,11 @@ namespace Jgr.IO.Parser {
 						}
 
 						for (var x = 0; x < imageWidth; x++) {
-							imageData[imageWidth * y + x] = (imageChannels[(int)SimisAceChannelId.Red][x] << 16) + (imageChannels[(int)SimisAceChannelId.Green][x] << 8) + imageChannels[(int)SimisAceChannelId.Blue][x];
+							imageColorData[imageWidth * y + x] = (imageChannels[(int)SimisAceChannelId.Red][x] << 16) + (imageChannels[(int)SimisAceChannelId.Green][x] << 8) + imageChannels[(int)SimisAceChannelId.Blue][x];
 							if (imageChannels[(int)SimisAceChannelId.Alpha] != null) {
-								imageData[imageWidth * y + x] += (imageChannels[(int)SimisAceChannelId.Alpha][x] << 24);
+								imageColorData[imageWidth * y + x] += (imageChannels[(int)SimisAceChannelId.Alpha][x] << 24);
 							} else {
-								imageData[imageWidth * y + x] += (0xFF << 24);
+								imageColorData[imageWidth * y + x] += (0xFF << 24);
 							}
 
 							if (imageChannels[(int)SimisAceChannelId.Mask] != null) {
@@ -180,11 +180,11 @@ namespace Jgr.IO.Parser {
 						}
 					}
 
-					var image = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppArgb);
-					var imageBits = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
-					Debug.Assert(imageBits.Stride == 4 * imageBits.Width, "Cannot copy data to bitmap with Stride != Width.");
-					Marshal.Copy(imageData, 0, imageBits.Scan0, imageData.Length);
-					image.UnlockBits(imageBits);
+					var imageColor = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppArgb);
+					var imageColorBits = imageColor.LockBits(new Rectangle(Point.Empty, imageColor.Size), ImageLockMode.WriteOnly, imageColor.PixelFormat);
+					Debug.Assert(imageColorBits.Stride == 4 * imageColorBits.Width, "Cannot copy data to bitmap with Stride != Width.");
+					Marshal.Copy(imageColorData, 0, imageColorBits.Scan0, imageColorData.Length);
+					imageColor.UnlockBits(imageColorBits);
 
 					var imageMask = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppRgb);
 					var imageMaskBits = imageMask.LockBits(new Rectangle(Point.Empty, imageMask.Size), ImageLockMode.WriteOnly, imageMask.PixelFormat);
@@ -192,7 +192,7 @@ namespace Jgr.IO.Parser {
 					Marshal.Copy(imageMaskData, 0, imageMaskBits.Scan0, imageMaskData.Length);
 					imageMask.UnlockBits(imageMaskBits);
 
-					images.Add(new SimisAceImage(image, imageMask));
+					images.Add(new SimisAceImage(imageColor, imageMask));
 				}
 			}
 

@@ -71,12 +71,15 @@ namespace Jgr.IO.Parser {
 
 	[Immutable]
 	public class SimisAceImage : DataTreeNode<SimisAceImage> {
+		public int Width { get { return ImageColor != null ? ImageColor.Width : ImageMask != null ? ImageMask.Width : 0; } }
+		public int Height { get { return ImageColor != null ? ImageColor.Height : ImageMask != null ? ImageMask.Height : 0; } }
 		public readonly Bitmap ImageColor;
 		public readonly Bitmap ImageMask;
 
 		public SimisAceImage(Bitmap imageColor, Bitmap imageMask) {
 			if ((imageColor != null) && (imageColor.PixelFormat != PixelFormat.Format32bppArgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppArgb.", "imageColor");
 			if ((imageMask != null) && (imageMask.PixelFormat != PixelFormat.Format32bppRgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppRgb.", "imageMask");
+			if ((imageColor != null) && (imageMask != null) && (imageColor.Size != imageMask.Size)) throw new ArgumentException("Color and mask images must be the same dimensions.");
 			ImageColor = imageColor;
 			ImageMask = imageMask;
 		}

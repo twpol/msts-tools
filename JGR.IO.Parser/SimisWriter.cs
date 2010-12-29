@@ -20,11 +20,11 @@ namespace Jgr.IO.Parser {
 			Writer = writer;
 		}
 
-		//public static SimisAceWriter ToAceStream(Stream stream, bool streamIsBinary, bool streamIsCompressed) {
-		//    if (!stream.CanWrite) throw new ArgumentException("Stream must support writing.", "stream");
-		//    if (!stream.CanSeek) throw new ArgumentException("Stream must support seeking.", "stream");
-		//    throw new NotImplementedException();
-		//}
+		public static SimisAceWriter ToAceStream(Stream stream, bool streamIsBinary, bool streamIsCompressed) {
+			if (!stream.CanWrite) throw new ArgumentException("Stream must support writing.", "stream");
+			if (!stream.CanSeek) throw new ArgumentException("Stream must support seeking.", "stream");
+			return new SimisAceWriter(SimisStreamWriter.ToStream(stream, streamIsBinary, streamIsCompressed));
+		}
 
 		public static SimisJinxWriter ToJinxStream(Stream stream, bool streamIsBinary, bool streamIsCompressed, SimisProvider simisProvider, bool jinxStreamIsBinary, SimisJinxFormat jinxStreamFormat) {
 			if (!stream.CanWrite) throw new ArgumentException("Stream must support writing.", "stream");

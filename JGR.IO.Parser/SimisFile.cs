@@ -178,10 +178,9 @@ namespace Jgr.IO.Parser {
 					writer.WriteEnd();
 				}
 			} else if (Ace != null) {
-				// FIXME: using (var writer = SimisWriter.ToAceStream(stream, StreamIsBinary, StreamIsCompressed)) {
-				// FIXME: WriteBlockChildren(writer, Tree);
-				// FIXME: writer.WriteEnd();
-				// FIXME: }
+				using (var writer = SimisWriter.ToAceStream(stream, StreamIsBinary, StreamIsCompressed)) {
+					writer.Write(Ace);
+				}
 			}
 		}
 
