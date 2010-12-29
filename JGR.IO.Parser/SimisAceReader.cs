@@ -149,8 +149,22 @@ namespace Jgr.IO.Parser {
 
 					for (var y = 0; y < imageHeight; y++) {
 						var imageChannels = new byte[8][];
-						foreach (var channel in channels)
-							imageChannels[(int)channel.Type] = Reader.ReadBytes((int)Math.Ceiling((double)channel.Size * imageWidth / 8));
+						foreach (var channel in channels) {
+							switch (channel.Size) {
+								case 1:
+									// 1bpp channels start with the MSB and work down to LSB and then the next byte.
+									var bytes = Reader.ReadBytes((int)Math.Ceiling((double)channel.Size * imageWidth / 8));
+									imageChannels[(int)channel.Type] = new byte[imageWidth];
+									for (var x = 0; x < imageWidth; x++) {
+										imageChannels[(int)channel.Type][x] = (byte)(((bytes[x / 8] >> (7 - (x % 8))) & 1) != 0 ? 0xFF : 0x00);
+									}
+									break;
+								case 8:
+									// 8bpp are simple.
+									imageChannels[(int)channel.Type] = Reader.ReadBytes(imageWidth);
+									break;
+							}
+						}
 
 						for (var x = 0; x < imageWidth; x++) {
 							imageData[imageWidth * y + x] = (imageChannels[(int)SimisAceChannelId.Red][x] << 16) + (imageChannels[(int)SimisAceChannelId.Green][x] << 8) + imageChannels[(int)SimisAceChannelId.Blue][x];
@@ -161,7 +175,7 @@ namespace Jgr.IO.Parser {
 							}
 
 							if (imageChannels[(int)SimisAceChannelId.Mask] != null) {
-								imageMaskData[imageWidth * y + x] = (((imageChannels[(int)SimisAceChannelId.Mask][x / 8] >> (7 - (x % 8))) & 1) != 0 ? 255 : 0) * 0x00010101;
+								imageMaskData[imageWidth * y + x] = imageChannels[(int)SimisAceChannelId.Mask][x] * 0x00010101;
 							}
 						}
 					}
