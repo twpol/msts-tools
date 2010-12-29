@@ -196,14 +196,10 @@ namespace Jgr.IO.Parser {
 				}
 			}
 
-			// A number of ACE files appear to have 8BIM (Photoshop) files attached to them or bits of them from memory by accident.
-			//var diff = (int)(Reader.BaseStream.Length - Reader.BaseStream.Position);
-			//if (diff > 0) {
-			//    Reader.ReadBytes(diff);
-			//    throw new ReaderException(Reader, true, diff, String.Format("Reader is {0} bytes short of the end of ACE format 0x{1:X2}/0x{2:X2}.", diff, format, unknown4));
-			//}
+			var unknownTrail1 = new byte[0];
+			var unknownTrail2 = Reader.ReadBytes(0x10000);
 
-			return new SimisAce(format, width, height, unknown4, channelCount, unknown6, unknown7, creator, unknown9, channels.ToArray(), images.ToArray());
+			return new SimisAce(format, width, height, unknown4, channelCount, unknown6, unknown7, creator, unknown9, channels.ToArray(), images.ToArray(), unknownTrail1, unknownTrail2);
 		}
 	}
 }

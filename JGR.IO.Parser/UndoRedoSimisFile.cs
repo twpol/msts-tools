@@ -29,7 +29,7 @@ namespace Jgr.IO.Parser {
 			: base(fileName, provider) {
 			UndoBuffer = new Stack<SimisFileState>();
 			RedoBuffer = new Stack<SimisFileState>();
-			ResetUndo(new SimisTreeNode("<root>", ""), new SimisAce(0, 0, 0, 0, 0, 0, "", "", new byte[44], new SimisAceChannel[0], new SimisAceImage[0]));
+			ResetUndo(new SimisTreeNode("<root>", ""), new SimisAce(0, 0, 0, 0, 0, 0, "", "", new byte[44], new SimisAceChannel[0], new SimisAceImage[0], new byte[0], new byte[0]));
 		}
 
 		/// <summary>

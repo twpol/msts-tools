@@ -73,7 +73,7 @@ namespace Jgr.IO.Parser {
 								case 1:
 									for (var x = 0; x < image.Width; x += 8) {
 										for (var i = 0; i < 8; i++) {
-											if ((image.Width * y + x + i) * 4 + dataOffset < data.Length) {
+											if (x + i < image.Width) {
 												bits[x / 8] += (byte)((data[(image.Width * y + x + i) * 4 + dataOffset] >= 0x80 ? 1 : 0) << (7 - i));
 											}
 										}
@@ -90,6 +90,8 @@ namespace Jgr.IO.Parser {
 					}
 				}
 			}
+			Writer.Write(ace.UnknownTrail1);
+			Writer.Write(ace.UnknownTrail2);
 		}
 	}
 }

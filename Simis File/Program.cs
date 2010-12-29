@@ -406,15 +406,6 @@ namespace Normalize
 					}
 				}
 				if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
-					if ((result.JinxStreamFormat.Extension == "ace") && (readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position == saveReader.BaseStream.Length)) {
-						var photoshopExtra = readReader.ReadUInt32();
-						if (photoshopExtra == 0x4D494238) { // 38 42 49 4D == 8BIM
-							// This is kind of a cheat, but many MSTS files have 8BIM-tagged (Photoshop) data beyond the end. I'm going to consider it a
-							// success but print a warning.
-							result.WriteSuccess = true;
-						}
-						readReader.BaseStream.Position -= 4;
-					}
 					var readEx = new ReaderException(readReader, newFile.StreamIsBinary, 0, "");
 					var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, 0, "");
 					if (verbose) {
