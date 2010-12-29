@@ -337,7 +337,10 @@ namespace Normalize
 								}
 								result.JinxStreamFormat = readerJinx.JinxStreamFormat;
 							} else if (readerAce != null) {
-								result.JinxStreamFormat = fileProvider.Formats.FirstOrDefault();
+								if (fileProvider.Formats.FirstOrDefault() == null) {
+									return result;
+								}
+								result.JinxStreamFormat = fileProvider.Formats.First();
 							} else {
 								return result;
 							}
