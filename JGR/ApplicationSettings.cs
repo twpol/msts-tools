@@ -72,12 +72,16 @@ namespace Jgr {
 			return null;
 		}
 
-		public ApplicationSettings() {
+		ApplicationSettings(string path) {
 			_settingsBoolean = new ApplicationSettings<bool>(this, RegistryValueKind.DWord);
 			_settingsInteger = new ApplicationSettings<int>(this, RegistryValueKind.DWord);
 			_settingsString = new ApplicationSettings<string>(this, RegistryValueKind.String);
 			_groups = new Dictionary<string, ApplicationSettings>();
-			_path = string.Format(@"Software\{0}\{1}", ApplicationCompany, ApplicationProduct);
+			_path = path;
+		}
+
+		public ApplicationSettings()
+			: this(string.Format(@"Software\{0}\{1}", ApplicationCompany, ApplicationProduct)) {
 			if ((ApplicationProduct == ApplicationTitle) || string.IsNullOrEmpty(ApplicationTitle)) {
 				_groupDefault = this;
 			} else {
@@ -86,8 +90,7 @@ namespace Jgr {
 		}
 
 		protected ApplicationSettings(ApplicationSettings root, string path)
-			: this() {
-			_path = string.Format(@"{0}\{1}", root._path, path);
+			: this(string.Format(@"{0}\{1}", root._path, path)) {
 		}
 
 		public ApplicationSettings this[string group] {
