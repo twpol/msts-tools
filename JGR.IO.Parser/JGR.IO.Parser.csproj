@@ -57,6 +57,7 @@
     <Compile Include="MutableSimisFile.cs" />
     <Compile Include="SimisAce.cs" />
     <Compile Include="SimisAceReader.cs" />
+    <Compile Include="SimisAceWriter.cs" />
     <Compile Include="SimisFile.cs" />
     <Compile Include="SimisReader.cs" />
     <Compile Include="SimisStreamReader.cs" />
