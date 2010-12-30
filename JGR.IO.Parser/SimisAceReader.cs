@@ -71,66 +71,72 @@ namespace Jgr.IO.Parser {
 			var imageCount = 1 + (int)((format & 0x01) == 0x01 ? Math.Log(width) / Math.Log(2) : 0);
 			if ((format & 0x10) == 0x10) {
 				// DXT format.
-				if (unknown4 != 0x12) {
-					throw new InvalidDataException("Only unknown4 = 0x12 is supported for DXT-compressed ACE files.");
-				}
+				switch (unknown4) {
+					case 0x12:
+						// DXT1
+						if (channels.Any(c => c.Type == SimisAceChannelId.Alpha)) {
+							throw new InvalidDataException("Alpha channel not supported with DXT1 ACE files (use a mask instead).");
+						}
 
-				if (channels.Any(c => c.Type == SimisAceChannelId.Alpha)) {
-					throw new InvalidDataException("Alpha channel not supported with DXT-compressed ACE files.");
-				}
+						// Jump table: offsets to start of each image.
+						Reader.ReadBytes(imageCount * 4);
 
-				// Jump table: offsets to start of each image.
-				Reader.ReadBytes(imageCount * 4);
+						for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
+							var imageWidth = width / (int)Math.Pow(2, imageIndex);
+							var imageHeight = height / (int)Math.Pow(2, imageIndex);
+							var imageData = new int[imageWidth * imageHeight];
 
-				for (var imageIndex = 0; imageIndex < imageCount; imageIndex++) {
-					var imageWidth = width / (int)Math.Pow(2, imageIndex);
-					var imageHeight = height / (int)Math.Pow(2, imageIndex);
-					if (imageWidth < 2) {
-						break;
-					}
-					var imageData = new int[imageWidth * imageHeight];
-
-					var bytes = Reader.ReadUInt32();
-					var size = (int)Math.Ceiling(imageHeight / 4f);
-					for (var y = 0; y < size; y++) {
-						for (var x = 0; x < size; x++) {
-							var c = new byte[4, 4];
-							var ci = new uint[2];
-							for (var i = 0; i < 2; i++) {
-								ci[i] = Reader.ReadUInt16();
-								c[i, 0] = 0xFF;
-								c[i, 1] = (byte)((ci[i] & 0xF800) >> 8);
-								c[i, 2] = (byte)((ci[i] & 0x07E0) >> 3);
-								c[i, 3] = (byte)((ci[i] & 0x001F) << 3);
-							}
-							if (ci[0] > ci[1]) {
-								for (var i = 0; i < 4; i++) {
-									c[2, i] = (byte)(2 * c[0, i] / 3 + 1 * c[1, i] / 3);
-									c[3, i] = (byte)(1 * c[0, i] / 3 + 2 * c[1, i] / 3);
-								}
-							} else {
-								for (var i = 0; i < 4; i++) {
-									c[2, i] = (byte)(c[0, i] / 2 + c[1, i] / 2);
-								}
-							}
-							var lookup = Reader.ReadUInt32();
-							for (var x2 = 0; x2 < 4; x2++) {
-								for (var y2 = 0; y2 < 4; y2++) {
-									var index = (lookup >> (x2 * 2 + y2 * 8)) & 0x3;
-									if ((x * 4 + x2 < imageWidth) && (y * 4 + y2 < imageHeight)) {
-										imageData[imageWidth * (y * 4 + y2) + (x * 4 + x2)] = (c[index, 0] << 24) + (c[index, 1] << 16) + (c[index, 2] << 8) + c[index, 3];
+							if ((imageWidth >= 4) && (imageHeight >= 4)) {
+								// DXT compressed blocks have a length header.
+								var bytes = Reader.ReadUInt32();
+								var size = (int)Math.Ceiling(imageHeight / 4f);
+								for (var y = 0; y < size; y++) {
+									for (var x = 0; x < size; x++) {
+										var c = new byte[4, 4];
+										var ci = new uint[2];
+										for (var i = 0; i < 2; i++) {
+											ci[i] = Reader.ReadUInt16();
+											c[i, 0] = 0xFF;
+											c[i, 1] = (byte)((ci[i] & 0xF800) >> 8);
+											c[i, 2] = (byte)((ci[i] & 0x07E0) >> 3);
+											c[i, 3] = (byte)((ci[i] & 0x001F) << 3);
+										}
+										if (ci[0] > ci[1]) {
+											for (var i = 0; i < 4; i++) {
+												c[2, i] = (byte)(2 * c[0, i] / 3 + 1 * c[1, i] / 3);
+												c[3, i] = (byte)(1 * c[0, i] / 3 + 2 * c[1, i] / 3);
+											}
+										} else {
+											for (var i = 0; i < 4; i++) {
+												c[2, i] = (byte)(c[0, i] / 2 + c[1, i] / 2);
+											}
+										}
+										var lookup = Reader.ReadUInt32();
+										for (var x2 = 0; x2 < 4; x2++) {
+											for (var y2 = 0; y2 < 4; y2++) {
+												var index = (lookup >> (x2 * 2 + y2 * 8)) & 0x3;
+												if ((x * 4 + x2 < imageWidth) && (y * 4 + y2 < imageHeight)) {
+													imageData[imageWidth * (y * 4 + y2) + (x * 4 + x2)] = (c[index, 0] << 24) + (c[index, 1] << 16) + (c[index, 2] << 8) + c[index, 3];
+												}
+											}
+										}
 									}
 								}
+							} else {
+								// For <4 pixels the images are in RGB format.
+								// FIXME: Code this (same as below, share?).
 							}
-						}
-					}
 
-					var image = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppArgb);
-					var imageBits = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
-					Debug.Assert(imageBits.Stride == 4 * imageBits.Width, "Cannot copy data to bitmap with Stride != Width.");
-					Marshal.Copy(imageData, 0, imageBits.Scan0, imageData.Length);
-					image.UnlockBits(imageBits);
-					images.Add(new SimisAceImage(image, null));
+							var image = new Bitmap(imageWidth, imageHeight, PixelFormat.Format32bppArgb);
+							var imageBits = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, image.PixelFormat);
+							Debug.Assert(imageBits.Stride == 4 * imageBits.Width, "Cannot copy data to bitmap with Stride != Width.");
+							Marshal.Copy(imageData, 0, imageBits.Scan0, imageData.Length);
+							image.UnlockBits(imageBits);
+							images.Add(new SimisAceImage(image, null));
+						}
+						break;
+					default:
+						throw new NotSupportedException("ACE DXT format unknown4=" + unknown4 + " is not supported.");
 				}
 			} else {
 				// RGB format.
