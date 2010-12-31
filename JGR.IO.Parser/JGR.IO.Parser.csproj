@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="BNFFile.cs" />
     <Compile Include="DataTree.cs" />
+    <Compile Include="ImageComparison.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReaderException.cs" />
     <Compile Include="MutableSimisFile.cs" />

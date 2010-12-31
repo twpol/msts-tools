@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -169,7 +170,6 @@ namespace Normalize
 			Console.WriteLine("{0}Width:         {1}", indentString, ace.Width);
 			Console.WriteLine("{0}Height:        {1}", indentString, ace.Height);
 			Console.WriteLine("{0}Unk4:          0x{1:X}", indentString, ace.Unknown4);
-			Console.WriteLine("{0}Channel Count: {1}", indentString, ace.ChannelCount);
 			Console.WriteLine("{0}Unk6:          0x{1:X}", indentString, ace.Unknown6);
 			Console.WriteLine("{0}Unk7:          {1}", indentString, ace.Unknown7);
 			Console.WriteLine("{0}Creator:       {1}", indentString, ace.Creator);
@@ -390,8 +390,10 @@ namespace Normalize
 				saveStream.Seek(0, SeekOrigin.Begin);
 				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
 				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
+				var isDXTACE = (result.JinxStreamFormat.Extension == "ace") && ((newFile.Ace.Format & 0x10) != 0);
 				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
 					var oldPos = readReader.BaseStream.Position;
+					if (isDXTACE && (oldPos > 168)) break;
 					var fileChar = readReader.ReadChar();
 					var saveChar = saveReader.ReadChar();
 					if (fileChar != saveChar) {
@@ -405,15 +407,59 @@ namespace Normalize
 						return result;
 					}
 				}
-				if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
-					var readEx = new ReaderException(readReader, newFile.StreamIsBinary, 0, "");
-					var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, 0, "");
-					if (verbose) {
-						lock (formatCounts) {
-							Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+				if ((result.JinxStreamFormat.Extension == "ace") && ((newFile.Ace.Format & 0x10) != 0)) {
+					// DXT images are a massive pain because it is a lossy compression.
+					saveStream.Seek(0, SeekOrigin.Begin);
+					var saveOutput = new SimisFile(saveStream, fileProvider);
+					Debug.Assert(saveOutput.Ace != null);
+					Debug.Assert(saveOutput.Ace.Format == newFile.Ace.Format);
+
+					if (newFile.Ace.Width != saveOutput.Ace.Width) {
+					}
+					if (newFile.Ace.Height != saveOutput.Ace.Height) {
+					}
+					if (newFile.Ace.Unknown7 != saveOutput.Ace.Unknown7) {
+					}
+					if (newFile.Ace.Creator != saveOutput.Ace.Creator) {
+					}
+					if (String.Join(",", newFile.Ace.Channel.Select(c => c.Type.ToString() + c.Size).ToArray()) != String.Join(",", saveOutput.Ace.Channel.Select(c => c.Type.ToString() + c.Size).ToArray())) {
+						// TODO: ERROR with channels.
+					}
+					if (newFile.Ace.Image.Count != saveOutput.Ace.Image.Count) {
+						// TODO: ERROR with image count.
+					}
+
+					var errors = new List<double>();
+					for (var i = 0; i < newFile.Ace.Image.Count; i++) {
+						if (newFile.Ace.Image[i].ImageColor != null) {
+							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageColor, saveOutput.Ace.Image[i].ImageColor));
+						}
+						if (newFile.Ace.Image[i].ImageMask != null) {
+							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask));
 						}
 					}
-					return result;
+					//Console.WriteLine("Image error: {0,3:F0} {1,3:F0} {1,3:F0} (min/max/mean)", errors.Min(), errors.Max(), errors.Average());
+
+					// Any error over 1.0 is considered a fail.
+					if (errors.Max() > 1.0) {
+						if (verbose) {
+							lock (formatCounts) {
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nWorst image root mean square error is too high: {1:F1} > 1.0.\n", file, errors.Max()));
+							}
+						}
+						return result;
+					}
+				} else {
+					if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
+						var readEx = new ReaderException(readReader, newFile.StreamIsBinary, 0, "");
+						var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, 0, "");
+						if (verbose) {
+							lock (formatCounts) {
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile and stream length do not match: {1:N0} vs {2:N0}.\n\n{3}{4}\n", file, readReader.BaseStream.Length, saveReader.BaseStream.Length, readEx.ToString(), saveEx.ToString()));
+							}
+						}
+						return result;
+					}
 				}
 
 				// It all worked!
