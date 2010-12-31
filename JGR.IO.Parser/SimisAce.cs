@@ -78,14 +78,22 @@ namespace Jgr.IO.Parser {
 		public readonly Bitmap ImageColor;
 		public readonly Bitmap ImageMask;
 
-		public SimisAceImage(Bitmap imageColor, Bitmap imageMask) {
+		SimisAceImage(int width, int height, Bitmap imageColor, Bitmap imageMask) {
 			if ((imageColor != null) && (imageColor.PixelFormat != PixelFormat.Format32bppArgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppArgb.", "imageColor");
 			if ((imageMask != null) && (imageMask.PixelFormat != PixelFormat.Format32bppRgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppRgb.", "imageMask");
 			if ((imageColor != null) && (imageMask != null) && (imageColor.Size != imageMask.Size)) throw new ArgumentException("Color and mask images must be the same dimensions.");
-			Width = imageColor != null ? imageColor.Width : imageMask != null ? imageMask.Width : 0;
-			Height = imageColor != null ? imageColor.Height : imageMask != null ? imageMask.Height : 0;
+			Width = width;
+			Height = height;
 			ImageColor = imageColor;
 			ImageMask = imageMask;
+		}
+
+		public SimisAceImage(Bitmap imageColor, Bitmap imageMask)
+			: this(
+				imageColor != null ? imageColor.Width : imageMask != null ? imageMask.Width : 0,
+				imageColor != null ? imageColor.Height : imageMask != null ? imageMask.Height : 0,
+				imageColor,
+				imageMask) {
 		}
 
 		public Image GetImage(SimisAceImageType type) {
