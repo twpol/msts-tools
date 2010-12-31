@@ -141,9 +141,9 @@ namespace Jgr.IO.Parser {
 										// If R = 0.0, will get NaNs.
 										if ((u1.GetEuclideanNorm() > double.Epsilon) && (u2.GetEuclideanNorm() > double.Epsilon)) {
 											Debug.Assert(!R.ToString().Contains("NaN"));
-											Debug.Assert(Math.Abs(R.Values[1, 0]) < 0.00000001);
-											Debug.Assert(Math.Abs(R.Values[2, 0]) < 0.00000001);
-											Debug.Assert(Math.Abs(R.Values[2, 1]) < 0.00000001);
+											Debug.Assert(Math.Abs(R.Values[1, 0]) < 0.0000001);
+											Debug.Assert(Math.Abs(R.Values[2, 0]) < 0.0000001);
+											Debug.Assert(Math.Abs(R.Values[2, 1]) < 0.0000001);
 
 											var largestEigenValue = R.Values[0, 0] > R.Values[1, 1] && R.Values[0, 0] > R.Values[2, 2] ? 0 : R.Values[1, 1] > R.Values[2, 2] ? 1 : 2;
 											//Console.WriteLine("{0,9:F3}, {1,9:F3}, {2,9:F3} --> {3}", R.Values[0, 0], R.Values[1, 1], R.Values[2, 2], largestEigenValue);
