@@ -11,6 +11,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Jgr.IO.Parser {
 	public class SimisAceWriter : SimisWriter {
@@ -41,7 +42,7 @@ namespace Jgr.IO.Parser {
 			Writer.Write(ace.Width);
 			Writer.Write(ace.Height);
 			Writer.Write(ace.Unknown4);
-			Writer.Write(ace.ChannelCount);
+			Writer.Write(ace.Channel.Count);
 			Writer.Write(ace.Unknown6);
 			Writer.Write(ace.Unknown7.PadRight(16, '\0').Substring(0, 16).ToCharArray());
 			Writer.Write(ace.Creator.PadRight(64, '\0').Substring(0, 64).ToCharArray());
@@ -54,7 +55,7 @@ namespace Jgr.IO.Parser {
 
 			if ((ace.Format & 0x10) == 0x10) {
 				// DXT format.
-
+				// TODO: Check width/height are a power-of-2 dimension.
 				switch (ace.Unknown4) {
 					case 0x12:
 						// DXT1
@@ -63,16 +64,159 @@ namespace Jgr.IO.Parser {
 						}
 
 						// Jump table: offsets to start of each image.
-						var dataSize = 152 + 16 * ace.ChannelCount + 4 * ace.Image.Count;
+						var dataSize = 152 + 16 * ace.Channel.Count + 4 * ace.Image.Count;
 						foreach (var image in ace.Image) {
 							Writer.Write(dataSize);
 							dataSize += GetImageDataBlockSize(ace.Channel, true, image);
 						}
 
 						foreach (var image in ace.Image) {
-							var strideH = (int)Math.Ceiling((double)image.Width / 4) * 4;
-							var strideV = (int)Math.Ceiling((double)image.Height / 4) * 4;
-							Writer.Write(new byte[strideH * strideV * 8]);
+							if ((image.Width >= 4) && (image.Height >= 4)) {
+								Writer.Write(GetImageDataBlockSize(ace.Channel, true, image));
+
+								var imageBits = image.ImageColor.LockBits(new Rectangle(Point.Empty, image.ImageColor.Size), ImageLockMode.ReadOnly, image.ImageColor.PixelFormat);
+								Debug.Assert(imageBits.Stride == image.Width * 4);
+								var imageData = new int[image.Width * image.Height];
+								Marshal.Copy(imageBits.Scan0, imageData, 0, imageData.Length);
+								image.ImageColor.UnlockBits(imageBits);
+
+								for (var y = 0; y < image.Height; y += 4) {
+									for (var x = 0; x < image.Width; x += 4) {
+										var colors = new Matrix(16, 4);
+										var componentMeans = new Matrix(1, 4);
+										var hasAlpha = false;
+										for (var x2 = 0; x2 < 4; x2++) {
+											for (var y2 = 0; y2 < 4; y2++) {
+												var color = imageData[image.Width * (y + y2) + x + x2];
+												for (var component = 0; component < 4; component++) {
+													var colorComponent = (color >> (24 - 8 * component)) & 0xFF;
+													colors.Values[y2 * 4 + x2, component] = colorComponent;
+													componentMeans.Values[0, component] += (double)colorComponent / 16;
+												}
+												hasAlpha |= (color >> 24) > 0;
+											}
+										}
+
+										var colorsCentered = new Matrix(16, 4);
+										for (var color = 0; color < 16; color++) {
+											for (var component = 0; component < 4; component++) {
+												colorsCentered.Values[color, component] = colors.Values[color, component] - componentMeans.Values[0, component];
+											}
+										}
+
+										// Covariance.
+										Func<int, int, double> cov = (componentA, componentB) => {
+											var sum = 0d;
+											for (var color = 0; color < 16; color++) {
+												sum += colorsCentered.Values[color, componentA] * colorsCentered.Values[color, componentB];
+											}
+											return sum / (16 - 1);
+										};
+
+										var A = new Matrix(3, 3,
+											cov(1, 1), cov(1, 2), cov(1, 3),
+											cov(2, 1), cov(2, 2), cov(2, 3),
+											cov(3, 1), cov(3, 2), cov(3, 3)
+										);
+
+										// QR decomposition via Householder transformation:
+										var a1 = A.GetColumn(0);
+										var u1 = a1 - a1.GetEuclideanNorm() * new Matrix(3, 1, 1, 0, 0);
+										var v1 = u1 / u1.GetEuclideanNorm();
+										var Q1 = Matrix.Identity(3) - 2 * v1 * v1.GetTranspose();
+										var Q1A = Q1 * A;
+
+										var A2 = Q1A.GetMinor(1, 1);
+										var a2 = A2.GetColumn(0);
+										var u2 = a2 - a2.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
+										var v2 = u2 / u2.GetEuclideanNorm();
+										var Q2 = Matrix.Identity(2) - 2 * v2 * v2.GetTranspose();
+										var Q2A = Q2 * A2;
+
+										Q2 = Q2.GetIdentityExpansion(1, 3);
+
+										var Q = Q1.GetTranspose() * Q2.GetTranspose();
+										var R = Q2 * Q1 * A;
+
+										// If R = 0.0, will get NaNs.
+										if ((u1.GetEuclideanNorm() > double.Epsilon) && (u2.GetEuclideanNorm() > double.Epsilon)) {
+											Debug.Assert(!R.ToString().Contains("NaN"));
+											Debug.Assert(Math.Abs(R.Values[1, 0]) < 0.00000001);
+											Debug.Assert(Math.Abs(R.Values[2, 0]) < 0.00000001);
+											Debug.Assert(Math.Abs(R.Values[2, 1]) < 0.00000001);
+
+											var largestEigenValue = R.Values[0, 0] > R.Values[1, 1] && R.Values[0, 0] > R.Values[2, 2] ? 0 : R.Values[1, 1] > R.Values[2, 2] ? 1 : 2;
+											//Console.WriteLine("{0,9:F3}, {1,9:F3}, {2,9:F3} --> {3}", R.Values[0, 0], R.Values[1, 1], R.Values[2, 2], largestEigenValue);
+											//Console.WriteLine("{0} --> eigen = {1,9:F3} * {3} ({2})", A, R.Values[largestEigenValue, largestEigenValue], largestEigenValue, Q.GetColumn(largestEigenValue));
+
+											var featureVector = Q.GetColumn(largestEigenValue).GetNormalized();
+											var finalData = colorsCentered.GetMinor(0, 1) * featureVector;
+											//Console.WriteLine(finalData);
+
+											var finalDataList = finalData.GetColumnList(0);
+											var finalDataListMin = finalDataList.Min();
+											var finalDataListMax = finalDataList.Max();
+											var min = finalDataListMin * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
+											var max = finalDataListMax * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
+											//Console.WriteLine("Min = {0}, max = {1}", min, max);
+											//Console.WriteLine();
+
+											var minColor = min.GetColumnList(0).Select(v => ClampColor(v)).ToArray();
+											var maxColor = max.GetColumnList(0).Select(v => ClampColor(v)).ToArray();
+											var midColor = minColor.Select((v, i) => (v + maxColor[i]) / 2).ToArray();
+
+											var minColorValue = ((minColor[0] << 8) & 0xF800) + ((minColor[1] << 3) & 0x07E0) + ((minColor[2] >> 3) & 0x001F);
+											var maxColorValue = ((maxColor[0] << 8) & 0xF800) + ((maxColor[1] << 3) & 0x07E0) + ((maxColor[2] >> 3) & 0x001F);
+											var midColorValue = ((midColor[0] << 8) & 0xF800) + ((midColor[1] << 3) & 0x07E0) + ((midColor[2] >> 3) & 0x001F);
+
+											var swapped = minColorValue > maxColorValue;
+											if (swapped) {
+												var temp = minColorValue;
+												minColorValue = maxColorValue;
+												maxColorValue = temp;
+											}
+
+											Writer.Write((short)minColorValue);
+											Writer.Write((short)maxColorValue);
+
+											var indicies = 0;
+											if (finalDataListMax > finalDataListMin) {
+												for (var i = 0; i < 16; i++) {
+													if (colors.Values[i, 0] < 0xFF) {
+														indicies += 3 << (i * 2);
+													} else {
+														var colorErrors = new List<double>(new[] {
+															Math.Abs(colors.Values[i, 1] - minColor[0]) + Math.Abs(colors.Values[i, 2] - minColor[1]) + Math.Abs(colors.Values[i, 3] - minColor[2]),
+															Math.Abs(colors.Values[i, 1] - maxColor[0]) + Math.Abs(colors.Values[i, 2] - maxColor[1]) + Math.Abs(colors.Values[i, 3] - maxColor[2]),
+															Math.Abs(colors.Values[i, 1] - midColor[0]) + Math.Abs(colors.Values[i, 2] - midColor[1]) + Math.Abs(colors.Values[i, 3] - midColor[2])
+														});
+														var index = colorErrors.IndexOf(colorErrors.Min());
+														if (swapped) index = 3 - index;
+														Debug.Assert(index >= 0 && index <= 3);
+														indicies += index << (i * 2);
+													}
+												}
+											}
+											Writer.Write(indicies);
+										} else {
+											Debug.Assert(R.ToString().Contains("NaN"));
+
+											var colorValue = (((int)colors.Values[0, 1] << 8) & 0xF800) + (((int)colors.Values[0, 2] << 3) & 0x07E0) + (((int)colors.Values[0, 3] >> 3) & 0x001F);
+											Writer.Write((short)colorValue);
+											Writer.Write((short)colorValue);
+											var indicies = 0;
+											for (var i = 0; i < 16; i++) {
+												if (colors.Values[i, 0] < 0xFF) {
+													indicies += 3 << (i * 2);
+												}
+											}
+											Writer.Write(indicies);
+										}
+									}
+								}
+							} else {
+								Writer.Write(new byte[GetImageDataBlockSize(ace.Channel, true, image)]);
+							}
 						}
 
 						break;
@@ -83,7 +227,7 @@ namespace Jgr.IO.Parser {
 				// RGB format.
 
 				// Jump table: offsets to start of each scanline of each image.
-				var dataSize = 152 + 16 * ace.ChannelCount + 4 * ace.Image.Sum(i => i.Height);
+				var dataSize = 152 + 16 * ace.Channel.Count + 4 * ace.Image.Sum(i => i.Height);
 				foreach (var image in ace.Image) {
 					for (var y = 0; y < image.Height; y++) {
 						Writer.Write(dataSize);
@@ -134,6 +278,223 @@ namespace Jgr.IO.Parser {
 			}
 			Writer.Write(ace.UnknownTrail1);
 			Writer.Write(ace.UnknownTrail2);
+		}
+
+		int ClampColor(double value) {
+			var rv = (int)value;
+			if (rv < 0) rv = 0;
+			else if (rv > 255) rv = 255;
+			return rv;
+		}
+
+		struct Matrix {
+			public readonly int Height;
+			public readonly int Width;
+			public readonly double[,] Values;
+
+			public Matrix(int h, int w) {
+				Height = h;
+				Width = w;
+				Values = new double[Height, Width];
+			}
+
+			public Matrix(int h, int w, params double[] values)
+				: this(h, w) {
+				Debug.Assert(w * h == values.Length);
+				for (var i = 0; i < w * h; i++) {
+					Values[i / w, i % w] = values[i];
+				}
+			}
+
+			public Matrix(int h, int w, double[,] values)
+				: this(h, w) {
+				Debug.Assert(h == values.GetLength(0));
+				Debug.Assert(w == values.GetLength(1));
+				for (var y = 0; y < Height; y++) {
+					for (var x = 0; x < Width; x++) {
+						Values[y, x] = values[y, x];
+					}
+				}
+			}
+
+			public override string ToString() {
+				var sb = new StringBuilder();
+				sb.Append('[');
+				for (var y = 0; y < Height; y++) {
+					sb.Append('[');
+					for (var x = 0; x < Width; x++) {
+						if (x > 0) sb.Append(", ");
+						sb.AppendFormat("{0,9:F3}", Values[y, x]);
+					}
+					sb.Append(']');
+				}
+				sb.Append(']');
+				return sb.ToString();
+			}
+
+			public double GetEuclideanNorm() {
+				Debug.Assert(Width == 1 || Height == 1);
+				var sum = 0d;
+				for (var y = 0; y < Height; y++) {
+					for (var x = 0; x < Width; x++) {
+						sum += Values[y, x] * Values[y, x];
+					}
+				}
+				return Math.Sqrt(sum);
+			}
+
+			public Matrix GetNormalized() {
+				return this * GetEuclideanNorm();
+			}
+
+			public Matrix GetRow(int row) {
+				var m = new Matrix(1, Width);
+				for (var x = 0; x < Width; x++) {
+					m.Values[0, x] = Values[row, x];
+				}
+				return m;
+			}
+
+			public double[] GetRowList(int row) {
+				var list = new double[Width];
+				for (var x = 0; x < Width; x++) {
+					list[x] = Values[row, x];
+				}
+				return list;
+			}
+
+			public Matrix GetColumn(int column) {
+				var m = new Matrix(Height, 1);
+				for (var y = 0; y < Height; y++) {
+					m.Values[y, 0] = Values[y, column];
+				}
+				return m;
+			}
+
+			public double[] GetColumnList(int column) {
+				var list = new double[Height];
+				for (var y = 0; y < Height; y++) {
+					list[y] = Values[y, column];
+				}
+				return list;
+			}
+
+			public Matrix GetTranspose() {
+				var m = new Matrix(Width, Height);
+				for (var y = 0; y < Height; y++) {
+					for (var x = 0; x < Width; x++) {
+						m.Values[x, y] = Values[y, x];
+					}
+				}
+				return m;
+			}
+
+			public Matrix GetMinor(int y, int x) {
+				return GetMinor(y, x, Height - y, Width - x);
+			}
+
+			public Matrix GetMinor(int oy, int ox, int h, int w) {
+				Debug.Assert(oy >= 0);
+				Debug.Assert(oy < Height);
+				Debug.Assert(ox >= 0);
+				Debug.Assert(ox < Width);
+				Debug.Assert(h > 0);
+				Debug.Assert(oy + h <= Height);
+				Debug.Assert(w > 0);
+				Debug.Assert(ox + w <= Width);
+				var m = new Matrix(h, w);
+				for (var y = 0; y < m.Height; y++) {
+					for (var x = 0; x < m.Width; x++) {
+						m.Values[y, x] = Values[y + oy, x + ox];
+					}
+				}
+				return m;
+			}
+
+			public Matrix GetIdentityExpansion(int offset, int size) {
+				Debug.Assert(Height == Width);
+				var m = new Matrix(size, size);
+				for (var i = 0; i < size; i++) {
+					if ((i < offset) || (i >= Height + offset)) {
+						m.Values[i, i] = 1;
+					}
+				}
+				for (var y = 0; y < Height; y++) {
+					for (var x = 0; x < Width; x++) {
+						m.Values[y + offset, x + offset] = Values[y, x];
+					}
+				}
+				return m;
+			}
+
+			public static Matrix Identity(int size) {
+				var m = new Matrix(size, size);
+				for (var i = 0; i < size; i++) {
+					m.Values[i, i] = 1;
+				}
+				return m;
+			}
+
+			public static Matrix operator *(double d, Matrix m) {
+				return m * d;
+			}
+
+			public static Matrix operator *(Matrix m, double d) {
+				m = new Matrix(m.Height, m.Width, m.Values);
+				for (var y = 0; y < m.Height; y++) {
+					for (var x = 0; x < m.Width; x++) {
+						m.Values[y, x] *= d;
+					}
+				}
+				return m;
+			}
+
+			public static Matrix operator /(Matrix m, double d) {
+				m = new Matrix(m.Height, m.Width, m.Values);
+				for (var y = 0; y < m.Height; y++) {
+					for (var x = 0; x < m.Width; x++) {
+						m.Values[y, x] /= d;
+					}
+				}
+				return m;
+			}
+
+			public static Matrix operator +(Matrix m1, Matrix m2) {
+				Debug.Assert(m1.Height == m2.Height);
+				Debug.Assert(m1.Width == m2.Width);
+				var m = new Matrix(m1.Height, m1.Width, m1.Values);
+				for (var y = 0; y < m.Height; y++) {
+					for (var x = 0; x < m.Width; x++) {
+						m.Values[y, x] += m2.Values[y, x];
+					}
+				}
+				return m;
+			}
+
+			public static Matrix operator -(Matrix m1, Matrix m2) {
+				Debug.Assert(m1.Height == m2.Height);
+				Debug.Assert(m1.Width == m2.Width);
+				var m = new Matrix(m1.Height, m1.Width, m1.Values);
+				for (var y = 0; y < m.Height; y++) {
+					for (var x = 0; x < m.Width; x++) {
+						m.Values[y, x] -= m2.Values[y, x];
+					}
+				}
+				return m;
+			}
+
+			public static Matrix operator *(Matrix m1, Matrix m2) {
+				Debug.Assert(m1.Width == m2.Height);
+				var m = new Matrix(m1.Height, m2.Width);
+				for (var y = 0; y < m1.Height; y++) {
+					for (var x = 0; x < m2.Width; x++) {
+						for (var i = 0; i < m1.Width; i++) {
+							m.Values[y, x] += m1.Values[y, i] * m2.Values[i, x];
+						}						
+					}
+				}
+				return m;
+			}
 		}
 	}
 }

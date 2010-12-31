@@ -71,6 +71,7 @@ namespace Jgr.IO.Parser {
 			var imageCount = 1 + (int)((format & 0x01) == 0x01 ? Math.Log(width) / Math.Log(2) : 0);
 			if ((format & 0x10) == 0x10) {
 				// DXT format.
+				// TODO: Check width/height are a power-of-2 dimension.
 				switch (unknown4) {
 					case 0x12:
 						// DXT1
@@ -205,7 +206,7 @@ namespace Jgr.IO.Parser {
 			var unknownTrail1 = new byte[0];
 			var unknownTrail2 = Reader.ReadBytes(0x10000);
 
-			return new SimisAce(format, width, height, unknown4, channelCount, unknown6, unknown7, creator, unknown9, channels.ToArray(), images.ToArray(), unknownTrail1, unknownTrail2);
+			return new SimisAce(format, width, height, unknown4, unknown6, unknown7, creator, unknown9, channels.ToArray(), images.ToArray(), unknownTrail1, unknownTrail2);
 		}
 	}
 }
