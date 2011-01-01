@@ -438,13 +438,13 @@ namespace Normalize
 							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask));
 						}
 					}
-					//Console.WriteLine("Image error: {0,3:F0} {1,3:F0} {1,3:F0} (min/max/mean)", errors.Min(), errors.Max(), errors.Average());
 
 					// Any error over 1.0 is considered a fail.
-					if (errors.Max() > 1.0) {
+					var maxError = 0.0;
+					if (errors.Max() > maxError) {
 						if (verbose) {
 							lock (formatCounts) {
-								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nWorst image root mean square error is too high: {1:F1} > 1.0.\n", file, errors.Max()));
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nImage RMS (root mean square) errors are too high; highest: {3,5:F1} > {1,5:F1}; all: {2}.\n", file, maxError, String.Join(", ", errors.Select(e => e.ToString("F1").PadLeft(5)).ToArray()), errors.Max()));
 							}
 						}
 						return result;

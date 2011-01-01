@@ -59,9 +59,7 @@ namespace Jgr.IO.Parser {
 				switch (ace.Unknown4) {
 					case 0x12:
 						// DXT1
-						if (ace.Channel.Any(c => c.Type == SimisAceChannelId.Alpha)) {
-							throw new InvalidDataException("Alpha channel not supported with DXT1 ACE files (use a mask instead).");
-						}
+						if (ace.Channel.Any(c => c.Type == SimisAceChannelId.Alpha)) throw new InvalidDataException("Alpha channel not supported with DXT1 ACE files (use a mask instead).");
 
 						// Jump table: offsets to start of each image.
 						var dataSize = 152 + 16 * ace.Channel.Count + 4 * ace.Image.Count;
@@ -71,155 +69,15 @@ namespace Jgr.IO.Parser {
 						}
 
 						foreach (var image in ace.Image) {
+							var colorData = CreateDataFromBitmap(image.Width, image.Height, image.ImageColor);
+							var maskData = CreateDataFromBitmap(image.Width, image.Height, image.ImageMask);
 							if ((image.Width >= 4) && (image.Height >= 4)) {
 								Writer.Write(GetImageDataBlockSize(ace.Channel, true, image));
-
-								var imageBits = image.ImageColor.LockBits(new Rectangle(Point.Empty, image.ImageColor.Size), ImageLockMode.ReadOnly, image.ImageColor.PixelFormat);
-								Debug.Assert(imageBits.Stride == image.Width * 4);
-								var imageData = new int[image.Width * image.Height];
-								Marshal.Copy(imageBits.Scan0, imageData, 0, imageData.Length);
-								image.ImageColor.UnlockBits(imageBits);
-
-								for (var y = 0; y < image.Height; y += 4) {
-									for (var x = 0; x < image.Width; x += 4) {
-										var colors = new Matrix(16, 4);
-										var componentMeans = new Matrix(1, 4);
-										var hasAlpha = false;
-										for (var x2 = 0; x2 < 4; x2++) {
-											for (var y2 = 0; y2 < 4; y2++) {
-												var color = imageData[image.Width * (y + y2) + x + x2];
-												for (var component = 0; component < 4; component++) {
-													var colorComponent = (color >> (24 - 8 * component)) & 0xFF;
-													colors.Values[y2 * 4 + x2, component] = colorComponent;
-													componentMeans.Values[0, component] += (double)colorComponent / 16;
-												}
-												hasAlpha |= (color >> 24) > 0;
-											}
-										}
-
-										var colorsCentered = new Matrix(16, 4);
-										for (var color = 0; color < 16; color++) {
-											for (var component = 0; component < 4; component++) {
-												colorsCentered.Values[color, component] = colors.Values[color, component] - componentMeans.Values[0, component];
-											}
-										}
-
-										// Covariance.
-										Func<int, int, double> cov = (componentA, componentB) => {
-											var sum = 0d;
-											for (var color = 0; color < 16; color++) {
-												sum += colorsCentered.Values[color, componentA] * colorsCentered.Values[color, componentB];
-											}
-											return sum / (16 - 1);
-										};
-
-										var A = new Matrix(3, 3,
-											cov(1, 1), cov(1, 2), cov(1, 3),
-											cov(2, 1), cov(2, 2), cov(2, 3),
-											cov(3, 1), cov(3, 2), cov(3, 3)
-										);
-										var R = new Matrix(3, 3);
-										var Q = new Matrix(3, 3);
-										var QROkay = false;
-
-										// QR decomposition via Householder transformation:
-										// If |u1| or |u2| is zero, we will get NaNs in the decomposition.
-										var a1 = A.GetColumn(0);
-										var u1 = a1 - a1.GetEuclideanNorm() * new Matrix(3, 1, 1, 0, 0);
-										if (u1.GetEuclideanNorm() > double.Epsilon) {
-											var v1 = u1 / u1.GetEuclideanNorm();
-											var Q1 = Matrix.Identity(3) - 2 * v1 * v1.GetTranspose();
-
-											Q = Q1.GetTranspose();
-											R = Q1 * A;
-											QROkay = true;
-
-											var a2 = R.GetMinor(1, 1).GetColumn(0);
-											var u2 = a2 - a2.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
-											if (u2.GetEuclideanNorm() > double.Epsilon) {
-												var v2 = u2 / u2.GetEuclideanNorm();
-												var Q2 = Matrix.Identity(2) - 2 * v2 * v2.GetTranspose();
-												Q2 = Q2.GetIdentityExpansion(1, 3);
-
-												Q = Q * Q2.GetTranspose();
-												R = Q2 * R;
-												QROkay = true;
-											}
-										}
-
-										if (QROkay) {
-											var largestEigenValue = R.Values[0, 0] > R.Values[1, 1] && R.Values[0, 0] > R.Values[2, 2] ? 0 : R.Values[1, 1] > R.Values[2, 2] ? 1 : 2;
-											//Console.WriteLine("{0,9:F3}, {1,9:F3}, {2,9:F3} --> {3}", R.Values[0, 0], R.Values[1, 1], R.Values[2, 2], largestEigenValue);
-											//Console.WriteLine("{0} --> eigen = {1,9:F3} * {3} ({2})", A, R.Values[largestEigenValue, largestEigenValue], largestEigenValue, Q.GetColumn(largestEigenValue));
-
-											var featureVector = Q.GetColumn(largestEigenValue).GetNormalized();
-											var finalData = colorsCentered.GetMinor(0, 1) * featureVector;
-											//Console.WriteLine(finalData);
-
-											var finalDataList = finalData.GetColumnList(0);
-											var finalDataListMin = finalDataList.Min();
-											var finalDataListMax = finalDataList.Max();
-											var min = finalDataListMin * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
-											var max = finalDataListMax * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
-											//Console.WriteLine("Min = {0}, max = {1}", min, max);
-											//Console.WriteLine();
-
-											var minColor = new[] { ClampColor(min.Values[0, 0]), ClampColor(min.Values[1, 0]), ClampColor(min.Values[2, 0]) };
-											var maxColor = new[] { ClampColor(max.Values[0, 0]), ClampColor(max.Values[1, 0]), ClampColor(max.Values[2, 0]) };
-											var midColor = new[] { (minColor[0] + maxColor[0]) / 2, (minColor[1] + maxColor[1]) / 2, (minColor[2] + maxColor[2]) / 2 };
-
-											var minColorValue = ((minColor[0] << 8) & 0xF800) + ((minColor[1] << 3) & 0x07E0) + ((minColor[2] >> 3) & 0x001F);
-											var maxColorValue = ((maxColor[0] << 8) & 0xF800) + ((maxColor[1] << 3) & 0x07E0) + ((maxColor[2] >> 3) & 0x001F);
-											var midColorValue = ((midColor[0] << 8) & 0xF800) + ((midColor[1] << 3) & 0x07E0) + ((midColor[2] >> 3) & 0x001F);
-
-											var swapped = minColorValue > maxColorValue;
-											if (swapped) {
-												var temp = minColor;
-												minColor = maxColor;
-												maxColor = temp;
-												var tempValue = minColorValue;
-												minColorValue = maxColorValue;
-												maxColorValue = tempValue;
-											}
-
-											Writer.Write((ushort)minColorValue);
-											Writer.Write((ushort)maxColorValue);
-
-											var indicies = 0;
-											for (var i = 0; i < 16; i++) {
-												if (colors.Values[i, 0] < 0x80) {
-													indicies += 3 << (i * 2);
-												} else {
-													var colorErrors = new List<double>(new[] {
-															Math.Abs(colors.Values[i, 1] - minColor[0]) + Math.Abs(colors.Values[i, 2] - minColor[1]) + Math.Abs(colors.Values[i, 3] - minColor[2]),
-															Math.Abs(colors.Values[i, 1] - maxColor[0]) + Math.Abs(colors.Values[i, 2] - maxColor[1]) + Math.Abs(colors.Values[i, 3] - maxColor[2]),
-															Math.Abs(colors.Values[i, 1] - midColor[0]) + Math.Abs(colors.Values[i, 2] - midColor[1]) + Math.Abs(colors.Values[i, 3] - midColor[2])
-														});
-													var index = colorErrors.IndexOf(colorErrors.Min());
-													Debug.Assert(index >= 0 && index <= 3);
-													indicies += index << (i * 2);
-												}
-											}
-											Writer.Write(indicies);
-										} else {
-											var colorValue = (((int)colors.Values[0, 1] << 8) & 0xF800) + (((int)colors.Values[0, 2] << 3) & 0x07E0) + (((int)colors.Values[0, 3] >> 3) & 0x001F);
-											Writer.Write((ushort)colorValue);
-											Writer.Write((ushort)colorValue);
-											var indicies = 0;
-											for (var i = 0; i < 16; i++) {
-												if (colors.Values[i, 0] < 0x80) {
-													indicies += 3 << (i * 2);
-												}
-											}
-											Writer.Write(indicies);
-										}
-									}
-								}
+								WriteDXT1ImageData(image.Width, image.Height, ace.Channel, colorData, maskData);
 							} else {
-								Writer.Write(new byte[GetImageDataBlockSize(ace.Channel, true, image)]);
+								WriteARGBImageData(image.Width, image.Height, ace.Channel, colorData, maskData);
 							}
 						}
-
 						break;
 					default:
 						throw new NotSupportedException("ACE DXT format unknown4=" + ace.Unknown4 + " is not supported.");
@@ -237,48 +95,189 @@ namespace Jgr.IO.Parser {
 				}
 
 				foreach (var image in ace.Image) {
-					var colorData = new byte[image.Width * image.Height * 4];
-					var maskData = new byte[image.Width * image.Height * 4];
-					if (image.ImageColor != null) {
-						var imageColorBits = image.ImageColor.LockBits(new Rectangle(Point.Empty, image.ImageColor.Size), ImageLockMode.ReadOnly, image.ImageColor.PixelFormat);
-						Debug.Assert(imageColorBits.Stride == 4 * imageColorBits.Width, "Cannot copy data to bitmap with Stride != Width.");
-						Marshal.Copy(imageColorBits.Scan0, colorData, 0, colorData.Length);
-						image.ImageColor.UnlockBits(imageColorBits);
-					}
-					if (image.ImageMask != null) {
-						var imageMaskBits = image.ImageMask.LockBits(new Rectangle(Point.Empty, image.ImageMask.Size), ImageLockMode.ReadOnly, image.ImageMask.PixelFormat);
-						Debug.Assert(imageMaskBits.Stride == 4 * imageMaskBits.Width, "Cannot copy data to bitmap with Stride != Width.");
-						Marshal.Copy(imageMaskBits.Scan0, maskData, 0, maskData.Length);
-						image.ImageMask.UnlockBits(imageMaskBits);
-					}
-					for (var y = 0; y < image.Height; y++) {
-						foreach (var channel in ace.Channel) {
-							var data = channel.Type == SimisAceChannelId.Mask ? maskData : colorData;
-							var dataOffset = new[] { 0, 2, 1, 0, 3 }[(int)channel.Type - 2];
-							var bits = new byte[(int)Math.Ceiling((double)channel.Size * image.Width / 8)];
-							switch (channel.Size) {
-								case 1:
-									for (var x = 0; x < image.Width; x += 8) {
-										for (var i = 0; i < 8; i++) {
-											if (x + i < image.Width) {
-												bits[x / 8] += (byte)((data[(image.Width * y + x + i) * 4 + dataOffset] >= 0x80 ? 1 : 0) << (7 - i));
-											}
-										}
-									}
-									break;
-								case 8:
-									for (var x = 0; x < image.Width; x++) {
-										bits[x] = data[(image.Width * y + x) * 4 + dataOffset];
-									}
-									break;
-							}
-							Writer.Write(bits);
-						}
-					}
+					var colorData = CreateDataFromBitmap(image.Width, image.Height, image.ImageColor);
+					var maskData = CreateDataFromBitmap(image.Width, image.Height, image.ImageMask);
+					WriteARGBImageData(image.Width, image.Height, ace.Channel, colorData, maskData);
 				}
 			}
 			Writer.Write(ace.UnknownTrail1);
 			Writer.Write(ace.UnknownTrail2);
+		}
+
+		void WriteARGBImageData(int width, int height, IEnumerable<SimisAceChannel> channels, int[] colorData, int[] maskData) {
+			for (var y = 0; y < height; y++) {
+				foreach (var channel in channels) {
+					var data = channel.Type == SimisAceChannelId.Mask ? maskData : colorData;
+					var dataOffset = new[] { 0, 16, 8, 0, 24 }[(int)channel.Type - 2];
+					var bits = new byte[(int)Math.Ceiling((double)channel.Size * width / 8)];
+					switch (channel.Size) {
+						case 1:
+							for (var x = 0; x < width; x += 8) {
+								for (var i = 0; i < 8; i++) {
+									if (x + i < width) {
+										bits[x / 8] += (byte)((((data[width * y + x + i] >> dataOffset) & 0xFF) >= 0x80 ? 1 : 0) << (7 - i));
+									}
+								}
+							}
+							break;
+						case 8:
+							for (var x = 0; x < width; x++) {
+								bits[x] = (byte)((data[width * y + x] >> dataOffset) & 0xFF);
+							}
+							break;
+					}
+					Writer.Write(bits);
+				}
+			}
+		}
+
+		void WriteDXT1ImageData(int width, int height, IEnumerable<SimisAceChannel> channels, int[] colorData, int[] maskData) {
+			for (var y = 0; y < height; y += 4) {
+				for (var x = 0; x < width; x += 4) {
+					var colors = new Matrix(16, 4);
+					var componentMeans = new Matrix(1, 4);
+					var hasAlpha = false;
+					for (var x2 = 0; x2 < 4; x2++) {
+						for (var y2 = 0; y2 < 4; y2++) {
+							var color = (colorData[width * (y + y2) + x + x2] & 0x00FFFFFF) + (maskData[width * (y + y2) + x + x2] << 24);
+							for (var component = 0; component < 4; component++) {
+								var colorComponent = (color >> (24 - 8 * component)) & 0xFF;
+								colors.Values[y2 * 4 + x2, component] = colorComponent;
+								componentMeans.Values[0, component] += (double)colorComponent / 16;
+							}
+							hasAlpha |= (color >> 24) > 0;
+						}
+					}
+
+					var colorsCentered = new Matrix(16, 4);
+					for (var color = 0; color < 16; color++) {
+						for (var component = 0; component < 4; component++) {
+							colorsCentered.Values[color, component] = colors.Values[color, component] - componentMeans.Values[0, component];
+						}
+					}
+
+					// Covariance.
+					Func<int, int, double> cov = (componentA, componentB) => {
+						var sum = 0d;
+						for (var color = 0; color < 16; color++) {
+							sum += colorsCentered.Values[color, componentA] * colorsCentered.Values[color, componentB];
+						}
+						return sum / (16 - 1);
+					};
+
+					var A = new Matrix(3, 3,
+						cov(1, 1), cov(1, 2), cov(1, 3),
+						cov(2, 1), cov(2, 2), cov(2, 3),
+						cov(3, 1), cov(3, 2), cov(3, 3)
+					);
+					var R = new Matrix(3, 3);
+					var Q = new Matrix(3, 3);
+					var QROkay = false;
+
+					// QR decomposition via Householder transformation:
+					// If |u1| or |u2| is zero, we will get NaNs in the decomposition.
+					var a1 = A.GetColumn(0);
+					var u1 = a1 - a1.GetEuclideanNorm() * new Matrix(3, 1, 1, 0, 0);
+					if (u1.GetEuclideanNorm() > double.Epsilon) {
+						var v1 = u1 / u1.GetEuclideanNorm();
+						var Q1 = Matrix.Identity(3) - 2 * v1 * v1.GetTranspose();
+
+						Q = Q1.GetTranspose();
+						R = Q1 * A;
+						QROkay = true;
+
+						var a2 = R.GetMinor(1, 1).GetColumn(0);
+						var u2 = a2 - a2.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
+						if (u2.GetEuclideanNorm() > double.Epsilon) {
+							var v2 = u2 / u2.GetEuclideanNorm();
+							var Q2 = Matrix.Identity(2) - 2 * v2 * v2.GetTranspose();
+							Q2 = Q2.GetIdentityExpansion(1, 3);
+
+							Q = Q * Q2.GetTranspose();
+							R = Q2 * R;
+							QROkay = true;
+						}
+					}
+
+					if (QROkay) {
+						var largestEigenValue = R.Values[0, 0] > R.Values[1, 1] && R.Values[0, 0] > R.Values[2, 2] ? 0 : R.Values[1, 1] > R.Values[2, 2] ? 1 : 2;
+						//Console.WriteLine("{0,9:F3}, {1,9:F3}, {2,9:F3} --> {3}", R.Values[0, 0], R.Values[1, 1], R.Values[2, 2], largestEigenValue);
+						//Console.WriteLine("{0} --> eigen = {1,9:F3} * {3} ({2})", A, R.Values[largestEigenValue, largestEigenValue], largestEigenValue, Q.GetColumn(largestEigenValue));
+
+						var featureVector = Q.GetColumn(largestEigenValue).GetNormalized();
+						var finalData = colorsCentered.GetMinor(0, 1) * featureVector;
+						//Console.WriteLine(finalData);
+
+						var finalDataList = finalData.GetColumnList(0);
+						var finalDataListMin = finalDataList.Min();
+						var finalDataListMax = finalDataList.Max();
+						var min = finalDataListMin * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
+						var max = finalDataListMax * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
+						//Console.WriteLine("Min = {0}, max = {1}", min, max);
+						//Console.WriteLine();
+
+						var minColor = new[] { ClampColor(min.Values[0, 0]), ClampColor(min.Values[1, 0]), ClampColor(min.Values[2, 0]) };
+						var maxColor = new[] { ClampColor(max.Values[0, 0]), ClampColor(max.Values[1, 0]), ClampColor(max.Values[2, 0]) };
+						var midColor = new[] { (minColor[0] + maxColor[0]) / 2, (minColor[1] + maxColor[1]) / 2, (minColor[2] + maxColor[2]) / 2 };
+
+						var minColorValue = ((minColor[0] << 8) & 0xF800) + ((minColor[1] << 3) & 0x07E0) + ((minColor[2] >> 3) & 0x001F);
+						var maxColorValue = ((maxColor[0] << 8) & 0xF800) + ((maxColor[1] << 3) & 0x07E0) + ((maxColor[2] >> 3) & 0x001F);
+						var midColorValue = ((midColor[0] << 8) & 0xF800) + ((midColor[1] << 3) & 0x07E0) + ((midColor[2] >> 3) & 0x001F);
+
+						var swapped = minColorValue > maxColorValue;
+						if (swapped) {
+							var temp = minColor;
+							minColor = maxColor;
+							maxColor = temp;
+							var tempValue = minColorValue;
+							minColorValue = maxColorValue;
+							maxColorValue = tempValue;
+						}
+
+						Writer.Write((ushort)minColorValue);
+						Writer.Write((ushort)maxColorValue);
+
+						var indicies = 0;
+						for (var i = 0; i < 16; i++) {
+							if (colors.Values[i, 0] < 0x80) {
+								indicies += 3 << (i * 2);
+							} else {
+								var colorErrors = new List<double>(new[] {
+															Math.Abs(colors.Values[i, 1] - minColor[0]) + Math.Abs(colors.Values[i, 2] - minColor[1]) + Math.Abs(colors.Values[i, 3] - minColor[2]),
+															Math.Abs(colors.Values[i, 1] - maxColor[0]) + Math.Abs(colors.Values[i, 2] - maxColor[1]) + Math.Abs(colors.Values[i, 3] - maxColor[2]),
+															Math.Abs(colors.Values[i, 1] - midColor[0]) + Math.Abs(colors.Values[i, 2] - midColor[1]) + Math.Abs(colors.Values[i, 3] - midColor[2])
+														});
+								var index = colorErrors.IndexOf(colorErrors.Min());
+								Debug.Assert(index >= 0 && index <= 3);
+								indicies += index << (i * 2);
+							}
+						}
+						Writer.Write(indicies);
+					} else {
+						var colorValue = (((int)colors.Values[0, 1] << 8) & 0xF800) + (((int)colors.Values[0, 2] << 3) & 0x07E0) + (((int)colors.Values[0, 3] >> 3) & 0x001F);
+						Writer.Write((ushort)colorValue);
+						Writer.Write((ushort)colorValue);
+						var indicies = 0;
+						for (var i = 0; i < 16; i++) {
+							if (colors.Values[i, 0] < 0x80) {
+								indicies += 3 << (i * 2);
+							}
+						}
+						Writer.Write(indicies);
+					}
+				}
+			}
+		}
+
+		static int[] CreateDataFromBitmap(int width, int height, Bitmap image) {
+			var data = new int[width * height];
+			if (image != null) {
+				var imageColorBits = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.ReadOnly, image.PixelFormat);
+				Debug.Assert(imageColorBits.Stride == 4 * imageColorBits.Width, "Cannot copy data to bitmap with Stride != Width.");
+				Marshal.Copy(imageColorBits.Scan0, data, 0, data.Length);
+				image.UnlockBits(imageColorBits);
+			}
+			return data;
 		}
 
 		int ClampColor(double value) {
