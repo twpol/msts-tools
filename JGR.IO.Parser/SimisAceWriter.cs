@@ -118,33 +118,36 @@ namespace Jgr.IO.Parser {
 											cov(2, 1), cov(2, 2), cov(2, 3),
 											cov(3, 1), cov(3, 2), cov(3, 3)
 										);
+										var R = new Matrix(3, 3);
+										var Q = new Matrix(3, 3);
+										var QROkay = false;
 
 										// QR decomposition via Householder transformation:
+										// If |u1| or |u2| is zero, we will get NaNs in the decomposition.
 										var a1 = A.GetColumn(0);
 										var u1 = a1 - a1.GetEuclideanNorm() * new Matrix(3, 1, 1, 0, 0);
-										var v1 = u1 / u1.GetEuclideanNorm();
-										var Q1 = Matrix.Identity(3) - 2 * v1 * v1.GetTranspose();
-										var Q1A = Q1 * A;
+										if (u1.GetEuclideanNorm() > double.Epsilon) {
+											var v1 = u1 / u1.GetEuclideanNorm();
+											var Q1 = Matrix.Identity(3) - 2 * v1 * v1.GetTranspose();
 
-										var A2 = Q1A.GetMinor(1, 1);
-										var a2 = A2.GetColumn(0);
-										var u2 = a2 - a2.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
-										var v2 = u2 / u2.GetEuclideanNorm();
-										var Q2 = Matrix.Identity(2) - 2 * v2 * v2.GetTranspose();
-										var Q2A = Q2 * A2;
+											Q = Q1.GetTranspose();
+											R = Q1 * A;
+											QROkay = true;
 
-										Q2 = Q2.GetIdentityExpansion(1, 3);
+											var a2 = R.GetMinor(1, 1).GetColumn(0);
+											var u2 = a2 - a2.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
+											if (u2.GetEuclideanNorm() > double.Epsilon) {
+												var v2 = u2 / u2.GetEuclideanNorm();
+												var Q2 = Matrix.Identity(2) - 2 * v2 * v2.GetTranspose();
+												Q2 = Q2.GetIdentityExpansion(1, 3);
 
-										var Q = Q1.GetTranspose() * Q2.GetTranspose();
-										var R = Q2 * Q1 * A;
+												Q = Q * Q2.GetTranspose();
+												R = Q2 * R;
+												QROkay = true;
+											}
+										}
 
-										// If R = 0.0, will get NaNs.
-										if ((u1.GetEuclideanNorm() > double.Epsilon) && (u2.GetEuclideanNorm() > double.Epsilon)) {
-											Debug.Assert(!R.ToString().Contains("NaN"));
-											Debug.Assert(Math.Abs(R.Values[1, 0]) < 0.0000001);
-											Debug.Assert(Math.Abs(R.Values[2, 0]) < 0.0000001);
-											Debug.Assert(Math.Abs(R.Values[2, 1]) < 0.0000001);
-
+										if (QROkay) {
 											var largestEigenValue = R.Values[0, 0] > R.Values[1, 1] && R.Values[0, 0] > R.Values[2, 2] ? 0 : R.Values[1, 1] > R.Values[2, 2] ? 1 : 2;
 											//Console.WriteLine("{0,9:F3}, {1,9:F3}, {2,9:F3} --> {3}", R.Values[0, 0], R.Values[1, 1], R.Values[2, 2], largestEigenValue);
 											//Console.WriteLine("{0} --> eigen = {1,9:F3} * {3} ({2})", A, R.Values[largestEigenValue, largestEigenValue], largestEigenValue, Q.GetColumn(largestEigenValue));
@@ -161,9 +164,9 @@ namespace Jgr.IO.Parser {
 											//Console.WriteLine("Min = {0}, max = {1}", min, max);
 											//Console.WriteLine();
 
-											var minColor = min.GetColumnList(0).Select(v => ClampColor(v)).ToArray();
-											var maxColor = max.GetColumnList(0).Select(v => ClampColor(v)).ToArray();
-											var midColor = minColor.Select((v, i) => (v + maxColor[i]) / 2).ToArray();
+											var minColor = new[] { ClampColor(min.Values[0, 0]), ClampColor(min.Values[1, 0]), ClampColor(min.Values[2, 0]) };
+											var maxColor = new[] { ClampColor(max.Values[0, 0]), ClampColor(max.Values[1, 0]), ClampColor(max.Values[2, 0]) };
+											var midColor = new[] { (minColor[0] + maxColor[0]) / 2, (minColor[1] + maxColor[1]) / 2, (minColor[2] + maxColor[2]) / 2 };
 
 											var minColorValue = ((minColor[0] << 8) & 0xF800) + ((minColor[1] << 3) & 0x07E0) + ((minColor[2] >> 3) & 0x001F);
 											var maxColorValue = ((maxColor[0] << 8) & 0xF800) + ((maxColor[1] << 3) & 0x07E0) + ((maxColor[2] >> 3) & 0x001F);
@@ -171,42 +174,40 @@ namespace Jgr.IO.Parser {
 
 											var swapped = minColorValue > maxColorValue;
 											if (swapped) {
-												var temp = minColorValue;
+												var temp = minColor;
+												minColor = maxColor;
+												maxColor = temp;
+												var tempValue = minColorValue;
 												minColorValue = maxColorValue;
-												maxColorValue = temp;
+												maxColorValue = tempValue;
 											}
 
-											Writer.Write((short)minColorValue);
-											Writer.Write((short)maxColorValue);
+											Writer.Write((ushort)minColorValue);
+											Writer.Write((ushort)maxColorValue);
 
 											var indicies = 0;
-											if (finalDataListMax > finalDataListMin) {
-												for (var i = 0; i < 16; i++) {
-													if (colors.Values[i, 0] < 0xFF) {
-														indicies += 3 << (i * 2);
-													} else {
-														var colorErrors = new List<double>(new[] {
+											for (var i = 0; i < 16; i++) {
+												if (colors.Values[i, 0] < 0x80) {
+													indicies += 3 << (i * 2);
+												} else {
+													var colorErrors = new List<double>(new[] {
 															Math.Abs(colors.Values[i, 1] - minColor[0]) + Math.Abs(colors.Values[i, 2] - minColor[1]) + Math.Abs(colors.Values[i, 3] - minColor[2]),
 															Math.Abs(colors.Values[i, 1] - maxColor[0]) + Math.Abs(colors.Values[i, 2] - maxColor[1]) + Math.Abs(colors.Values[i, 3] - maxColor[2]),
 															Math.Abs(colors.Values[i, 1] - midColor[0]) + Math.Abs(colors.Values[i, 2] - midColor[1]) + Math.Abs(colors.Values[i, 3] - midColor[2])
 														});
-														var index = colorErrors.IndexOf(colorErrors.Min());
-														if (swapped) index = 3 - index;
-														Debug.Assert(index >= 0 && index <= 3);
-														indicies += index << (i * 2);
-													}
+													var index = colorErrors.IndexOf(colorErrors.Min());
+													Debug.Assert(index >= 0 && index <= 3);
+													indicies += index << (i * 2);
 												}
 											}
 											Writer.Write(indicies);
 										} else {
-											Debug.Assert(R.ToString().Contains("NaN"));
-
 											var colorValue = (((int)colors.Values[0, 1] << 8) & 0xF800) + (((int)colors.Values[0, 2] << 3) & 0x07E0) + (((int)colors.Values[0, 3] >> 3) & 0x001F);
-											Writer.Write((short)colorValue);
-											Writer.Write((short)colorValue);
+											Writer.Write((ushort)colorValue);
+											Writer.Write((ushort)colorValue);
 											var indicies = 0;
 											for (var i = 0; i < 16; i++) {
-												if (colors.Values[i, 0] < 0xFF) {
+												if (colors.Values[i, 0] < 0x80) {
 													indicies += 3 << (i * 2);
 												}
 											}
