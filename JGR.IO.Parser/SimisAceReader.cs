@@ -26,7 +26,7 @@ namespace Jgr.IO.Parser {
 			//   08 = ?
 			//   10 = is DXT compressed.
 			var format = Reader.ReadInt32();
-			if (!new[] { 0x00, 0x01, 0x10, 0x11 }.Contains(format)) {
+			if (!new[] { 0x00, 0x01, 0x04, 0x05, 0x10, 0x11, 0x14, 0x15 }.Contains(format)) {
 				throw new ReaderException(Reader, true, 4, "ACE format 0x" + format.ToString("X") + " is not supported.");
 			}
 			var width = Reader.ReadInt32();
