@@ -158,13 +158,13 @@ namespace Normalize
 			}
 		}
 
-		static void PrintSimisAce(SimisAce ace, string fileName) {
+		static void PrintSimisAce(SimisAce ace) {
 			Console.WriteLine("Ace {");
-			PrintSimisAce(1, ace, fileName);
+			PrintSimisAce(1, ace);
 			Console.WriteLine("}");
 		}
 
-		static void PrintSimisAce(int indent, SimisAce ace, string fileName) {
+		static void PrintSimisAce(int indent, SimisAce ace) {
 			var indentString = new String(' ', 2 * indent);
 			Console.WriteLine("{0}Format:        0x{1:X}", indentString, ace.Format);
 			Console.WriteLine("{0}Width:         {1}", indentString, ace.Width);
@@ -177,48 +177,7 @@ namespace Normalize
 				Console.WriteLine("{0}Unk9.{2:X}:        {1}", indentString, String.Join(" ", ace.Unknown9.Skip(i * 4).Take(4).Select(b => b.ToString("X2")).ToArray()), i);
 			}
 			Console.WriteLine("{0}Channels:      {1}", indentString, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
-
-#if DEBUG_ACE
-			Console.WriteLine("{0}D1: f={1:X2} unk4={2:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
-			Console.WriteLine("{0}D2: f={1:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
-			Console.WriteLine("{0}D3: unk4={2:X2} chs={3}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
-			Console.WriteLine("{0}D4: f={1:X2} unk4={2:X2}", indentString, ace.Format, ace.Unknown4, String.Join(", ", ace.Channel.Select(c => String.Format("{0} ({1} bits)", c.Type, c.Size)).ToArray()));
-
-			var fileBytes = (double)File.ReadAllBytes(fileName).Length - 168 - 16 * ace.Channel.Count;
-			var imageCount = 1 + (int)((ace.Format & 0x01) == 0x01 ? Math.Log(ace.Width) / Math.Log(2) : 0);
-			if ((ace.Format & 0x10) == 0x10) {
-				fileBytes -= 4 * imageCount;
-			} else {
-				fileBytes -= 4 * imageCount * ace.Height;
-			}
-			var bytesPerPixel = (double)ace.Channel.Sum(c => c.Size) / 8;
-			if ((ace.Format & 0x10) == 0x10) bytesPerPixel = 0.5;
-			var imageBytes = ace.Width * ace.Height * bytesPerPixel;
-			Console.WriteLine("{0}E1: f={1:X2} fs={2,8:F0} im={3,8:F0} ratio={4,3:F1} {5}", indentString, ace.Format, fileBytes, imageBytes, fileBytes / imageBytes, fileBytes / imageBytes > 1.1 ? "MIPS" : "");
-#endif
-
-			foreach (var channel in ace.Channel) {
-				Console.WriteLine("{0}Channel {{", indentString);
-				PrintSimisAce(indent + 1, channel);
-				Console.WriteLine("{0}}}", indentString);
-			}
-
-			foreach (var image in ace.Image) {
-				Console.WriteLine("{0}Image {{", indentString);
-				PrintSimisAce(indent + 1, image);
-				Console.WriteLine("{0}}}", indentString);
-			}
-		}
-
-		static void PrintSimisAce(int indent, SimisAceChannel channel) {
-			var indentString = new String(' ', 2 * indent);
-			Console.WriteLine("{0}Type: {1}", indentString, channel.Type);
-			Console.WriteLine("{0}Size: {1} bits", indentString, channel.Size);
-		}
-
-		static void PrintSimisAce(int indent, SimisAceImage image) {
-			var indentString = new String(' ', 2 * indent);
-			Console.WriteLine("{0}NOT SUPPORTED IN DUMP YET", indentString);
+			Console.WriteLine("{0}Images:        {1}", indentString, String.Join(", ", ace.Image.Select(i => String.Format("{0}x{1}{2}{3}", i.Width, i.Height, i.ImageColor != null ? " Color" : "", i.ImageMask != null ? " Mask" : "")).ToArray()));
 		}
 
 		static void ShowFormats() {
@@ -254,7 +213,7 @@ namespace Normalize
 					if (parsedFile.Tree != null) {
 						PrintSimisTree(0, parsedFile.Tree);
 					} else if (parsedFile.Ace != null) {
-						PrintSimisAce(parsedFile.Ace, inputFile);
+						PrintSimisAce(parsedFile.Ace);
 					}
 				} catch (Exception ex) {
 					if (verbose) {
