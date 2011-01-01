@@ -399,7 +399,7 @@ namespace Normalize
 					}
 
 					// Any error over 1.0 is considered a fail.
-					var maxError = 0.0;
+					var maxError = 1.0;
 					if (errors.Max() > maxError) {
 						if (verbose) {
 							lock (formatCounts) {
