@@ -373,37 +373,31 @@ namespace Normalize
 					Debug.Assert(saveOutput.Ace != null);
 					Debug.Assert(saveOutput.Ace.Format == newFile.Ace.Format);
 
-					if (newFile.Ace.Width != saveOutput.Ace.Width) {
-					}
-					if (newFile.Ace.Height != saveOutput.Ace.Height) {
-					}
-					if (newFile.Ace.Unknown7 != saveOutput.Ace.Unknown7) {
-					}
-					if (newFile.Ace.Creator != saveOutput.Ace.Creator) {
-					}
-					if (String.Join(",", newFile.Ace.Channel.Select(c => c.Type.ToString() + c.Size).ToArray()) != String.Join(",", saveOutput.Ace.Channel.Select(c => c.Type.ToString() + c.Size).ToArray())) {
-						// TODO: ERROR with channels.
-					}
-					if (newFile.Ace.Image.Count != saveOutput.Ace.Image.Count) {
-						// TODO: ERROR with image count.
-					}
+					try {
+						if (newFile.Ace.Width != saveOutput.Ace.Width) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE width expected {0}; got {1}.", newFile.Ace.Width, saveOutput.Ace.Width));
+						if (newFile.Ace.Height != saveOutput.Ace.Height) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE height expected {0}; got {1}.", newFile.Ace.Height, saveOutput.Ace.Height));
+						if (newFile.Ace.Unknown7 != saveOutput.Ace.Unknown7) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE unknown7 expected {0}; got {1}.", newFile.Ace.Unknown7, saveOutput.Ace.Unknown7));
+						if (newFile.Ace.Creator != saveOutput.Ace.Creator) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE creator expected {0}; got {1}.", newFile.Ace.Creator, saveOutput.Ace.Creator));
+						var newFileChannels = String.Join(",", newFile.Ace.Channel.Select(c => c.Type.ToString() + ":" + c.Size).ToArray());
+						var saveFileChannels = String.Join(",", saveOutput.Ace.Channel.Select(c => c.Type.ToString() + ":" + c.Size).ToArray());
+						if (newFileChannels != saveFileChannels) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE channels expected {0}; got {1}.", newFileChannels, saveFileChannels));
+						if (newFile.Ace.Image.Count != saveOutput.Ace.Image.Count) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE image count expected {0}; got {1}.", newFile.Ace.Image.Count, saveOutput.Ace.Image.Count));
 
-					var errors = new List<double>();
-					for (var i = 0; i < newFile.Ace.Image.Count; i++) {
-						if (newFile.Ace.Image[i].ImageColor != null) {
-							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageColor, saveOutput.Ace.Image[i].ImageColor));
+						var errors = new List<double>();
+						for (var i = 0; i < newFile.Ace.Image.Count; i++) {
+							if (newFile.Ace.Image[i].Width != saveOutput.Ace.Image[i].Width) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE image {2} width expected {0}; got {1}.", newFile.Ace.Image[i].Width, saveOutput.Ace.Image[i].Width, i));
+							if (newFile.Ace.Image[i].Height != saveOutput.Ace.Image[i].Height) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE image {2} height expected {0}; got {1}.", newFile.Ace.Image[i].Height, saveOutput.Ace.Image[i].Height, i));
+							if (newFile.Ace.Image[i].ImageColor != null) errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageColor, saveOutput.Ace.Image[i].ImageColor));
+							if (newFile.Ace.Image[i].ImageMask != null) errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask));
 						}
-						if (newFile.Ace.Image[i].ImageMask != null) {
-							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask));
-						}
-					}
 
-					// Any error over 1.0 is considered a fail.
-					var maxError = 1.0;
-					if (errors.Max() > maxError) {
+						// Any error over 1.0 is considered a fail.
+						var maxError = 1.0;
+						if (errors.Max() > maxError) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "Image RMS (root mean square) errors are too high; highest: {2,5:F1} > {0,5:F1}; all: {1}.", maxError, String.Join(", ", errors.Select(e => e.ToString("F1").PadLeft(5)).ToArray()), errors.Max()));
+					} catch (InvalidDataException ex) {
 						if (verbose) {
 							lock (formatCounts) {
-								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nImage RMS (root mean square) errors are too high; highest: {3,5:F1} > {1,5:F1}; all: {2}.\n", file, maxError, String.Join(", ", errors.Select(e => e.ToString("F1").PadLeft(5)).ToArray()), errors.Max()));
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\n{1}\n", file, ex.Message));
 							}
 						}
 						return result;
