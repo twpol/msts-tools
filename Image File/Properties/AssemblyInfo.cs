@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Ace File")]
+[assembly: AssemblyTitle("Image File")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("JGR")]
 [assembly: AssemblyProduct("MSTS Editors & Tools")]
-[assembly: AssemblyCopyright("© JGR 2010")]
+[assembly: AssemblyCopyright("© JGR 2010, 2011")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -1,5 +1,5 @@
 ﻿//------------------------------------------------------------------------------
-// Ace File, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
+// Image File, part of MSTS Editors & Tools (http://jgrmsts.codeplex.com/).
 // License: New BSD License (BSD).
 //------------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace AceFile {
+namespace ImageFile {
 	class Program {
 		static void Main(string[] args) {
 			// Flags: at least 2 characters, starts with "/" or "-", stored without the "/" or "-".

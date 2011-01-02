@@ -27,7 +27,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JGR.MSTS", "JGR.MSTS\JGR.MS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tools", "Tools\Tools.csproj", "{6B0A3294-F32F-48CE-9805-B1E3BC10A911}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ace File", "Ace File\Ace File.csproj", "{00B23D23-CADA-4A98-A629-AD0D5D007EC3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Image File", "Image File\Image File.csproj", "{00B23D23-CADA-4A98-A629-AD0D5D007EC3}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution

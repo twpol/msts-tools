@@ -8,8 +8,8 @@
     <ProjectGuid>{00B23D23-CADA-4A98-A629-AD0D5D007EC3}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AceFile</RootNamespace>
-    <AssemblyName>AceFile</AssemblyName>
+    <RootNamespace>ImageFile</RootNamespace>
+    <AssemblyName>ImageFile</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
