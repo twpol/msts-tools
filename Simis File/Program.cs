@@ -387,8 +387,8 @@ namespace Normalize
 						for (var i = 0; i < newFile.Ace.Image.Count; i++) {
 							if (newFile.Ace.Image[i].Width != saveOutput.Ace.Image[i].Width) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE image {2} width expected {0}; got {1}.", newFile.Ace.Image[i].Width, saveOutput.Ace.Image[i].Width, i));
 							if (newFile.Ace.Image[i].Height != saveOutput.Ace.Image[i].Height) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "ACE image {2} height expected {0}; got {1}.", newFile.Ace.Image[i].Height, saveOutput.Ace.Image[i].Height, i));
-							if (newFile.Ace.Image[i].ImageColor != null) errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageColor, saveOutput.Ace.Image[i].ImageColor));
-							if (newFile.Ace.Image[i].ImageMask != null) errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask));
+							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageColor, saveOutput.Ace.Image[i].ImageColor));
+							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask));
 						}
 
 						// Any error over 1.0 is considered a fail.

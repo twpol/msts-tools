@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Jgr.IO.Parser {
@@ -27,8 +28,10 @@ namespace Jgr.IO.Parser {
 		readonly SimisAceImage[] Images;
 		public readonly byte[] UnknownTrail1;
 		public readonly byte[] UnknownTrail2;
+		public readonly bool HasAlpha;
+		public readonly bool HasMask;
 
-		public SimisAce(int format, int width, int height, int unknown4, int unknown6, string unknown7, string creator, byte[] unknown9, SimisAceChannel[] channels, SimisAceImage[] images, byte[] unknownTrail1, byte[] unknownTrail2) {
+		SimisAce(int format, int width, int height, int unknown4, int unknown6, string unknown7, string creator, byte[] unknown9, SimisAceChannel[] channels, SimisAceImage[] images, byte[] unknownTrail1, byte[] unknownTrail2, bool hasAlpha, bool hasMask) {
 			Format = format;
 			Width = width;
 			Height = height;
@@ -41,6 +44,12 @@ namespace Jgr.IO.Parser {
 			Images = images;
 			UnknownTrail1 = unknownTrail1;
 			UnknownTrail2 = unknownTrail2;
+			HasAlpha = hasAlpha;
+			HasMask = hasMask;
+		}
+
+		public SimisAce(int format, int width, int height, int unknown4, int unknown6, string unknown7, string creator, byte[] unknown9, SimisAceChannel[] channels, SimisAceImage[] images, byte[] unknownTrail1, byte[] unknownTrail2)
+			: this(format, width, height, unknown4, unknown6, unknown7, creator, unknown9, channels, images, unknownTrail1, unknownTrail2, channels.Any(c => c.Type == SimisAceChannelId.Alpha), channels.Any(c => c.Type == SimisAceChannelId.Mask)) {
 		}
 	}
 
@@ -79,9 +88,11 @@ namespace Jgr.IO.Parser {
 		public readonly Bitmap ImageMask;
 
 		SimisAceImage(int width, int height, Bitmap imageColor, Bitmap imageMask) {
-			if ((imageColor != null) && (imageColor.PixelFormat != PixelFormat.Format32bppArgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppArgb.", "imageColor");
-			if ((imageMask != null) && (imageMask.PixelFormat != PixelFormat.Format32bppRgb)) throw new ArgumentException("Argument must use PixelFormat.Format32bppRgb.", "imageMask");
-			if ((imageColor != null) && (imageMask != null) && (imageColor.Size != imageMask.Size)) throw new ArgumentException("Color and mask images must be the same dimensions.");
+			if (imageColor == null) throw new ArgumentNullException("imageColor");
+			if (imageMask == null) throw new ArgumentNullException("imageMask");
+			if (imageColor.PixelFormat != PixelFormat.Format32bppArgb) throw new ArgumentException("Argument must use PixelFormat.Format32bppArgb.", "imageColor");
+			if (imageMask.PixelFormat != PixelFormat.Format32bppRgb) throw new ArgumentException("Argument must use PixelFormat.Format32bppRgb.", "imageMask");
+			if (imageColor.Size != imageMask.Size) throw new ArgumentException("Color and mask images must be the same dimensions.");
 			Width = width;
 			Height = height;
 			ImageColor = imageColor;
@@ -90,8 +101,8 @@ namespace Jgr.IO.Parser {
 
 		public SimisAceImage(Bitmap imageColor, Bitmap imageMask)
 			: this(
-				imageColor != null ? imageColor.Width : imageMask != null ? imageMask.Width : 0,
-				imageColor != null ? imageColor.Height : imageMask != null ? imageMask.Height : 0,
+				imageColor != null ? imageColor.Width : 0,
+				imageColor != null ? imageColor.Height : 0,
 				imageColor,
 				imageMask) {
 		}
@@ -99,7 +110,6 @@ namespace Jgr.IO.Parser {
 		public Image GetImage(SimisAceImageType type) {
 			switch (type) {
 				case SimisAceImageType.ColorOnly:
-					if (ImageColor == null) throw new InvalidOperationException("Cannot produce color-only image when ImageColor is null.");
 					var imageColorBits = ImageColor.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageColor.PixelFormat);
 					var image = new Bitmap(ImageColor.Width, ImageColor.Height, PixelFormat.Format32bppRgb);
 					var imageBits = image.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.WriteOnly, ImageColor.PixelFormat);
@@ -115,7 +125,6 @@ namespace Jgr.IO.Parser {
 					ImageColor.UnlockBits(imageColorBits);
 					return image;
 				case SimisAceImageType.AlphaOnly:
-					if (ImageColor == null) throw new InvalidOperationException("Cannot produce alpha-only image when ImageColor is null.");
 					imageColorBits = ImageColor.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageColor.PixelFormat);
 					image = new Bitmap(ImageColor.Width, ImageColor.Height, PixelFormat.Format32bppRgb);
 					imageBits = image.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.WriteOnly, ImageColor.PixelFormat);
@@ -131,14 +140,10 @@ namespace Jgr.IO.Parser {
 					ImageColor.UnlockBits(imageColorBits);
 					return image;
 				case SimisAceImageType.MaskOnly:
-					if (ImageMask == null) throw new InvalidOperationException("Cannot produce mask-only image when ImageMask is null.");
 					return ImageMask;
 				case SimisAceImageType.ColorAndAlpha:
-					if (ImageColor == null) throw new InvalidOperationException("Cannot produce color-and-alpha image when ImageColor is null.");
 					return ImageColor;
 				case SimisAceImageType.ColorAndMask:
-					if (ImageColor == null) throw new InvalidOperationException("Cannot produce color-and-mask image when ImageColor is null.");
-					if (ImageMask == null) throw new InvalidOperationException("Cannot produce color-and-mask image when ImageMask is null.");
 					imageColorBits = ImageColor.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageColor.PixelFormat);
 					var imageMaskBits = ImageMask.LockBits(new Rectangle(Point.Empty, ImageColor.Size), ImageLockMode.ReadOnly, ImageMask.PixelFormat);
 					image = new Bitmap(ImageColor.Width, ImageColor.Height, PixelFormat.Format32bppArgb);
