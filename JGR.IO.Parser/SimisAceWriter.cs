@@ -170,51 +170,49 @@ namespace Jgr.IO.Parser {
 						cov(2, 1), cov(2, 2), cov(2, 3),
 						cov(3, 1), cov(3, 2), cov(3, 3)
 					);
-					var R = new Matrix(3, 3);
-					var Q = new Matrix(3, 3);
+					var R = new Matrix(A.Height, A.Width, A.Values);
+					var Q = Matrix.Identity(3);
 					var QROkay = false;
 
 					// QR decomposition via Householder transformation:
-					// If |u1| or |u2| is zero, we will get NaNs in the decomposition.
-					var a1 = A.GetColumn(0);
-					var u1 = a1 - a1.GetEuclideanNorm() * new Matrix(3, 1, 1, 0, 0);
-					if (u1.GetEuclideanNorm() > double.Epsilon) {
-						var v1 = u1 / u1.GetEuclideanNorm();
-						var Q1 = Matrix.Identity(3) - 2 * v1 * v1.GetTranspose();
+					// If |u1| and |u2| are zero, we will get NaNs in the decomposition.
+					{
+						var a = R.GetColumn(0);
+						var u = a - a.GetEuclideanNorm() * new Matrix(3, 1, 1, 0, 0);
+						if (u.GetEuclideanNorm() > double.Epsilon) {
+							var v = u / u.GetEuclideanNorm();
+							var q = Matrix.Identity(3) - 2 * v * v.GetTranspose();
 
-						Q = Q1.GetTranspose();
-						R = Q1 * A;
-						QROkay = true;
+							Q *= q.GetTranspose();
+							R = q * R;
+							QROkay = true;
+						}
+					}
+					{
+						var a = R.GetMinor(1, 1).GetColumn(0);
+						var u = a - a.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
+						if (u.GetEuclideanNorm() > double.Epsilon) {
+							var v = u / u.GetEuclideanNorm();
+							var q = Matrix.Identity(2) - 2 * v * v.GetTranspose();
+							q = q.GetIdentityExpansion(1, 3);
 
-						var a2 = R.GetMinor(1, 1).GetColumn(0);
-						var u2 = a2 - a2.GetEuclideanNorm() * new Matrix(2, 1, 1, 0);
-						if (u2.GetEuclideanNorm() > double.Epsilon) {
-							var v2 = u2 / u2.GetEuclideanNorm();
-							var Q2 = Matrix.Identity(2) - 2 * v2 * v2.GetTranspose();
-							Q2 = Q2.GetIdentityExpansion(1, 3);
-
-							Q = Q * Q2.GetTranspose();
-							R = Q2 * R;
+							Q *= q.GetTranspose();
+							R = q * R;
 							QROkay = true;
 						}
 					}
 
 					if (QROkay) {
 						var largestEigenValue = R.Values[0, 0] > R.Values[1, 1] && R.Values[0, 0] > R.Values[2, 2] ? 0 : R.Values[1, 1] > R.Values[2, 2] ? 1 : 2;
-						//Console.WriteLine("{0,9:F3}, {1,9:F3}, {2,9:F3} --> {3}", R.Values[0, 0], R.Values[1, 1], R.Values[2, 2], largestEigenValue);
-						//Console.WriteLine("{0} --> eigen = {1,9:F3} * {3} ({2})", A, R.Values[largestEigenValue, largestEigenValue], largestEigenValue, Q.GetColumn(largestEigenValue));
 
-						var featureVector = Q.GetColumn(largestEigenValue).GetNormalized();
+						var featureVector = Q.GetColumn(0).GetNormalized();
 						var finalData = colorsCentered.GetMinor(0, 1) * featureVector;
-						//Console.WriteLine(finalData);
 
 						var finalDataList = finalData.GetColumnList(0);
 						var finalDataListMin = finalDataList.Min();
 						var finalDataListMax = finalDataList.Max();
 						var min = finalDataListMin * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
 						var max = finalDataListMax * featureVector + componentMeans.GetMinor(0, 1).GetTranspose();
-						//Console.WriteLine("Min = {0}, max = {1}", min, max);
-						//Console.WriteLine();
 
 						var minColor = new[] { ClampColor(min.Values[0, 0]), ClampColor(min.Values[1, 0]), ClampColor(min.Values[2, 0]) };
 						var maxColor = new[] { ClampColor(max.Values[0, 0]), ClampColor(max.Values[1, 0]), ClampColor(max.Values[2, 0]) };
