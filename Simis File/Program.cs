@@ -391,8 +391,8 @@ namespace Normalize
 							errors.Add(ImageComparison.GetRootMeanSquareError(newFile.Ace.Image[i].ImageMask, saveOutput.Ace.Image[i].ImageMask, newFile.Ace.Width, newFile.Ace.Height));
 						}
 
-						// Any error over 1.0 is considered a fail.
-						var maxError = 1.0;
+						// Any error over 10.0 is considered a fail.
+						var maxError = 10.0;
 						if (errors.Max() > maxError) throw new InvalidDataException(String.Format(CultureInfo.CurrentCulture, "Image RMS (root mean square) errors are too high; highest: {2,5:F1} > {0,5:F1}; all: {1}.", maxError, String.Join(", ", errors.Select(e => e.ToString("F1").PadLeft(5)).ToArray()), errors.Max()));
 					} catch (InvalidDataException ex) {
 						if (verbose) {
