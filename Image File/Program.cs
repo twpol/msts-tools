@@ -235,27 +235,59 @@ namespace ImageFile {
 							if (width != height) throw new InvalidOperationException(String.Format("Image width {0} and height {1} must be equal for a texture.", width, height));
 						}
 
-						using (var g = Graphics.FromImage(inputImage)) {
-							if (convertRoundtrip || convertTexture) {
-								throw new NotImplementedException("Roundtrip and texture conversion to ACE not yet supported.");
-							} else {
-								if (convertDXT1) {
-									// TODO: Handle the various alpha/mask fun here.
-								} else {
-									var aceChannels = new[] {
+						if (convertRoundtrip || convertTexture) {
+							var imageCount = 1 + (int)(convertTexture ? Math.Log(height) / Math.Log(2) : 0);
+							var aceChannels = new[] {
+										new SimisAceChannel(8, SimisAceChannelId.Red),
+										new SimisAceChannel(8, SimisAceChannelId.Green),
+										new SimisAceChannel(8, SimisAceChannelId.Blue),
+										new SimisAceChannel(8, SimisAceChannelId.Alpha),
+										new SimisAceChannel(1, SimisAceChannelId.Mask),
+									};
+							// Remove the alpha channel for DXT1.
+							if (convertDXT1) {
+								aceChannels = new[] { aceChannels[0], aceChannels[1], aceChannels[2], aceChannels[4] };
+							}
+							var aceImages = new SimisAceImage[imageCount];
+							var y = 0;
+							for (var i = 0; i < imageCount; i++) {
+								var scale = (int)Math.Pow(2, i);
+								var colorImage = new Bitmap(width / scale, height / scale, PixelFormat.Format32bppArgb);
+								var maskImage = new Bitmap(width / scale, height / scale, PixelFormat.Format32bppRgb);
+								using (var g = Graphics.FromImage(colorImage)) {
+									g.DrawImage(inputImage, new Rectangle(Point.Empty, colorImage.Size), new Rectangle(0, y, colorImage.Width, colorImage.Height), GraphicsUnit.Pixel);
+								}
+								using (var g = Graphics.FromImage(maskImage)) {
+									g.DrawImage(inputImage, new Rectangle(Point.Empty, maskImage.Size), new Rectangle(width, y, maskImage.Width, maskImage.Height), GraphicsUnit.Pixel);
+								}
+								aceImages[i] = new SimisAceImage(colorImage, maskImage);
+								y += colorImage.Height;
+							}
+							var ace = new SimisAce((convertDXT1 ? 0x10 : 0x00) + (convertTexture ? 0x05 : 0x00), width, height, convertDXT1 ? 0x12 : 0x00, 0, "Unknown", "JGR Image File", new byte[44], aceChannels, aceImages, new byte[0], new byte[0]);
+							var aceFile = new SimisFile(file.Output, true, convertZLIB, ace);
+							aceFile.Write();
+						} else {
+							// TODO: Handle the various alpha/mask fun here.
+							var aceChannels = new[] {
 										new SimisAceChannel(8, SimisAceChannelId.Red),
 										new SimisAceChannel(8, SimisAceChannelId.Green),
 										new SimisAceChannel(8, SimisAceChannelId.Blue),
 										new SimisAceChannel(8, SimisAceChannelId.Alpha),
 									};
-									var aceImages = new[] {
-										new SimisAceImage(new Bitmap(inputImage), new Bitmap(width, height, PixelFormat.Format32bppRgb)),
-									};
-									var ace = new SimisAce(convertDXT1 ? 0x10 : 0x00, width, height, convertDXT1 ? 0x12 : 0x00, 0, "Unknown", "JGR Image File", new byte[44], aceChannels, aceImages, new byte[0], new byte[0]);
-									var aceFile = new SimisFile(file.Output, true, convertZLIB, ace);
-									aceFile.Write();
-								}
+							// Replace the alpha channel with mask channel for DXT1.
+							if (convertDXT1) {
+								aceChannels[3] = new SimisAceChannel(1, SimisAceChannelId.Mask);
 							}
+							var maskImage = new Bitmap(width, height, PixelFormat.Format32bppRgb);
+							using (var g = Graphics.FromImage(maskImage)) {
+								g.FillRectangle(Brushes.White, 0, 0, maskImage.Width, maskImage.Height);
+							}
+							var aceImages = new[] {
+								new SimisAceImage(new Bitmap(inputImage), maskImage),
+							};
+							var ace = new SimisAce(convertDXT1 ? 0x10 : 0x00, width, height, convertDXT1 ? 0x12 : 0x00, 0, "Unknown", "JGR Image File", new byte[44], aceChannels, aceImages, new byte[0], new byte[0]);
+							var aceFile = new SimisFile(file.Output, true, convertZLIB, ace);
+							aceFile.Write();
 						}
 					} else {
 						// *** -> ***
