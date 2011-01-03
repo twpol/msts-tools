@@ -59,7 +59,7 @@ namespace Jgr.IO.Parser {
 				switch (ace.Unknown4) {
 					case 0x12:
 						// DXT1
-						if (ace.Channel.Any(c => c.Type == SimisAceChannelId.Alpha)) throw new InvalidDataException("Alpha channel not supported with DXT1 ACE files (use a mask instead).");
+						if (ace.HasAlpha) throw new InvalidDataException("Alpha channel not supported with DXT1 ACE files (use a mask instead).");
 
 						// Jump table: offsets to start of each image.
 						var dataSize = 152 + 16 * ace.Channel.Count + 4 * ace.Image.Count;

@@ -226,11 +226,7 @@ namespace SimisEditor
 					SimisTree.SelectedNode = SimisTree.Nodes[0];
 				}
 			} else if (File.Ace != null) {
-				try {
-					SelectAceType(AceType);
-				} catch (InvalidOperationException) {
-					SelectAceType(SimisAceImageType.ColorAndAlpha);
-				}
+				SelectAceType(File.Ace.HasAlpha ? SimisAceImageType.ColorAndAlpha : File.Ace.HasMask ? SimisAceImageType.ColorAndMask : SimisAceImageType.ColorOnly);
 				SelectAceZoomToWindow();
 			}
 			UpdateTitle();
@@ -748,11 +744,11 @@ namespace SimisEditor
 			zoomToWindowToolStripMenuItem.Enabled = AceContainer.Visible;
 			actualSizeToolStripMenuItem.Enabled = AceContainer.Visible;
 
-			colorOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null;
-			alphaOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null;
-			maskOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageMask != null;
-			colorAndAlphaToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null;
-			colorAndMaskToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.Image[0].ImageColor != null && File.Ace.Image[0].ImageMask != null;
+			colorOnlyToolStripMenuItem.Enabled = AceContainer.Visible;
+			alphaOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.HasAlpha;
+			maskOnlyToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.HasMask;
+			colorAndAlphaToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.HasAlpha;
+			colorAndMaskToolStripMenuItem.Enabled = AceContainer.Visible && File.Ace.HasMask;
 
 			colorOnlyToolStripMenuItem.Checked = AceType == SimisAceImageType.ColorOnly;
 			alphaOnlyToolStripMenuItem.Checked = AceType == SimisAceImageType.AlphaOnly;
@@ -781,27 +777,27 @@ namespace SimisEditor
 			var verticalPosition = padding;
 			foreach (var image in File.Ace.Image) {
 				foreach (var picture in new[] { image.ImageColor, image.ImageMask }) {
-					if (picture != null) {
-						var label = new Label();
-						label.Text = String.Format("{0}x{1} {2}:", picture.Width, picture.Height, picture == image.ImageColor ? "color" : "mask");
-						label.AutoSize = true;
-						label.Left = padding;
-						label.Top = verticalPosition;
-						AceChannels.Controls.Add(label);
-						verticalPosition += label.Height;
+					if ((picture == image.ImageMask) && !File.Ace.HasMask) continue;
 
-						var pictureBox = new PictureBox();
-						pictureBox.Image = picture;
-						pictureBox.BackColor = Color.White;
-						pictureBox.BackgroundImage = AceImage.BackgroundImage;
-						pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
-						pictureBox.Width = Math.Min(picture.Width, AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
-						pictureBox.Height = picture.Height * pictureBox.Width / picture.Width;
-						pictureBox.Left = padding + (horizontalSpace - pictureBox.Width) / 2;
-						pictureBox.Top = verticalPosition;
-						AceChannels.Controls.Add(pictureBox);
-						verticalPosition += pictureBox.Height + padding;
-					}
+					var label = new Label();
+					label.Text = String.Format("{0}x{1} {2}:", picture.Width, picture.Height, picture == image.ImageColor ? "color" : "mask");
+					label.AutoSize = true;
+					label.Left = padding;
+					label.Top = verticalPosition;
+					AceChannels.Controls.Add(label);
+					verticalPosition += label.Height;
+
+					var pictureBox = new PictureBox();
+					pictureBox.Image = picture;
+					pictureBox.BackColor = Color.White;
+					pictureBox.BackgroundImage = AceImage.BackgroundImage;
+					pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+					pictureBox.Width = Math.Min(picture.Width, AceChannels.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
+					pictureBox.Height = picture.Height * pictureBox.Width / picture.Width;
+					pictureBox.Left = padding + (horizontalSpace - pictureBox.Width) / 2;
+					pictureBox.Top = verticalPosition;
+					AceChannels.Controls.Add(pictureBox);
+					verticalPosition += pictureBox.Height + padding;
 				}
 			}
 		}
