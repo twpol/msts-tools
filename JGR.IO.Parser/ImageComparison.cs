@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace Jgr.IO.Parser {
 	public static class ImageComparison {
-		public static double GetRootMeanSquareError(Bitmap image1, Bitmap image2) {
+		public static double GetRootMeanSquareError(Bitmap image1, Bitmap image2, int scoreWidth, int scoreHeight) {
 			if (image1 == null) throw new ArgumentNullException("image1");
 			if (image2 == null) throw new ArgumentNullException("image2");
 			if (image1.Width != image2.Width) throw new ArgumentException("Images must have the same width.");
@@ -55,7 +55,7 @@ namespace Jgr.IO.Parser {
 				}
 			}
 
-			var pixelCount = width * height * (hasAlpha ? 4 : 3);
+			var pixelCount = scoreWidth * scoreHeight * (hasAlpha ? 4 : 3);
 
 			return Math.Sqrt((double)error / pixelCount);
 		}
