@@ -350,17 +350,20 @@ namespace Normalize
 				var readReader = new BinaryReader(new SimisTestableStream(readStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
 				var saveReader = new BinaryReader(new SimisTestableStream(saveStream), newFile.StreamIsBinary ? ByteEncoding.Encoding : Encoding.Unicode);
 				var isDXTACE = (result.JinxStreamFormat.Extension == "ace") && ((newFile.Ace.Format & 0x10) != 0);
-				while ((readReader.BaseStream.Position < readReader.BaseStream.Length) && (saveReader.BaseStream.Position < saveReader.BaseStream.Length)) {
-					var oldPos = readReader.BaseStream.Position;
-					if (isDXTACE && (oldPos > 168)) break;
-					var fileChar = readReader.ReadChar();
-					var saveChar = saveReader.ReadChar();
-					if (fileChar != saveChar) {
-						var readEx = new ReaderException(readReader, newFile.StreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
-						var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, (int)(readReader.BaseStream.Position - oldPos), "");
+				var readChars = readReader.ReadChars((int)readReader.BaseStream.Length);
+				var saveChars = saveReader.ReadChars((int)saveReader.BaseStream.Length);
+				var charBytes = newFile.StreamIsBinary ? 1 : 2;
+				var charMin = Math.Min(readChars.Length, saveChars.Length);
+				for (var i = 0; i < charMin; i++) {
+					if (isDXTACE && (i > 168)) break;
+					if (readChars[i] != saveChars[i]) {
+						readReader.BaseStream.Position = charBytes * (i + 1);
+						saveReader.BaseStream.Position = charBytes * (i + 1);
+						var readEx = new ReaderException(readReader, newFile.StreamIsBinary, charBytes, "");
+						var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, charBytes, "");
 						if (verbose) {
 							lock (formatCounts) {
-								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, oldPos, fileChar, saveChar, readEx.ToString(), saveEx.ToString()));
+								Console.WriteLine("Compare: " + String.Format(CultureInfo.CurrentCulture, "{0}\n\nFile character {1:N0} does not match: {2:X4} vs {3:X4}.\n\n{4}{5}\n", file, charBytes * i, readChars[i], saveChars[i], readEx.ToString(), saveEx.ToString()));
 							}
 						}
 						return result;
@@ -403,7 +406,9 @@ namespace Normalize
 						return result;
 					}
 				} else {
-					if (readReader.BaseStream.Length != saveReader.BaseStream.Length) {
+					if (readChars.Length != saveChars.Length) {
+						readReader.BaseStream.Position = charBytes * charMin;
+						saveReader.BaseStream.Position = charBytes * charMin;
 						var readEx = new ReaderException(readReader, newFile.StreamIsBinary, 0, "");
 						var saveEx = new ReaderException(saveReader, newFile.StreamIsBinary, 0, "");
 						if (verbose) {
