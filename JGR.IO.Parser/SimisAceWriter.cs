@@ -166,10 +166,13 @@ namespace Jgr.IO.Parser {
 					};
 
 					var A = new Matrix(3, 3,
-						cov(1, 1), cov(1, 2), cov(1, 3),
-						cov(2, 1), cov(2, 2), cov(2, 3),
+						cov(1, 1), 0, 0,
+						cov(2, 1), cov(2, 2), 0,
 						cov(3, 1), cov(3, 2), cov(3, 3)
 					);
+					A.Values[0, 1] = A.Values[1, 0];
+					A.Values[0, 2] = A.Values[2, 0];
+					A.Values[1, 2] = A.Values[2, 1];
 					var R = new Matrix(A.Height, A.Width, A.Values);
 					var Q = Matrix.Identity(3);
 					var QROkay = false;
@@ -240,12 +243,12 @@ namespace Jgr.IO.Parser {
 							if (colors.Values[i, 0] < 0x80) {
 								indicies += 3 << (i * 2);
 							} else {
-								var colorErrors = new List<double>(new[] {
-															Math.Abs(colors.Values[i, 1] - minColor[0]) + Math.Abs(colors.Values[i, 2] - minColor[1]) + Math.Abs(colors.Values[i, 3] - minColor[2]),
-															Math.Abs(colors.Values[i, 1] - maxColor[0]) + Math.Abs(colors.Values[i, 2] - maxColor[1]) + Math.Abs(colors.Values[i, 3] - maxColor[2]),
-															Math.Abs(colors.Values[i, 1] - midColor[0]) + Math.Abs(colors.Values[i, 2] - midColor[1]) + Math.Abs(colors.Values[i, 3] - midColor[2])
-														});
-								var index = colorErrors.IndexOf(colorErrors.Min());
+								var colorErrors = new[] {
+									Math.Abs(colors.Values[i, 1] - minColor[0]) + Math.Abs(colors.Values[i, 2] - minColor[1]) + Math.Abs(colors.Values[i, 3] - minColor[2]),
+									Math.Abs(colors.Values[i, 1] - maxColor[0]) + Math.Abs(colors.Values[i, 2] - maxColor[1]) + Math.Abs(colors.Values[i, 3] - maxColor[2]),
+									Math.Abs(colors.Values[i, 1] - midColor[0]) + Math.Abs(colors.Values[i, 2] - midColor[1]) + Math.Abs(colors.Values[i, 3] - midColor[2])
+								};
+								var index = colorErrors[0] < colorErrors[1] && colorErrors[0] < colorErrors[2] ? 0 : colorErrors[1] < colorErrors[2] ? 1 : 2;
 								Debug.Assert(index >= 0 && index <= 3);
 								indicies += index << (i * 2);
 							}
