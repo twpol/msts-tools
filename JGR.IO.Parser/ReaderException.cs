@@ -77,6 +77,8 @@ namespace Jgr.IO.Parser
 				ExceptionData = data.ToArray();
 				// Reset reader in case anything else wants to play with it.
 				reader.BaseStream.Position = originalPosition;
+			} else {
+				ExceptionData = new char[0];
 			}
 		}
 

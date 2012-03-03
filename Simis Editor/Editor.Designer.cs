@@ -99,7 +99,7 @@
 			statusBar.Location = new System.Drawing.Point(0, 540);
 			statusBar.Name = "statusBar";
 			statusBar.Size = new System.Drawing.Size(784, 22);
-			statusBar.TabIndex = 3;
+			statusBar.TabIndex = 4;
 			statusBar.Text = "statusStrip1";
 			// 
 			// statusBarProgress
@@ -159,7 +159,7 @@
 			this.SimisProperties.Name = "SimisProperties";
 			this.SimisProperties.PropertySort = System.Windows.Forms.PropertySort.Alphabetical;
 			this.SimisProperties.Size = new System.Drawing.Size(302, 516);
-			this.SimisProperties.TabIndex = 2;
+			this.SimisProperties.TabIndex = 3;
 			this.SimisProperties.ToolbarVisible = false;
 			this.SimisProperties.Visible = false;
 			this.SimisProperties.PropertyValueChanged += new System.Windows.Forms.PropertyValueChangedEventHandler(this.SimisProperties_PropertyValueChanged);
@@ -208,7 +208,7 @@
 			this.menuStrip.Name = "menuStrip";
 			this.menuStrip.Padding = new System.Windows.Forms.Padding(0, 0, 0, 1);
 			this.menuStrip.Size = new System.Drawing.Size(784, 24);
-			this.menuStrip.TabIndex = 1;
+			this.menuStrip.TabIndex = 0;
 			this.menuStrip.Text = "menuStrip1";
 			// 
 			// fileToolStripMenuItem
@@ -555,8 +555,7 @@
 			this.AceContainer.Location = new System.Drawing.Point(0, 24);
 			this.AceContainer.Name = "AceContainer";
 			this.AceContainer.Size = new System.Drawing.Size(282, 516);
-			this.AceContainer.TabIndex = 4;
-			this.AceContainer.TabStop = true;
+			this.AceContainer.TabIndex = 1;
 			this.AceContainer.Visible = false;
 			// 
 			// AceImage
@@ -579,7 +578,7 @@
 			this.AceChannels.Location = new System.Drawing.Point(282, 24);
 			this.AceChannels.Name = "AceChannels";
 			this.AceChannels.Size = new System.Drawing.Size(200, 516);
-			this.AceChannels.TabIndex = 5;
+			this.AceChannels.TabIndex = 2;
 			this.AceChannels.Visible = false;
 			// 
 			// FileStatus

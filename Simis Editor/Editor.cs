@@ -326,14 +326,6 @@ namespace SimisEditor
 
 		#region Menu Events - Edit
 
-		void UpdateEditState() {
-			cutToolStripMenuItem.Enabled = EditState.CanCut;
-			copyToolStripMenuItem.Enabled = EditState.CanCopy;
-			pasteToolStripMenuItem.Enabled = EditState.CanPaste;
-			deleteToolStripMenuItem.Enabled = EditState.CanDelete;
-			selectAllToolStripMenuItem.Enabled = EditState.CanSelectAll;
-		}
-
 		void editToolStripMenuItem_DropDownOpening(object sender, EventArgs e) {
 			UpdateEditState();
 		}
@@ -724,6 +716,14 @@ namespace SimisEditor
 			saveAsToolStripMenuItem.Enabled = File != null;
 		}
 
+		void UpdateEditState() {
+			cutToolStripMenuItem.Enabled = EditState.CanCut;
+			copyToolStripMenuItem.Enabled = EditState.CanCopy;
+			pasteToolStripMenuItem.Enabled = EditState.CanPaste;
+			deleteToolStripMenuItem.Enabled = EditState.CanDelete;
+			selectAllToolStripMenuItem.Enabled = EditState.CanSelectAll;
+		}
+
 		void UpdateViewer() {
 			UpdateViewer(false);
 		}
@@ -806,7 +806,7 @@ namespace SimisEditor
 			if (File == null) {
 				statusBarLabel.Text = "";
 			} else if (File.Ace != null) {
-				statusBarLabel.Text = String.Format("[ACE Image] {1}%, {0}", new[] { "Color Only", "Alpha Only", "Mask Only", "Color and Alpha", "Color and Mask" }[(int)AceType], 100 * Math.Pow(2, AceZoom));
+				statusBarLabel.Text = String.Format("[ACE Image {2}x{3}] {1}%, {0}", new[] { "Color Only", "Alpha Only", "Mask Only", "Color and Alpha", "Color and Mask" }[(int)AceType], 100 * Math.Pow(2, AceZoom), File.Ace.Width, File.Ace.Height);
 			} else if (SelectedNode == null) {
 				statusBarLabel.Text = String.Format("[{0}]", File.JinxStreamFormat.Name);
 			} else {
