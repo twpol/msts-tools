@@ -27,7 +27,7 @@ namespace Jgr.IO.Parser
 		Stack<long> BlockStarts;
 		BnfState BnfState;
 
-		public const string SafeTokenCharacters = "._!/+-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		public const string SafeTokenCharacters = "._!?$*/+-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		public SimisJinxWriter(SimisStreamWriter writer, SimisProvider simisProvider, bool jinxStreamIsBinary, SimisJinxFormat jinxStreamFormat)
 			: base(writer) {

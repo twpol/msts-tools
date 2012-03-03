@@ -195,9 +195,9 @@ namespace Jgr.Msts {
 
 			using (var streamElevation = new FileStream(tileElevationFile, FileMode.Open, FileAccess.Read)) {
 				var readerElevation = new BinaryReader(streamElevation);
-				for (var x = 0; x < terrainWidth; x++) {
-					for (var z = 0; z < terrainHeight; z++) {
-						Terrain[z, x] = terrainFloor + (double)readerElevation.ReadUInt16() * terrainScale;
+				for (var z = 0; z < terrainHeight; z++) {
+					for (var x = 0; x < terrainWidth; x++) {
+						Terrain[x, z] = terrainFloor + (double)readerElevation.ReadUInt16() * terrainScale;
 					}
 				}
 			}
