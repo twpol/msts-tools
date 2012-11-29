@@ -50,7 +50,7 @@ namespace Jgr.IO.Parser
 				} else {
 					reader.BaseStream.Position = 0;
 				}
-				List<char> data = new List<char>();
+				var data = new List<char>();
 				// Record the addresses of the prefix and suffix.
 				ExceptionAddressPrefix = reader.BaseStream.Position;
 				ExceptionAddressSuffix = ExceptionAddress + exceptionLength;

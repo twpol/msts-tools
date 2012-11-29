@@ -235,7 +235,7 @@ namespace Jgr.IO.Parser
 				return rv;
 			}
 
-			if (token.StartsWith("_", StringComparison.InvariantCulture) || (token.ToUpperInvariant() == "SKIP") || (token.ToUpperInvariant() == "COMMENT")) {
+			if (token.StartsWith("_", StringComparison.InvariantCulture) || (token.ToUpperInvariant() == "COMMENT") || (token.ToUpperInvariant() == "INFO") || (token.ToUpperInvariant() == "SKIP")) {
 				var oldPosition = Reader.BaseStream.Position;
 				while ((Reader.BaseStream.Position < Reader.BaseStream.Length) && WhitespaceChars.Contains((char)Reader.PeekChar())) {
 					Reader.ReadChar();
@@ -453,7 +453,7 @@ namespace Jgr.IO.Parser
 				} while ('+' == Reader.PeekChar());
 			} else {
 				// Consume all non-whitespace, non-special characters.
-				while ((Reader.BaseStream.Position < Reader.BaseStream.Length) && !WhitespaceAndSpecialChars.Contains((char)Reader.PeekChar())) {
+				while ((Reader.BaseStream.Position < Reader.BaseStream.Length) && !WhitespaceAndSpecialChars.Any(c => c == Reader.PeekChar())) {
 					token += Reader.ReadChar();
 				}
 			}
