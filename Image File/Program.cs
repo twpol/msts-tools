@@ -177,9 +177,9 @@ namespace ImageFile {
 				if (verbose) {
 					lock (files) {
 						if (threading > 1) {
-							Console.WriteLine(String.Format("[Thread {0}] {1} -> {2}", Thread.CurrentThread.ManagedThreadId, file.Input, file.Output));
+							Console.WriteLine("[Thread {0}] {1} -> {2}", Thread.CurrentThread.ManagedThreadId, file.Input, file.Output);
 						} else {
-							Console.WriteLine(String.Format("{0} -> {1}", file.Input, file.Output));
+							Console.WriteLine("{0} -> {1}", file.Input, file.Output);
 						}
 					}
 				}
@@ -254,11 +254,17 @@ namespace ImageFile {
 								var scale = (int)Math.Pow(2, i);
 								var colorImage = new Bitmap(width / scale, height / scale, PixelFormat.Format32bppArgb);
 								var maskImage = new Bitmap(width / scale, height / scale, PixelFormat.Format32bppRgb);
+								var sourceRect = convertRoundtrip ? new Rectangle(0, y, width / scale, height / scale) : new Rectangle(0, 0, width, height);
 								using (var g = Graphics.FromImage(colorImage)) {
-									g.DrawImage(inputImage, new Rectangle(Point.Empty, colorImage.Size), new Rectangle(0, y, colorImage.Width, colorImage.Height), GraphicsUnit.Pixel);
+									g.DrawImage(inputImage, new Rectangle(Point.Empty, colorImage.Size), sourceRect, GraphicsUnit.Pixel);
 								}
+								sourceRect.X = width;
 								using (var g = Graphics.FromImage(maskImage)) {
-									g.DrawImage(inputImage, new Rectangle(Point.Empty, maskImage.Size), new Rectangle(width, y, maskImage.Width, maskImage.Height), GraphicsUnit.Pixel);
+									if (width < inputImage.Width) {
+										g.DrawImage(inputImage, new Rectangle(Point.Empty, maskImage.Size), sourceRect, GraphicsUnit.Pixel);
+									} else {
+										g.FillRectangle(Brushes.White, new Rectangle(Point.Empty, maskImage.Size));
+									}
 								}
 								aceImages[i] = new SimisAceImage(colorImage, maskImage);
 								y += colorImage.Height;
